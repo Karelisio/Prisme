@@ -1,9 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { goBack, useNavigation } from '@/app/navigation';
 import { saveCreation } from '@/features/library/creations';
-import { setLiveWallpaper } from '@/features/live/live';
 import { type ApplyChoice, ApplySheet } from '@/features/preview/ApplySheet';
-import { TARGET_LABELS, applyWallpaper } from '@/features/preview/applyWallpaper';
+import { applyCreation } from '@/features/preview/applyWallpaper';
 import { useSettings } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
 import { getScreenInfo, screenRatio, useScreenInfo } from '@/shared/lib/screen';
@@ -57,11 +56,7 @@ export function GeneratorScreen() {
     const creation = await save();
     if (!creation) return;
     try {
-      if (choice === 'live') showSnackbar(await setLiveWallpaper(creation));
-      else {
-        await applyWallpaper({ wallpaper: creation, target: choice });
-        showSnackbar(`Fond appliqué : ${TARGET_LABELS[choice].toLowerCase()}`);
-      }
+      if (choice !== 'linked') showSnackbar(await applyCreation(creation, choice));
     } catch (e) {
       showSnackbar(`Échec : ${nativeErrorMessage(e)}`);
     }

@@ -220,3 +220,31 @@ test('palette Material You : couleurs calculées et simulation de l’accueil', 
   const iconBg = await preview.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--sim-icon-bg'));
   expect(iconBg).toMatch(/^#[0-9a-f]{6}$/i);
 });
+
+test('fonds liés : variante assortie sur l’autre écran', async ({ page }, info) => {
+  await mockApis(page);
+  await page.goto('/');
+  const settings = await openSettings(page);
+  await settings.getByRole('switch', { name: 'Fonds accueil et verrouillage liés' }).click();
+  await page.getByRole('button', { name: 'Explorer' }).click();
+  await page.locator('.tab[data-active="true"] .wp-cell').first().click();
+  await page.getByRole('button', { name: 'Appliquer' }).click();
+  await page.getByRole('button', { name: /Accueil et verrouillage assortis/ }).click();
+
+  const sheet = page.getByRole('dialog', { name: 'Fonds assortis' });
+  await expect(sheet.getByLabel("Écran d'accueil")).toBeVisible();
+  await expect(sheet.getByLabel('Écran de verrouillage')).toBeVisible();
+  await sheet.getByRole('button', { name: 'Gros plan' }).click();
+  await sheet.getByRole('radio', { name: 'Variante à l’accueil' }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: info.outputPath('linked.png') });
+  await sheet.getByRole('button', { name: 'Appliquer les deux' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Fonds assortis appliqués' })).toBeVisible();
+
+  const applied = await page.evaluate(() => window.__prismeWeb?.applied ?? []);
+  expect(applied).toHaveLength(2);
+  expect(applied[0]).toMatchObject({ target: 'home' });
+  expect(applied[0]?.uri).toMatch(/^blob:/);
+  expect(applied[1]).toMatchObject({ target: 'lock' });
+  expect(applied[1]?.uri).toContain('fm=jpg');
+});

@@ -1,4 +1,5 @@
 import { useLibrary } from '@/features/library/store';
+import { setLiveWallpaper } from '@/features/live/live';
 import { applyUri } from '@/features/library/useImageSrc';
 import type { Wallpaper } from '@/features/sources/types';
 import { trackUnsplashDownload } from '@/features/sources/unsplash';
@@ -33,4 +34,14 @@ export async function applyWallpaper({ wallpaper, target, crop, uri }: ApplyRequ
   if (wallpaper.source === 'unsplash' && wallpaper.downloadLocation) {
     void trackUnsplashDownload(wallpaper.downloadLocation);
   }
+}
+
+/** Choix proposés par la feuille « Appliquer sur ». */
+export type ApplyChoice = WallpaperTarget | 'live' | 'linked';
+
+/** Applique une création (éditeur, générateur) selon le choix ; renvoie le message à afficher. */
+export async function applyCreation(creation: Wallpaper, choice: Exclude<ApplyChoice, 'linked'>): Promise<string> {
+  if (choice === 'live') return setLiveWallpaper(creation);
+  await applyWallpaper({ wallpaper: creation, target: choice });
+  return `Fond appliqué : ${TARGET_LABELS[choice].toLowerCase()}`;
 }

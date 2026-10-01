@@ -19,6 +19,7 @@ export const OPTIONS: readonly OptionDef[] = [
   { key: 'editor', title: 'Éditeur', description: 'Flou, assombrissement, grain, dégradé, texte : bouton « Retoucher » de l’aperçu', icon: 'formatPaint' },
   { key: 'generator', title: 'Générateur minimaliste', description: 'Fonds unis, dégradés, aurores, vagues, formes', icon: 'wandStars', screen: 'generator' },
   { key: 'palette', title: 'Palette Material You', description: 'Couleurs que donnera le fond : bouton palette de l’aperçu', icon: 'palette' },
+  { key: 'linked', title: 'Fonds accueil et verrouillage liés', description: 'Variante assortie pour l’autre écran, au moment d’appliquer', icon: 'link' },
 ];
 
 /** Options désactivées par défaut : chacune s'active ici, puis se règle dans son écran. */

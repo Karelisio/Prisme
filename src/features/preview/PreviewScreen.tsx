@@ -8,11 +8,12 @@ import { useSettings } from '@/features/settings/store';
 import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
-import { PrismeWallpaper, type WallpaperTarget, isNative, nativeErrorMessage } from '@/shared/native';
+import { type NormalizedRect, PrismeWallpaper, type WallpaperTarget, isNative, nativeErrorMessage } from '@/shared/native';
 import { useTheme } from '@/shared/theme/ThemeController';
 import { Button, Icon, IconButton, LinearProgress } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { setLiveWallpaper } from '@/features/live/live';
+import { LinkedSheet } from '@/features/linked/LinkedSheet';
 import { PaletteSheet, simulationVars } from '@/features/palette/PaletteSheet';
 import type { ColorScheme } from '@/shared/theme/scheme';
 import { type ApplyChoice, ApplySheet } from './ApplySheet';
@@ -23,7 +24,7 @@ import { Simulation, type SimulationMode } from './Simulation';
 import { usePanZoom } from './usePanZoom';
 import './preview.css';
 
-type Sheet = 'apply' | 'info' | 'collections' | 'palette' | null;
+type Sheet = 'apply' | 'info' | 'collections' | 'palette' | 'linked' | null;
 
 function isLightColor(hex: string): boolean {
   const n = Number.parseInt(hex.replace('#', ''), 16);
@@ -98,7 +99,14 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
     return () => void handle.then((h) => h.remove());
   }, [isApplying, wallpaper.id]);
 
+  const [linkedCrop, setLinkedCrop] = useState<NormalizedRect | undefined>();
+
   const apply = async (choice: ApplyChoice) => {
+    if (choice === 'linked') {
+      setLinkedCrop(panZoom.getCrop());
+      setSheet('linked');
+      return;
+    }
     if (choice === 'live') {
       setSheet(null);
       try {
@@ -246,7 +254,10 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
         </div>
       )}
 
-      <ApplySheet open={sheet === 'apply'} onClose={() => setSheet(null)} onApply={(t) => void apply(t)} />
+      <ApplySheet open={sheet === 'apply'} onClose={() => setSheet(null)} onApply={(t) => void apply(t)} allowLinked />
+      {features.linked && (
+        <LinkedSheet wallpaper={wallpaper} crop={linkedCrop} open={sheet === 'linked'} onClose={() => setSheet(null)} />
+      )}
       <InfoSheet wallpaper={wallpaper} open={sheet === 'info'} onClose={() => setSheet(null)} />
       <CollectionsSheet wallpaper={wallpaper} open={sheet === 'collections'} onClose={() => setSheet(null)} />
       {features.palette && (

@@ -1,0 +1,36 @@
+.linked {
+  display: grid;
+  gap: 16px;
+  padding: 0 24px;
+}
+
+.linked__previews {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  height: min(42vh, 360px);
+}
+
+.linked__previews figure {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+}
+
+.linked__canvas {
+  flex: 1;
+}
+
+.linked__previews figcaption {
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 12px/16px var(--md-font);
+  text-align: center;
+}
+
+.linked__loading {
+  display: grid;
+  grid-column: 1 / -1;
+  place-items: center;
+}
