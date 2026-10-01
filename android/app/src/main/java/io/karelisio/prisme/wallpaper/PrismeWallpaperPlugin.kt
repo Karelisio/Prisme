@@ -120,12 +120,14 @@ class PrismeWallpaperPlugin : Plugin() {
         }
         val crop = WallpaperRef.cropFromJson(call.getObject("crop"))
         val id = call.getString("id") ?: uri
+        // « Essayer » un fond (mode focus…) ne doit pas remplacer le fond à restaurer plus tard.
+        val remember = call.getBoolean("remember", true) == true
         val screen = ScreenInfo.read(context, activity)
         scope.launch {
             try {
                 val file = withContext(io) { store.resolve(uri) { progress -> emitProgress(id, progress) } }
                 withContext(Dispatchers.Default) { applier.apply(file, target, crop, screen) }
-                applied.recordManual(target, WallpaperRef(id, uri, crop))
+                if (remember) applied.recordManual(target, WallpaperRef(id, uri, crop))
                 call.resolve(
                     JSObject().put("target", target.key).put("width", screen.width).put("height", screen.height),
                 )

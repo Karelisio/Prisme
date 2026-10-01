@@ -26,6 +26,7 @@ internal class AutomationStore(context: Context) {
                 appliedHome = json.optString("appliedHome").ifBlank { null },
                 appliedLock = json.optString("appliedLock").ifBlank { null },
                 focusApplied = json.optBoolean("focusApplied"),
+                dynamicApplied = json.optBoolean("dynamicApplied"),
             )
         }.getOrDefault(AutomationState())
     }
@@ -37,6 +38,7 @@ internal class AutomationStore(context: Context) {
             .put("appliedHome", state.appliedHome ?: "")
             .put("appliedLock", state.appliedLock ?: "")
             .put("focusApplied", state.focusApplied)
+            .put("dynamicApplied", state.dynamicApplied)
         prefs.edit().putString(KEY_STATE, json.toString()).apply()
     }
 

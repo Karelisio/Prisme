@@ -17,18 +17,21 @@ export interface ApplyRequest {
   crop?: NormalizedRect;
   /** Image déjà préparée (éditeur, fonds liés) : remplace la source du fond. */
   uri?: string;
+  /** false : essai, ne devient pas le fond à restaurer après un automatisme. */
+  remember?: boolean;
 }
 
 /**
  * Applique un fond : pleine résolution à ce moment-là seulement (copie hors ligne si elle existe),
  * puis historique et suivi de téléchargement Unsplash.
  */
-export async function applyWallpaper({ wallpaper, target, crop, uri }: ApplyRequest): Promise<void> {
+export async function applyWallpaper({ wallpaper, target, crop, uri, remember = true }: ApplyRequest): Promise<void> {
   await PrismeWallpaper.setWallpaper({
     uri: uri ?? applyUri(wallpaper),
     target,
     crop: uri ? undefined : crop,
     id: wallpaper.id,
+    remember,
   });
   useLibrary.getState().addHistory(wallpaper, target);
   if (wallpaper.source === 'unsplash' && wallpaper.downloadLocation) {

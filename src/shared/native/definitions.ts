@@ -50,6 +50,8 @@ export interface SetWallpaperOptions {
   crop?: NormalizedRect;
   /** Identifiant repris dans les événements de progression. */
   id?: string;
+  /** false : simple essai, ne remplace pas le fond à restaurer après le mode focus. */
+  remember?: boolean;
 }
 
 export interface SetWallpaperResult {

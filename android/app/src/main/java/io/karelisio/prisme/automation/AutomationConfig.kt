@@ -32,7 +32,8 @@ enum class Season(val key: String) {
 
 data class TimeSlot(val startMinute: Int, val ref: WallpaperRef)
 
-data class BatteryLevel(val min: Int, val ref: WallpaperRef)
+/** Plage de batterie [min, max[ en pourcentage. */
+data class BatteryLevel(val min: Int, val max: Int, val ref: WallpaperRef)
 
 /** Plage du mode focus : jours 1 (lundi) à 7 (dimanche), minutes depuis minuit ; fin < début = nuit à cheval. */
 data class FocusSchedule(val days: Set<Int>, val startMinute: Int, val endMinute: Int)
@@ -149,7 +150,9 @@ data class AutomationConfig(
                 }
                 "battery" -> json.optJSONObject("battery")?.let { b ->
                     val levels = objects(b.optJSONArray("levels")).mapNotNull { level ->
-                        WallpaperRef.fromJson(level.optJSONObject("item"))?.let { BatteryLevel(level.optInt("min").coerceIn(0, 100), it) }
+                        WallpaperRef.fromJson(level.optJSONObject("item"))?.let {
+                            BatteryLevel(level.optInt("min").coerceIn(0, 100), level.optInt("max", 101).coerceIn(1, 101), it)
+                        }
                     }
                     val charging = WallpaperRef.fromJson(b.optJSONObject("charging"))
                     if (levels.isEmpty() && charging == null) null else DynamicMode.Battery(levels, charging)

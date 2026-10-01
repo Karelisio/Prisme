@@ -86,14 +86,18 @@ class RulesEngineTest {
     @Test
     fun `fond selon la batterie et la recharge`() {
         val mode = DynamicMode.Battery(
-            levels = listOf(BatteryLevel(50, ref("plein")), BatteryLevel(20, ref("moyen")), BatteryLevel(0, ref("faible"))),
+            levels = listOf(BatteryLevel(50, 101, ref("plein")), BatteryLevel(20, 50, ref("moyen")), BatteryLevel(0, 20, ref("faible"))),
             charging = ref("charge"),
         )
-        assertEquals("plein", RulesEngine.batteryRef(mode, 80, false)?.id)
+        assertEquals("plein", RulesEngine.batteryRef(mode, 100, false)?.id)
         assertEquals("moyen", RulesEngine.batteryRef(mode, 35, false)?.id)
         assertEquals("faible", RulesEngine.batteryRef(mode, 5, false)?.id)
         assertEquals("charge", RulesEngine.batteryRef(mode, 5, true)?.id)
         assertNull(RulesEngine.batteryRef(mode.copy(charging = null), null, true))
+        // Seule la plage « faible » a un fond : rien au-dessus de 20 %.
+        val lowOnly = DynamicMode.Battery(listOf(BatteryLevel(0, 20, ref("faible"))), charging = null)
+        assertNull(RulesEngine.batteryRef(lowOnly, 80, false))
+        assertEquals("faible", RulesEngine.batteryRef(lowOnly, 19, false)?.id)
     }
 
     @Test
@@ -176,6 +180,39 @@ class RulesEngineTest {
         assertEquals(setOf("a", "s", "f"), config.refs().map { it.id }.toSet())
         assertFalse(AutomationConfig.parse("pas du json").anyEnabled)
         assertNull(AutomationConfig.parseMinute("25:00"))
+    }
+
+    @Test
+    fun `fond dynamique sans fond prévu pour la situation, on restaure le fond manuel`() {
+        val config = AutomationConfig(
+            dynamic = DynamicConfig(
+                enabled = true,
+                target = WallpaperTarget.HOME,
+                mode = DynamicMode.Battery(listOf(BatteryLevel(0, 20, ref("faible"))), charging = null),
+            ),
+        )
+        val manual = mapOf(WallpaperTarget.HOME to ref("maison"), WallpaperTarget.LOCK to ref("verrou"))
+        val low = RulesEngine.decide(config, Environment(at(10), batteryLevel = 10), AutomationState(), { manual[it] })
+        assertEquals(Reason.DYNAMIC, low.reason)
+        assertTrue(low.state.dynamicApplied)
+        val recharged = RulesEngine.decide(config, Environment(at(11), batteryLevel = 60), low.state, { manual[it] })
+        assertEquals(Reason.RESTORE, recharged.reason)
+        assertEquals("maison", recharged.home?.id)
+        assertNull(recharged.lock)
+        assertFalse(recharged.state.dynamicApplied)
+    }
+
+    @Test
+    fun `météo inconnue, on ne touche à rien`() {
+        val config = AutomationConfig(
+            dynamic = DynamicConfig(enabled = true, mode = DynamicMode.Weather(48.8, 2.3, mapOf(WeatherCondition.RAIN to ref("pluie")))),
+        )
+        val state = AutomationState(dynamicApplied = true, appliedHome = "pluie")
+        val decision = RulesEngine.decide(config, Environment(at(10), weather = null), state, { ref("maison") })
+        assertEquals(Reason.NONE, decision.reason)
+        assertEquals(state, decision.state)
+        val sunny = RulesEngine.decide(config, Environment(at(10), weather = WeatherCondition.CLEAR), state, { ref("maison") })
+        assertEquals(Reason.RESTORE, sunny.reason)
     }
 
     @Test

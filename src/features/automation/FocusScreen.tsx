@@ -88,7 +88,7 @@ export function FocusScreen() {
   const tryNow = async () => {
     if (!wallpaper) return;
     try {
-      await applyWallpaper({ wallpaper, target: prefs.target });
+      await applyWallpaper({ wallpaper, target: prefs.target, remember: false });
       showSnackbar(`Fond épuré appliqué : ${TARGET_LABELS[prefs.target].toLowerCase()}`);
     } catch (e) {
       showSnackbar(`Échec : ${nativeErrorMessage(e)}`);

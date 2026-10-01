@@ -17,7 +17,7 @@ export interface NativeAutomationConfig {
     time?: { slots: { start: string; item: AutomationRef }[] };
     weather?: { latitude: number; longitude: number; items: Partial<Record<string, AutomationRef>> };
     season?: { hemisphere: 'north' | 'south'; items: Partial<Record<string, AutomationRef>> };
-    battery?: { levels: { min: number; item: AutomationRef }[]; charging?: AutomationRef };
+    battery?: { levels: { min: number; max: number; item: AutomationRef }[]; charging?: AutomationRef };
   };
   focus: {
     enabled: boolean;

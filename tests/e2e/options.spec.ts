@@ -287,5 +287,5 @@ test('mode focus : fond épuré, plages horaires et écran visé', async ({ page
   await screen.getByRole('button', { name: 'Essayer maintenant' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Fond épuré appliqué' })).toBeVisible();
   const applied = await page.evaluate(() => window.__prismeWeb?.applied ?? []);
-  expect(applied.at(-1)?.target).toBe('lock');
+  expect(applied.at(-1)).toMatchObject({ target: 'lock', remember: false });
 });

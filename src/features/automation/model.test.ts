@@ -63,7 +63,7 @@ describe('configuration des automatismes', () => {
   it('batterie : niveaux et recharge', () => {
     const prefs = { ...DEFAULT_AUTOMATION, dynamic: { ...DEFAULT_AUTOMATION.dynamic, mode: 'battery' as const, battery: { low: 'b', charging: 'c' } } };
     const config = buildConfig(prefs, { ...off, dynamic: true }, library);
-    expect(config.dynamic.battery?.levels).toEqual([{ min: 0, item: { id: 'b', uri: 'https://images.unsplash.com/b?fm=jpg' } }]);
+    expect(config.dynamic.battery?.levels).toEqual([{ min: 0, max: 20, item: { id: 'b', uri: 'https://images.unsplash.com/b?fm=jpg' } }]);
     expect(config.dynamic.battery?.charging?.id).toBe('c');
   });
 

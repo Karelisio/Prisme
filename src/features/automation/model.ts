@@ -88,11 +88,12 @@ export const SEASONS: readonly { key: SeasonKey; label: string; icon: IconName }
   { key: 'winter', label: 'Hiver', icon: 'snow' },
 ];
 
-export const BATTERY_LEVELS: readonly { key: BatteryKey; label: string; min: number | null; icon: IconName }[] = [
-  { key: 'high', label: 'Plus de 50 %', min: 50, icon: 'battery' },
-  { key: 'medium', label: 'De 20 à 50 %', min: 20, icon: 'battery' },
-  { key: 'low', label: 'Moins de 20 %', min: 0, icon: 'batteryAlert' },
-  { key: 'charging', label: 'En charge', min: null, icon: 'bolt' },
+/** Plages [min, max[ ; une plage sans fond ne change rien (et rend le fond habituel en la quittant). */
+export const BATTERY_LEVELS: readonly { key: BatteryKey; label: string; min: number | null; max: number; icon: IconName }[] = [
+  { key: 'high', label: '50 % et plus', min: 50, max: 101, icon: 'battery' },
+  { key: 'medium', label: 'De 20 à 50 %', min: 20, max: 50, icon: 'battery' },
+  { key: 'low', label: 'Moins de 20 %', min: 0, max: 20, icon: 'batteryAlert' },
+  { key: 'charging', label: 'En charge', min: null, max: 101, icon: 'bolt' },
 ];
 
 export const DAYS: readonly { value: number; short: string; label: string }[] = [
@@ -170,9 +171,9 @@ export function buildConfig(
     case 'battery': {
       const refs = refMap(d.battery, items);
       dynamic.battery = {
-        levels: BATTERY_LEVELS.flatMap(({ key, min }) => {
+        levels: BATTERY_LEVELS.flatMap(({ key, min, max }) => {
           const ref = refs[key];
-          return min !== null && ref ? [{ min, item: ref }] : [];
+          return min !== null && ref ? [{ min, max, item: ref }] : [];
         }),
         charging: refs.charging,
       };

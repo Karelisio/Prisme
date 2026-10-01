@@ -21,7 +21,15 @@ data class AutomationState(
     val appliedHome: String? = null,
     val appliedLock: String? = null,
     val focusApplied: Boolean = false,
+    val dynamicApplied: Boolean = false,
 )
+
+/** Résultat d'un fond dynamique : un fond, rien à changer (donnée inconnue), ou aucun fond prévu. */
+sealed interface DynamicChoice {
+    data class Pick(val ref: WallpaperRef) : DynamicChoice
+    data object Keep : DynamicChoice
+    data object Unset : DynamicChoice
+}
 
 enum class Reason { FOCUS, DYNAMIC, ROTATION, RESTORE, NONE }
 
@@ -29,8 +37,9 @@ enum class Reason { FOCUS, DYNAMIC, ROTATION, RESTORE, NONE }
 data class Decision(val home: WallpaperRef?, val lock: WallpaperRef?, val reason: Reason, val state: AutomationState)
 
 /**
- * Logique pure, testée sur JVM. Priorités : mode focus > fonds dynamiques > rotation ;
- * à la fin d'une plage focus sans autre automatisme, on restaure le dernier fond choisi à la main.
+ * Logique pure, testée sur JVM. Priorités : mode focus > fonds dynamiques > rotation.
+ * Quand le focus se termine, ou qu'aucun fond dynamique n'est prévu pour la situation, et qu'aucun
+ * autre automatisme ne prend le relais, on restaure le dernier fond choisi à la main.
  */
 object RulesEngine {
     private const val MINUTES_PER_DAY = 24 * 60
@@ -50,8 +59,12 @@ object RulesEngine {
 
         val dynamic = config.dynamic
         if (dynamic.enabled) {
-            dynamicRef(dynamic.mode, env)?.let { ref ->
-                return decision(ref, dynamic.target, Reason.DYNAMIC, state.copy(focusApplied = false))
+            when (val choice = dynamicChoice(dynamic.mode, env)) {
+                is DynamicChoice.Pick ->
+                    return decision(choice.ref, dynamic.target, Reason.DYNAMIC, state.copy(focusApplied = false, dynamicApplied = true))
+                // Météo ou batterie inconnue (réseau absent…) : on ne touche à rien.
+                DynamicChoice.Keep -> if (!state.focusApplied) return Decision(null, null, Reason.NONE, state)
+                DynamicChoice.Unset -> Unit
             }
         }
 
@@ -66,16 +79,18 @@ object RulesEngine {
                     lastRotationAt = env.moment.epochMillis,
                 )
             }
-            return decision(rotation.items[next.rotationIndex], rotation.target, Reason.ROTATION, next.copy(focusApplied = false))
+            return decision(rotation.items[next.rotationIndex], rotation.target, Reason.ROTATION, next.copy(focusApplied = false, dynamicApplied = false))
         }
 
-        if (state.focusApplied) {
-            val target = focus.target
+        if (state.focusApplied || state.dynamicApplied) {
+            val targets = listOfNotNull(focus.target.takeIf { state.focusApplied }, dynamic.target.takeIf { state.dynamicApplied })
+            val home = targets.any { it != WallpaperTarget.LOCK }
+            val lock = targets.any { it != WallpaperTarget.HOME }
             return Decision(
-                home = if (target != WallpaperTarget.LOCK) lastManual(WallpaperTarget.HOME) else null,
-                lock = if (target != WallpaperTarget.HOME) lastManual(WallpaperTarget.LOCK) else null,
+                home = if (home) lastManual(WallpaperTarget.HOME) else null,
+                lock = if (lock) lastManual(WallpaperTarget.LOCK) else null,
                 reason = Reason.RESTORE,
-                state = state.copy(focusApplied = false),
+                state = state.copy(focusApplied = false, dynamicApplied = false),
             )
         }
         return Decision(null, null, Reason.NONE, state)
@@ -102,12 +117,16 @@ object RulesEngine {
 
     fun previousDay(day: Int): Int = if (day == 1) 7 else day - 1
 
-    fun dynamicRef(mode: DynamicMode?, env: Environment): WallpaperRef? = when (mode) {
-        is DynamicMode.Time -> timeSlotRef(mode.slots, env.moment.minuteOfDay)
-        is DynamicMode.Seasons -> mode.items[season(env.moment.month, mode.southern)]
-        is DynamicMode.Battery -> batteryRef(mode, env.batteryLevel, env.charging)
-        is DynamicMode.Weather -> env.weather?.let { weatherRef(mode.items, it) }
-        null -> null
+    fun dynamicChoice(mode: DynamicMode?, env: Environment): DynamicChoice {
+        fun of(ref: WallpaperRef?) = ref?.let { DynamicChoice.Pick(it) } ?: DynamicChoice.Unset
+        return when (mode) {
+            is DynamicMode.Time -> of(timeSlotRef(mode.slots, env.moment.minuteOfDay))
+            is DynamicMode.Seasons -> of(mode.items[season(env.moment.month, mode.southern)])
+            is DynamicMode.Battery ->
+                if (env.batteryLevel == null && !env.charging) DynamicChoice.Keep else of(batteryRef(mode, env.batteryLevel, env.charging))
+            is DynamicMode.Weather -> env.weather?.let { of(weatherRef(mode.items, it)) } ?: DynamicChoice.Keep
+            null -> DynamicChoice.Unset
+        }
     }
 
     /** Créneau en cours : le dernier commencé, sinon celui de la veille au soir. */
@@ -134,11 +153,11 @@ object RulesEngine {
         }
     }
 
+    /** Fond de la plage où se trouve le niveau ; null si cette plage n'a pas de fond. */
     fun batteryRef(mode: DynamicMode.Battery, level: Int?, charging: Boolean): WallpaperRef? {
         if (charging && mode.charging != null) return mode.charging
         if (level == null) return null
-        return mode.levels.sortedByDescending { it.min }.firstOrNull { level >= it.min }?.ref
-            ?: mode.levels.minByOrNull { it.min }?.ref
+        return mode.levels.firstOrNull { level >= it.min && level < it.max }?.ref
     }
 
     /** Codes météo WMO (Open-Meteo) → condition affichable. */
