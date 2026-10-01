@@ -15,7 +15,8 @@ export type Overlay =
   | { type: 'live' }
   | { type: 'rotation' }
   | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect }
-  | { type: 'generator' };
+  | { type: 'generator' }
+  | { type: 'focus' };
 
 export type OverlayEntry = Overlay & { key: number };
 

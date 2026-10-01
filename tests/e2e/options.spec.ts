@@ -248,3 +248,44 @@ test('fonds liés : variante assortie sur l’autre écran', async ({ page }, in
   expect(applied[1]).toMatchObject({ target: 'lock' });
   expect(applied[1]?.uri).toContain('fm=jpg');
 });
+
+test('mode focus : fond épuré, plages horaires et écran visé', async ({ page }, info) => {
+  await mockApis(page);
+  await page.goto('/');
+  const settings = await openSettings(page);
+  await settings.getByRole('switch', { name: 'Mode focus' }).click();
+  await settings.getByRole('button', { name: /Mode focus/ }).click();
+  const screen = page.locator('.overlay-screen');
+  await expect(screen.getByText('Choisis un fond épuré pour démarrer.')).toBeVisible();
+
+  await screen.getByRole('button', { name: 'Fond épuré Ardoise' }).click();
+  await expect(screen.getByRole('button', { name: 'Changer le fond « Fond choisi »' })).toBeVisible();
+
+  // Plage existante : du lundi au vendredi, on ajoute le samedi et on change les heures.
+  const first = screen.locator('.schedule').first();
+  await first.getByRole('button', { name: 'Samedi' }).click();
+  await first.getByLabel('Début').fill('08:00');
+  await first.getByLabel('Fin').fill('11:30');
+  await screen.getByRole('button', { name: 'Ajouter une plage' }).click();
+  const second = screen.locator('.schedule').nth(1);
+  await second.getByLabel('Début').fill('22:00');
+  await second.getByLabel('Fin').fill('07:00');
+  await expect(second.getByText('Se termine le lendemain.')).toBeVisible();
+  await screen.getByRole('button', { name: 'Verrouillage' }).click();
+  await page.screenshot({ path: info.outputPath('focus.png'), fullPage: false });
+
+  await expect.poll(async () => (await automationConfig(page))?.focus).toMatchObject({
+    enabled: true,
+    target: 'lock',
+    schedules: [
+      { days: [1, 2, 3, 4, 5, 6], start: '08:00', end: '11:30' },
+      { days: [1, 2, 3, 4, 5], start: '22:00', end: '07:00' },
+    ],
+  });
+  expect((await automationConfig(page))?.focus.item?.uri).toMatch(/^blob:/);
+
+  await screen.getByRole('button', { name: 'Essayer maintenant' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Fond épuré appliqué' })).toBeVisible();
+  const applied = await page.evaluate(() => window.__prismeWeb?.applied ?? []);
+  expect(applied.at(-1)?.target).toBe('lock');
+});

@@ -9,6 +9,8 @@ export default defineConfig({
   use: {
     ...devices['Pixel 7'],
     baseURL: 'http://localhost:4173',
+    locale: 'fr-FR',
+    timezoneId: 'Europe/Paris',
     trace: 'retain-on-failure',
     // En local, un Chromium préinstallé peut être imposé (PW_CHROMIUM_PATH).
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},

@@ -225,6 +225,10 @@ button {
   transition: background-color var(--md-duration-medium) var(--md-easing-standard);
 }
 
+.top-bar .switch {
+  margin: 0 12px 0 8px;
+}
+
 .top-bar--scrolled {
   background: var(--md-sys-color-surface-container);
 }
