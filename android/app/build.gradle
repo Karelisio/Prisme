@@ -1,4 +1,15 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+// Version : le numéro de build CI permet d'installer chaque APK par-dessus le précédent.
+def ciBuildNumber = (System.getenv('PRISME_BUILD_NUMBER') ?: '1').toInteger()
+def appVersion = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
+
+// Signature release : fournie par la CI (voir .github/workflows/android.yml).
+// Sans clé, l'APK release est signé avec la clé de debug pour rester installable.
+def releaseKeystore = System.getenv('PRISME_KEYSTORE_FILE')
+def releasePassword = System.getenv('PRISME_KEYSTORE_PASSWORD')
+def hasReleaseKey = releaseKeystore && releasePassword && file(releaseKeystore).exists()
 
 android {
     namespace = "io.karelisio.prisme"
@@ -7,8 +18,8 @@ android {
         applicationId "io.karelisio.prisme"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode ciBuildNumber
+        versionName "${appVersion}.${ciBuildNumber}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +27,32 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile file(releaseKeystore)
+                storePassword releasePassword
+                keyAlias System.getenv('PRISME_KEY_ALIAS') ?: 'prisme'
+                keyPassword releasePassword
+                storeType 'pkcs12'
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
     }
 }
 
@@ -33,10 +65,14 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.activity:activity-ktx:$androidxActivityVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.exifinterface:exifinterface:$exifInterfaceVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
+    testImplementation "org.json:json:$orgJsonVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')

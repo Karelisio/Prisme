@@ -1,0 +1,79 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, Roboto, 'Segoe UI', sans-serif;
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: Canvas;
+  color: CanvasText;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.diagnostics {
+  padding: calc(var(--safe-top) + 16px) 16px calc(var(--safe-bottom) + 16px);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.diagnostics dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+}
+
+.diagnostics dt {
+  opacity: 0.7;
+}
+
+.diagnostics dd {
+  margin: 0;
+}
+
+.diagnostics__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diagnostics__actions button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.diagnostics__palettes {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.diagnostics__palette {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  height: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.diagnostics__preview {
+  display: block;
+  width: 120px;
+  margin-top: 12px;
+  border-radius: 12px;
+}
+
+.diagnostics__log {
+  padding-left: 20px;
+  font-size: 13px;
+}

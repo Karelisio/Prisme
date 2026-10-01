@@ -1,0 +1,103 @@
+name: Android
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  # Écriture uniquement pour publier les releases (tags v*).
+  contents: write
+
+jobs:
+  build:
+    name: Tests et APK release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PRISME_BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Dépendances
+        run: npm ci
+
+      - name: Vérification des types
+        run: npm run typecheck
+
+      - name: Tests unitaires web
+        run: npm test
+
+      - name: Tests e2e (navigateur mobile simulé)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e
+
+      - name: Build web
+        env:
+          VITE_UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          VITE_PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: |
+          [ -n "$VITE_UNSPLASH_ACCESS_KEY" ] || echo "::warning title=Clé Unsplash absente::Ajoute le secret UNSPLASH_ACCESS_KEY (voir README)."
+          [ -n "$VITE_PEXELS_API_KEY" ] || echo "::warning title=Clé Pexels absente::Ajoute le secret PEXELS_API_KEY (voir README)."
+          npm run build
+
+      - name: Synchronisation Capacitor
+        run: npx cap sync android
+
+      - name: Clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::warning title=APK signé avec une clé de debug::Ajoute les secrets KEYSTORE_BASE64 et KEYSTORE_PASSWORD pour signer l'APK release (voir README)."
+            exit 0
+          fi
+          # La clé n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.p12"
+          echo "PRISME_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+
+      - name: Tests natifs et APK release
+        working-directory: android
+        env:
+          PRISME_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+
+      - name: Nommer l'APK
+        id: apk
+        run: |
+          NAME="Prisme-$(node -p "require('./package.json').version").${PRISME_BUILD_NUMBER}"
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/$NAME.apk"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: out/*.apk
+          if-no-files-found: error
+
+      - name: Publier la release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.apk
