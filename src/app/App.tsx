@@ -35,6 +35,7 @@ const screens = {
   collection: () => import('@/features/library/CollectionScreen'),
   diagnostics: () => import('@/features/diagnostics/DiagnosticsScreen'),
   dynamic: () => import('@/features/automation/DynamicScreen'),
+  live: () => import('@/features/live/LiveScreen'),
 };
 
 const LibraryScreen = lazy(() => screens.library().then((m) => ({ default: m.LibraryScreen })));
@@ -45,6 +46,7 @@ const PackScreen = lazy(() => screens.pack().then((m) => ({ default: m.PackScree
 const CollectionScreen = lazy(() => screens.collection().then((m) => ({ default: m.CollectionScreen })));
 const DiagnosticsScreen = lazy(() => screens.diagnostics().then((m) => ({ default: m.DiagnosticsScreen })));
 const DynamicScreen = lazy(() => screens.dynamic().then((m) => ({ default: m.DynamicScreen })));
+const LiveScreen = lazy(() => screens.live().then((m) => ({ default: m.LiveScreen })));
 
 /** Précharge les écrans secondaires une fois l'app affichée, pendant que le processeur est libre. */
 function prefetchScreens() {
@@ -114,6 +116,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <DiagnosticsScreen />;
     case 'dynamic':
       return <DynamicScreen />;
+    case 'live':
+      return <LiveScreen />;
   }
 }
 

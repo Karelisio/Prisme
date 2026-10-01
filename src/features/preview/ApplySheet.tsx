@@ -1,3 +1,5 @@
+import { useSettings } from '@/features/settings/store';
+import { useCapabilities } from '@/shared/lib/capabilities';
 import type { WallpaperTarget } from '@/shared/native';
 import { Icon, ListItem } from '@/shared/ui/components';
 import type { IconName } from '@/shared/ui/icons';
@@ -10,7 +12,12 @@ const OPTIONS: { target: WallpaperTarget; icon: IconName }[] = [
   { target: 'both', icon: 'mobile' },
 ];
 
-export function ApplySheet({ open, onClose, onApply }: { open: boolean; onClose: () => void; onApply: (target: WallpaperTarget) => void }) {
+export type ApplyChoice = WallpaperTarget | 'live';
+
+export function ApplySheet({ open, onClose, onApply }: { open: boolean; onClose: () => void; onApply: (choice: ApplyChoice) => void }) {
+  const features = useSettings((s) => s.features);
+  const capabilities = useCapabilities();
+  const liveAvailable = features.live && capabilities?.liveWallpaper !== false;
   return (
     <BottomSheet open={open} onClose={onClose} title="Appliquer sur">
       <ul className="list">
@@ -19,6 +26,16 @@ export function ApplySheet({ open, onClose, onApply }: { open: boolean; onClose:
             <ListItem headline={TARGET_LABELS[target]} leading={<Icon name={icon} />} onClick={() => onApply(target)} />
           </li>
         ))}
+        {liveAvailable && (
+          <li>
+            <ListItem
+              headline="Fond animé (parallaxe)"
+              supporting="Suit les mouvements du téléphone"
+              leading={<Icon name="rotation3d" />}
+              onClick={() => onApply('live')}
+            />
+          </li>
+        )}
       </ul>
     </BottomSheet>
   );

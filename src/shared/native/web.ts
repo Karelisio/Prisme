@@ -31,7 +31,8 @@ export class PrismeWallpaperWeb extends WebPlugin implements PrismeWallpaperPlug
       supported: true,
       settable: true,
       lockScreen: true,
-      liveWallpaper: false,
+      // Simulé : permet de tester l'option fond animé dans le navigateur.
+      liveWallpaper: true,
       dynamicColor: false,
       sdkInt: 0,
       manufacturer: 'web',

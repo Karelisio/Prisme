@@ -75,3 +75,36 @@ test.describe('options avancées', () => {
     await expect.poll(async () => (await automationConfig(page))?.dynamic.enabled).toBe(false);
   });
 });
+
+test('fond animé : réglage de l’intensité et application depuis l’aperçu', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('/');
+  await addFavorites(page, 1);
+
+  // Option désactivée : pas de choix « fond animé » dans la feuille d'application.
+  await page.locator('.tab[data-active="true"] .wp-cell').first().click();
+  await page.getByRole('button', { name: 'Appliquer' }).click();
+  await expect(page.getByRole('button', { name: /Fond animé/ })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+
+  const settings = await openSettings(page);
+  await settings.getByRole('switch', { name: 'Fond animé (parallaxe)' }).click();
+  await settings.getByRole('button', { name: /Fond animé \(parallaxe\)/ }).click();
+  const screen = page.locator('.overlay-screen');
+  await screen.getByRole('button', { name: 'Choisir une image' }).click();
+  await page.locator('.picker__item').first().click();
+  await screen.getByLabel('Intensité de la parallaxe').fill('0.8');
+  await screen.getByRole('button', { name: 'Activer le fond animé' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Confirme dans l’écran Android' })).toBeVisible();
+  const calls = await page.evaluate(() => window.__prismeLiveWeb?.calls ?? []);
+  expect(calls[0]?.intensity).toBeCloseTo(0.8);
+  expect(calls[0]?.uri).toMatch(/^https:\/\/images\./);
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('button', { name: 'Explorer' }).click();
+  await page.locator('.tab[data-active="true"] .wp-cell').nth(2).click();
+  await page.getByRole('button', { name: 'Appliquer' }).click();
+  await page.getByRole('button', { name: /Fond animé \(parallaxe\)/ }).click();
+  await expect.poll(() => page.evaluate(() => window.__prismeLiveWeb?.calls.length)).toBe(2);
+});

@@ -12,7 +12,8 @@ import { PrismeWallpaper, type WallpaperTarget, isNative, nativeErrorMessage } f
 import { useTheme } from '@/shared/theme/ThemeController';
 import { Button, Icon, IconButton, LinearProgress } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
-import { ApplySheet } from './ApplySheet';
+import { setLiveWallpaper } from '@/features/live/live';
+import { type ApplyChoice, ApplySheet } from './ApplySheet';
 import { TARGET_LABELS, applyWallpaper } from './applyWallpaper';
 import { type Size, fitStage } from './cropMath';
 import { InfoSheet, sourceName } from './InfoSheet';
@@ -92,7 +93,17 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
     return () => void handle.then((h) => h.remove());
   }, [isApplying, wallpaper.id]);
 
-  const apply = async (target: WallpaperTarget) => {
+  const apply = async (choice: ApplyChoice) => {
+    if (choice === 'live') {
+      setSheet(null);
+      try {
+        showSnackbar(await setLiveWallpaper(wallpaper, panZoom.getCrop()));
+      } catch (error) {
+        showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+      }
+      return;
+    }
+    const target: WallpaperTarget = choice;
     setSheet(null);
     setApplying({});
     try {
