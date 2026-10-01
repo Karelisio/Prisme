@@ -14,7 +14,8 @@ export type Overlay =
   | { type: 'dynamic' }
   | { type: 'live' }
   | { type: 'rotation' }
-  | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect };
+  | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect }
+  | { type: 'generator' };
 
 export type OverlayEntry = Overlay & { key: number };
 

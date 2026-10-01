@@ -171,3 +171,30 @@ test('éditeur : retouche, enregistrement dans « Créations » et application',
   await library.getByRole('radio', { name: 'Collections' }).click();
   await expect(library.getByRole('button', { name: /Créations/ })).toContainText('2 fonds');
 });
+
+test('générateur : style, palette Material You, enregistrement et application', async ({ page }, info) => {
+  await mockApis(page);
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Créer' })).toHaveCount(0);
+  const settings = await openSettings(page);
+  await settings.getByRole('switch', { name: 'Générateur minimaliste' }).click();
+  await page.getByRole('button', { name: 'Explorer' }).click();
+  await page.getByRole('button', { name: 'Créer' }).click();
+
+  const generator = page.getByRole('dialog', { name: 'Générateur' });
+  await generator.getByRole('button', { name: 'Vagues' }).click();
+  await generator.getByRole('button', { name: 'Palette Material You' }).click();
+  await expect(generator.getByRole('button', { name: 'Palette Material You' })).toHaveAttribute('aria-pressed', 'true');
+  await generator.getByLabel('Grain').fill('0.3');
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: info.outputPath('generator.png') });
+
+  await generator.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Enregistré dans la collection « Créations »' })).toBeVisible();
+  await generator.getByRole('button', { name: 'Appliquer' }).click();
+  await page.getByRole('button', { name: 'Accueil et verrouillage' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Fond appliqué' })).toBeVisible();
+  const applied = await page.evaluate(() => window.__prismeWeb?.applied ?? []);
+  expect(applied.at(-1)).toMatchObject({ target: 'both' });
+  expect(applied.at(-1)?.uri).toMatch(/^blob:/);
+});

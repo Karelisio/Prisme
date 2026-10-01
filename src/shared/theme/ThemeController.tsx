@@ -3,11 +3,13 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
 import { useSettings } from '@/features/settings/store';
 import { PrismeWallpaper, type SystemTheme, isNative } from '@/shared/native';
-import { applySchemeToDocument, resolveScheme } from './scheme';
+import { type ColorScheme, applySchemeToDocument, resolveScheme } from './scheme';
 
 interface ThemeState {
   system?: SystemTheme;
   isDark: boolean;
+  /** Schéma appliqué à l'interface (sert aussi de palette au générateur). */
+  scheme?: ColorScheme;
   /** Style imposé aux barres système par un écran plein cadre (aperçu sur fond d'image). */
   barsOverride: 'light-content' | 'dark-content' | null;
   setBarsOverride: (value: ThemeState['barsOverride']) => void;
@@ -49,7 +51,7 @@ export function ThemeController() {
 
   useLayoutEffect(() => {
     applySchemeToDocument(scheme, isDark);
-    useTheme.setState({ system, isDark });
+    useTheme.setState({ system, isDark, scheme });
   }, [scheme, isDark, system]);
 
   useEffect(() => {

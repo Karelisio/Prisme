@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { goBack, useNavigation } from '@/app/navigation';
 import { saveCreation } from '@/features/library/creations';
 import { setLiveWallpaper } from '@/features/live/live';
@@ -8,9 +8,10 @@ import type { Wallpaper } from '@/features/sources/types';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { type NormalizedRect, nativeErrorMessage } from '@/shared/native';
 import { Button, Chip, EmptyState, IconButton, Spinner, Switch } from '@/shared/ui/components';
+import { FittedCanvas } from '@/shared/ui/FittedCanvas';
 import type { IconName } from '@/shared/ui/icons';
 import { showSnackbar } from '@/shared/ui/overlays';
-import { DEFAULT_EDIT, type EditParams, type GradientStyle, type Size, exportEdit, renderEdit } from './render';
+import { DEFAULT_EDIT, type EditParams, type GradientStyle, exportEdit, renderEdit } from './render';
 import { type EditableImage, loadEditableImage } from './source';
 import './editor.css';
 
@@ -53,17 +54,8 @@ function Swatches({ value, onChange, label }: { value: string; onChange: (c: str
   );
 }
 
-/** Plus grand rectangle au ratio de l'écran qui tient dans la zone disponible. */
-export function fitBox(box: Size, ratio: number): Size {
-  const height = Math.min(box.height, box.width * ratio);
-  return { width: height / ratio, height };
-}
-
 export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?: NormalizedRect }) {
   const screen = useScreenInfo();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState<Size | null>(null);
   const [image, setImage] = useState<EditableImage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [params, setParams] = useState<EditParams>(DEFAULT_EDIT);
@@ -87,37 +79,13 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
 
   useEffect(() => () => image?.bitmap.close(), [image]);
 
-  // Taille d'affichage fixée d'après la place disponible (jamais d'après la résolution du canvas).
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setBox({ width: entry.contentRect.width, height: entry.contentRect.height });
-    });
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, []);
-
   const ratio = screenRatio(screen);
-  const display = box ? fitBox(box, ratio) : null;
-
-  // Aperçu redessiné à chaque réglage, à la résolution de l'affichage seulement.
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !image || !display) return;
-    const frame = requestAnimationFrame(() => {
-      const scale = Math.min(window.devicePixelRatio || 1, 1.5);
-      const width = Math.round(display.width * scale);
-      const height = Math.round(display.height * scale);
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
-      }
-      const ctx = canvas.getContext('2d');
-      if (ctx) renderEdit(ctx, image.bitmap, image.size, crop, params, width, height);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [image, params, crop, display?.width, display?.height]);
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+      if (image) renderEdit(ctx, image.bitmap, image.size, crop, params, width, height);
+    },
+    [image, params, crop],
+  );
 
   const set = (patch: Partial<EditParams>) => setParams((p) => ({ ...p, ...patch }));
 
@@ -165,25 +133,20 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
         </Button>
       </header>
 
-      <div ref={stageRef} className="editor__stage">
-        {error ? (
+      {error ? (
+        <div className="editor__stage">
           <EmptyState icon="error" title="Image indisponible" text={error} />
-        ) : (
-          <>
-            <canvas
-              ref={canvasRef}
-              className="editor__canvas"
-              style={display ? { width: display.width, height: display.height } : { visibility: 'hidden' }}
-              aria-label="Aperçu de la retouche"
-            />
-            {!image && (
-              <div className="editor__loading">
-                <Spinner />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="editor__stage-wrap">
+          <FittedCanvas className="editor__stage" ratio={ratio} draw={image ? draw : null} label="Aperçu de la retouche" />
+          {!image && (
+            <div className="editor__loading">
+              <Spinner />
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="editor__panel">
         <div className="editor__controls">

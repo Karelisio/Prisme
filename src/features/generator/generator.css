@@ -1,0 +1,34 @@
+.palette-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.palette-chip {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--md-shape-md);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+
+.palette-chip[aria-pressed='true'] {
+  border-color: var(--md-sys-color-on-surface);
+}
+
+.color-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.color-inputs input {
+  width: 44px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-sm);
+  background: none;
+}

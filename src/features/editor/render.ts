@@ -1,3 +1,4 @@
+import { drawGrain } from '@/shared/lib/noise';
 import type { NormalizedRect } from '@/shared/native';
 
 export interface Size {
@@ -52,25 +53,6 @@ export function zoomCrop(crop: NormalizedRect, factor: number): NormalizedRect {
 /** Zone source effectivement dessinée : recadrage demandé, sinon « cover » au ratio de sortie. */
 export function effectiveCrop(source: Size, crop: NormalizedRect | undefined, width: number, height: number): NormalizedRect {
   return crop ?? coverCrop(source, width / height);
-}
-
-let noiseTile: HTMLCanvasElement | null = null;
-
-/** Tuile de bruit réutilisée pour le grain (générée une seule fois). */
-function noise(): HTMLCanvasElement {
-  if (noiseTile) return noiseTile;
-  const tile = document.createElement('canvas');
-  tile.width = tile.height = 256;
-  const ctx = tile.getContext('2d')!;
-  const data = ctx.createImageData(256, 256);
-  for (let i = 0; i < data.data.length; i += 4) {
-    const v = Math.random() * 255;
-    data.data[i] = data.data[i + 1] = data.data[i + 2] = v;
-    data.data[i + 3] = 255;
-  }
-  ctx.putImageData(data, 0, 0);
-  noiseTile = tile;
-  return tile;
 }
 
 export function textFontSize(size: number, width: number): number {
@@ -141,19 +123,7 @@ export function renderEdit(
     ctx.fillRect(0, 0, width, height);
   }
 
-  if (params.grain > 0) {
-    const pattern = ctx.createPattern(noise(), 'repeat');
-    if (pattern) {
-      // Grain à l'échelle de l'écran : même aspect en aperçu et en pleine taille.
-      pattern.setTransform(new DOMMatrix().scale(Math.max(1, width / 1080)));
-      ctx.globalAlpha = params.grain * 0.45;
-      ctx.globalCompositeOperation = 'overlay';
-      ctx.fillStyle = pattern;
-      ctx.fillRect(0, 0, width, height);
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = 'source-over';
-    }
-  }
+  drawGrain(ctx, params.grain, width, height);
 
   const t = params.text;
   if (t.value.trim()) {

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@/app/navigation';
 import { PacksList } from '@/features/packs/PacksList';
 import { COLOR_OPTIONS, RATIO_OPTIONS } from '@/features/sources/filters';
+import { useSettings } from '@/features/settings/store';
 import { useOnline } from '@/shared/lib/useOnline';
 import { Chip, Icon, IconButton } from '@/shared/ui/components';
 import { CATEGORIES } from './categories';
@@ -18,6 +19,7 @@ export function ExploreScreen() {
   const filters = useBrowse((s) => s.filters);
   const push = useNavigation((s) => s.push);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const generator = useSettings((s) => s.features.generator);
   const spec = useMemo(() => CATEGORIES.find((c) => c.key === category) ?? CATEGORIES[0]!, [category]);
 
   const select = (key: string) => {
@@ -39,6 +41,11 @@ export function ExploreScreen() {
       </div>
 
       <nav className="chip-row" aria-label="Catégories">
+        {generator && (
+          <Chip icon="wandStars" onClick={() => push({ type: 'generator' })}>
+            Créer
+          </Chip>
+        )}
         <Chip icon="layers" selected={category === 'packs'} onClick={() => select('packs')}>
           Packs
         </Chip>

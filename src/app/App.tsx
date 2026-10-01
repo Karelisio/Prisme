@@ -38,6 +38,7 @@ const screens = {
   live: () => import('@/features/live/LiveScreen'),
   rotation: () => import('@/features/automation/RotationScreen'),
   editor: () => import('@/features/editor/EditorScreen'),
+  generator: () => import('@/features/generator/GeneratorScreen'),
 };
 
 const LibraryScreen = lazy(() => screens.library().then((m) => ({ default: m.LibraryScreen })));
@@ -51,6 +52,7 @@ const DynamicScreen = lazy(() => screens.dynamic().then((m) => ({ default: m.Dyn
 const LiveScreen = lazy(() => screens.live().then((m) => ({ default: m.LiveScreen })));
 const RotationScreen = lazy(() => screens.rotation().then((m) => ({ default: m.RotationScreen })));
 const EditorScreen = lazy(() => screens.editor().then((m) => ({ default: m.EditorScreen })));
+const GeneratorScreen = lazy(() => screens.generator().then((m) => ({ default: m.GeneratorScreen })));
 
 /** Précharge les écrans secondaires une fois l'app affichée, pendant que le processeur est libre. */
 function prefetchScreens() {
@@ -126,6 +128,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <RotationScreen />;
     case 'editor':
       return <EditorScreen wallpaper={overlay.wallpaper} crop={overlay.crop} />;
+    case 'generator':
+      return <GeneratorScreen />;
   }
 }
 
