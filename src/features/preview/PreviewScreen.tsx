@@ -13,6 +13,8 @@ import { useTheme } from '@/shared/theme/ThemeController';
 import { Button, Icon, IconButton, LinearProgress } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { setLiveWallpaper } from '@/features/live/live';
+import { PaletteSheet, simulationVars } from '@/features/palette/PaletteSheet';
+import type { ColorScheme } from '@/shared/theme/scheme';
 import { type ApplyChoice, ApplySheet } from './ApplySheet';
 import { TARGET_LABELS, applyWallpaper } from './applyWallpaper';
 import { type Size, fitStage } from './cropMath';
@@ -21,7 +23,7 @@ import { Simulation, type SimulationMode } from './Simulation';
 import { usePanZoom } from './usePanZoom';
 import './preview.css';
 
-type Sheet = 'apply' | 'info' | 'collections' | null;
+type Sheet = 'apply' | 'info' | 'collections' | 'palette' | null;
 
 function isLightColor(hex: string): boolean {
   const n = Number.parseInt(hex.replace('#', ''), 16);
@@ -50,6 +52,7 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
   const [applying, setApplying] = useState<{ progress?: number } | null>(null);
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [hint, setHint] = useState(false);
+  const [simScheme, setSimScheme] = useState<ColorScheme | null>(null);
   const hideTimer = useRef<number | undefined>(undefined);
   const panZoom = usePanZoom(stage, image, () => setControlsVisible((v) => !v));
   const thumbSrc = useThumbSrc(wallpaper);
@@ -144,7 +147,7 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
   };
 
   return (
-    <div className="preview" role="dialog" aria-label="Aperçu du fond d’écran">
+    <div className="preview" role="dialog" aria-label="Aperçu du fond d’écran" style={simScheme ? simulationVars(simScheme) : undefined}>
       <div
         className="preview__stage"
         style={stage ? { width: stage.width, height: stage.height } : undefined}
@@ -185,6 +188,9 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
                 variant="on-image"
                 onClick={() => push({ type: 'editor', wallpaper, crop: panZoom.getCrop() })}
               />
+            )}
+            {features.palette && (
+              <IconButton icon="palette" label="Couleurs Material You" variant="on-image" onClick={() => setSheet('palette')} />
             )}
             <IconButton icon="libraryAdd" label="Ajouter à une collection" variant="on-image" onClick={() => setSheet('collections')} />
             <IconButton icon="info" label="Informations" variant="on-image" onClick={() => setSheet('info')} />
@@ -243,6 +249,17 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
       <ApplySheet open={sheet === 'apply'} onClose={() => setSheet(null)} onApply={(t) => void apply(t)} />
       <InfoSheet wallpaper={wallpaper} open={sheet === 'info'} onClose={() => setSheet(null)} />
       <CollectionsSheet wallpaper={wallpaper} open={sheet === 'collections'} onClose={() => setSheet(null)} />
+      {features.palette && (
+        <PaletteSheet
+          wallpaper={wallpaper}
+          open={sheet === 'palette'}
+          onClose={() => setSheet(null)}
+          onSimulate={(scheme) => {
+            setSimScheme(scheme);
+            selectMode('home');
+          }}
+        />
+      )}
     </div>
   );
 }

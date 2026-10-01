@@ -198,3 +198,25 @@ test('générateur : style, palette Material You, enregistrement et application'
   expect(applied.at(-1)).toMatchObject({ target: 'both' });
   expect(applied.at(-1)?.uri).toMatch(/^blob:/);
 });
+
+test('palette Material You : couleurs calculées et simulation de l’accueil', async ({ page }, info) => {
+  await mockApis(page);
+  await page.goto('/');
+  const settings = await openSettings(page);
+  await settings.getByRole('switch', { name: 'Palette Material You' }).click();
+  await page.getByRole('button', { name: 'Explorer' }).click();
+  await page.locator('.tab[data-active="true"] .wp-cell').first().click();
+  await page.getByRole('button', { name: 'Couleurs Material You' }).click();
+
+  const sheet = page.getByRole('dialog', { name: 'Couleurs Material You' });
+  await expect(sheet.getByRole('radio', { name: 'Couleur source 1' })).toBeVisible();
+  await expect(sheet.getByLabel("Aperçu de l'interface")).toBeVisible();
+  await sheet.getByRole('radio', { name: 'Sombre' }).click();
+  await page.screenshot({ path: info.outputPath('palette.png') });
+  await sheet.getByRole('button', { name: "Voir sur l'écran d'accueil" }).click();
+
+  const preview = page.getByRole('dialog', { name: 'Aperçu du fond d’écran' });
+  await expect(preview.locator('.sim-home__icon').first()).toBeVisible();
+  const iconBg = await preview.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--sim-icon-bg'));
+  expect(iconBg).toMatch(/^#[0-9a-f]{6}$/i);
+});
