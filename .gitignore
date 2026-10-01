@@ -10,3 +10,4 @@ test-results/
 .DS_Store
 .idea/
 .vscode/
+!.env.e2e

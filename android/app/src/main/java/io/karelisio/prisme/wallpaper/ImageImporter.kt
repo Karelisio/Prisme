@@ -15,7 +15,7 @@ import java.util.UUID
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-data class LocalImage(val file: File, val width: Int, val height: Int)
+data class LocalImage(val file: File, val width: Int, val height: Int, val thumb: File? = null)
 
 /** Copie les images importées (galerie) ou créées (éditeur, générateur) dans le stockage de l'app. */
 internal class ImageImporter(private val resolver: ContentResolver, private val store: ImageStore) {
@@ -31,14 +31,13 @@ internal class ImageImporter(private val resolver: ContentResolver, private val 
         } catch (e: Exception) {
             throw WallpaperException("DECODE_FAILED", "Impossible de lire cette image", e)
         }
-        val out = File(store.importsRoot.apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
+        val name = UUID.randomUUID().toString()
+        val out = File(store.importsRoot.apply { mkdirs() }, "$name.jpg")
         try {
-            FileOutputStream(out).use { stream ->
-                if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream)) {
-                    throw WallpaperException("DECODE_FAILED", "Impossible d'enregistrer l'image")
-                }
-            }
-            return LocalImage(out, bitmap.width, bitmap.height)
+            writeJpeg(bitmap, out, 95)
+            val thumb = File(store.importsRoot, "$name$THUMB_SUFFIX")
+            writeThumbnail(bitmap, thumb)
+            return LocalImage(out, bitmap.width, bitmap.height, thumb)
         } finally {
             bitmap.recycle()
         }
@@ -52,10 +51,40 @@ internal class ImageImporter(private val resolver: ContentResolver, private val 
         } catch (e: IllegalArgumentException) {
             throw WallpaperException("INVALID_ARGUMENT", "Données d'image invalides", e)
         }
-        val file = File(store.creationsRoot.apply { mkdirs() }, "${DataUrl.safeName(name)}.${parsed.extension}")
+        val baseName = DataUrl.safeName(name)
+        val file = File(store.creationsRoot.apply { mkdirs() }, "$baseName.${parsed.extension}")
         file.writeBytes(bytes)
         val bounds = BitmapLoader.readBounds(file)
-        return LocalImage(file, bounds.width, bounds.height)
+        val thumb = File(store.creationsRoot, "$baseName$THUMB_SUFFIX")
+        val sample = CropMath.sampleSize(bounds.width, bounds.height, THUMB_WIDTH, THUMB_WIDTH)
+        BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })?.let {
+            try {
+                writeThumbnail(it, thumb)
+            } finally {
+                it.recycle()
+            }
+        }
+        return LocalImage(file, bounds.width, bounds.height, thumb.takeIf { it.exists() })
+    }
+
+    private fun writeJpeg(bitmap: Bitmap, file: File, quality: Int) {
+        FileOutputStream(file).use { stream ->
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)) {
+                throw WallpaperException("DECODE_FAILED", "Impossible d'enregistrer l'image")
+            }
+        }
+    }
+
+    /** Miniature légère pour les grilles (évite de décoder l'image pleine taille). */
+    private fun writeThumbnail(bitmap: Bitmap, file: File) {
+        val width = minOf(THUMB_WIDTH, bitmap.width)
+        val height = (bitmap.height.toLong() * width / bitmap.width).toInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(bitmap, width, height, true)
+        try {
+            writeJpeg(scaled, file, 80)
+        } finally {
+            if (scaled !== bitmap) scaled.recycle()
+        }
     }
 
     private fun decodeModern(uri: Uri, maxDimension: Int): Bitmap {
@@ -100,6 +129,11 @@ internal class ImageImporter(private val resolver: ContentResolver, private val 
 
     companion object {
         const val MAX_IMPORT_DIMENSION = 4096
+        const val THUMB_WIDTH = 400
+        const val THUMB_SUFFIX = "_thumb.jpg"
+
+        /** Miniature associée à une image importée ou créée. */
+        fun thumbnailOf(file: File): File = File(file.parentFile, file.nameWithoutExtension + THUMB_SUFFIX)
     }
 }
 

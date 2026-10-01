@@ -1,0 +1,39 @@
+.settings-section {
+  padding-bottom: 8px;
+}
+
+.settings-section .list-item {
+  padding-right: 16px;
+}
+
+.settings-block {
+  padding: 8px 16px 12px;
+}
+
+.settings-label {
+  margin: 0 0 8px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 14px/20px var(--md-font);
+}
+
+.seed-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.seed {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.seed[aria-checked='true'] {
+  outline: 3px solid var(--md-sys-color-on-surface);
+  outline-offset: 2px;
+}

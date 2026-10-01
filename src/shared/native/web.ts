@@ -69,7 +69,7 @@ export class PrismeWallpaperWeb extends WebPlugin implements PrismeWallpaperPlug
   async saveImage(options: { data: string }): Promise<LocalImage> {
     const blob = await (await fetch(options.data)).blob();
     const path = URL.createObjectURL(blob);
-    return { path, ...(await measure(path)) };
+    return { path, thumbPath: path, ...(await measure(path)) };
   }
 
   async deleteLocalImage(options: { path: string }): Promise<{ deleted: boolean }> {
@@ -89,7 +89,7 @@ export class PrismeWallpaperWeb extends WebPlugin implements PrismeWallpaperPlug
           return;
         }
         const path = URL.createObjectURL(file);
-        measure(path).then((size) => resolve({ cancelled: false, path, ...size }), reject);
+        measure(path).then((size) => resolve({ cancelled: false, path, thumbPath: path, ...size }), reject);
       });
       input.addEventListener('cancel', () => resolve({ cancelled: true }));
       input.click();

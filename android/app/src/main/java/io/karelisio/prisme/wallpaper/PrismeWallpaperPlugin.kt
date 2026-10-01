@@ -196,7 +196,10 @@ class PrismeWallpaperPlugin : Plugin() {
             return
         }
         scope.launch {
-            val deleted = withContext(io) { file.delete() }
+            val deleted = withContext(io) {
+                ImageImporter.thumbnailOf(file).delete()
+                file.delete()
+            }
             call.resolve(JSObject().put("deleted", deleted))
         }
     }
@@ -252,6 +255,7 @@ class PrismeWallpaperPlugin : Plugin() {
 
     private fun localImageResult(image: LocalImage): JSObject = JSObject()
         .put("path", image.file.absolutePath)
+        .put("thumbPath", image.thumb?.absolutePath ?: image.file.absolutePath)
         .put("width", image.width)
         .put("height", image.height)
 

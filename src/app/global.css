@@ -1,35 +1,98 @@
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, Roboto, 'Segoe UI', sans-serif;
-  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
-  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
-}
+@import '../shared/theme/tokens.css';
+@import '../shared/ui/ui.css';
 
 * {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  background: Canvas;
-  color: CanvasText;
-  -webkit-tap-highlight-color: transparent;
+html,
+body,
+#root {
+  height: 100%;
 }
 
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font: 400 16px/24px var(--md-font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+body.has-nav-bar {
+  --snackbar-offset: calc(var(--nav-bar-height) + 16px);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* Onglets superposés : l'onglet inactif est masqué sans perdre son défilement. */
+.tab {
+  position: fixed;
+  inset: 0;
+}
+
+.tab[data-active='false'] {
+  visibility: hidden;
+}
+
+.screen {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.screen--tab {
+  padding-bottom: calc(var(--nav-bar-height) + var(--safe-bottom) + 16px);
+}
+
+.overlay-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.overlay-screen {
+  position: absolute;
+  inset: 0;
+  padding-bottom: calc(var(--safe-bottom) + 16px);
+  background: var(--md-sys-color-surface);
+  animation: overlay-in var(--md-duration-medium) var(--md-easing-emphasized-decelerate);
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+/* Diagnostic */
 .diagnostics {
-  padding: calc(var(--safe-top) + 16px) 16px calc(var(--safe-bottom) + 16px);
-  max-width: 720px;
-  margin: 0 auto;
+  padding: 0 16px 16px;
+}
+
+.diagnostics h2 {
+  margin: 16px 0 8px;
+  color: var(--md-sys-color-primary);
+  font: 500 14px/20px var(--md-font);
 }
 
 .diagnostics dl {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 4px 12px;
+  margin: 0;
+  font: 400 14px/20px var(--md-font);
 }
 
 .diagnostics dt {
-  opacity: 0.7;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .diagnostics dd {
@@ -42,16 +105,6 @@ body {
   gap: 8px;
 }
 
-.diagnostics__actions button {
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 20px;
-  border: 1px solid currentColor;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-}
-
 .diagnostics__palettes {
   display: grid;
   gap: 4px;
@@ -62,8 +115,8 @@ body {
   display: grid;
   grid-template-columns: repeat(13, 1fr);
   height: 20px;
-  border-radius: 6px;
   overflow: hidden;
+  border-radius: 6px;
 }
 
 .diagnostics__preview {
@@ -75,5 +128,5 @@ body {
 
 .diagnostics__log {
   padding-left: 20px;
-  font-size: 13px;
+  font: 400 13px/18px var(--md-font);
 }

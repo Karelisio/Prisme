@@ -1,0 +1,169 @@
+import { type PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
+import type { NormalizedRect } from '@/shared/native';
+import {
+  type Point,
+  type Size,
+  type Transform,
+  clampTransform,
+  coverScale,
+  cropFromTransform,
+  distance,
+  initialTransform,
+  isDefaultTransform,
+  midpoint,
+  transformFromCrop,
+  zoomAt,
+} from './cropMath';
+
+const TAP_MAX_MS = 250;
+const TAP_MAX_MOVE = 8;
+const DOUBLE_TAP_MS = 280;
+const DOUBLE_TAP_ZOOM = 2.5;
+
+interface Gesture {
+  start: Transform;
+  startPoint: Point;
+  startDistance: number;
+  startMid: Point;
+  startTime: number;
+  moved: boolean;
+}
+
+/**
+ * Déplacement à un doigt, pincement, double appui pour zoomer. La transformation est appliquée
+ * directement au style de l'élément (sans rendu React) pour rester fluide sur milieu de gamme.
+ */
+export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => void) {
+  const targetRef = useRef<HTMLImageElement | null>(null);
+  const transform = useRef<Transform | null>(null);
+  const pointers = useRef(new Map<number, Point>());
+  const gesture = useRef<Gesture | null>(null);
+  const lastTap = useRef(0);
+  const tapTimer = useRef<number | undefined>(undefined);
+  const [modified, setModified] = useState(false);
+
+  const render = useCallback(() => {
+    const el = targetRef.current;
+    const t = transform.current;
+    if (!el || !t || !stage || !image) return;
+    const base = coverScale(stage, image);
+    el.style.width = `${image.width * base}px`;
+    el.style.height = `${image.height * base}px`;
+    el.style.transform = `translate3d(${t.x}px, ${t.y}px, 0) scale(${t.scale / base})`;
+  }, [stage, image]);
+
+  const commit = useCallback(
+    (t: Transform) => {
+      if (!stage || !image) return;
+      transform.current = clampTransform(t, stage, image);
+      render();
+      setModified(!isDefaultTransform(transform.current, stage, image));
+    },
+    [stage, image, render],
+  );
+
+  // Nouvelle scène ou nouvelle image : on repart du cadrage centré.
+  useEffect(() => {
+    if (!stage || !image) return;
+    transform.current = initialTransform(stage, image);
+    render();
+    setModified(false);
+  }, [stage, image, render]);
+
+  useEffect(() => () => window.clearTimeout(tapTimer.current), []);
+
+  const local = (e: PointerEvent): Point => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const startGesture = (time: number) => {
+    const points = [...pointers.current.values()];
+    const [a, b] = points;
+    if (!a || !transform.current) return;
+    gesture.current = {
+      start: transform.current,
+      startPoint: a,
+      startDistance: b ? distance(a, b) : 0,
+      startMid: b ? midpoint(a, b) : a,
+      startTime: time,
+      moved: gesture.current?.moved ?? false,
+    };
+  };
+
+  const onPointerDown = (e: PointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    pointers.current.set(e.pointerId, local(e));
+    if (pointers.current.size === 1) gesture.current = null;
+    startGesture(e.timeStamp);
+  };
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (!pointers.current.has(e.pointerId) || !gesture.current || !stage || !image) return;
+    pointers.current.set(e.pointerId, local(e));
+    const g = gesture.current;
+    const [a, b] = [...pointers.current.values()];
+    if (!a) return;
+    if (b && g.startDistance > 0) {
+      const mid = midpoint(a, b);
+      const zoomed = zoomAt(g.start, distance(a, b) / g.startDistance, g.startMid, stage, image);
+      commit({ ...zoomed, x: zoomed.x + mid.x - g.startMid.x, y: zoomed.y + mid.y - g.startMid.y });
+      g.moved = true;
+    } else {
+      const dx = a.x - g.startPoint.x;
+      const dy = a.y - g.startPoint.y;
+      if (Math.hypot(dx, dy) > TAP_MAX_MOVE) g.moved = true;
+      if (g.moved) commit({ ...g.start, x: g.start.x + dx, y: g.start.y + dy });
+    }
+  };
+
+  const onPointerUp = (e: PointerEvent) => {
+    const point = pointers.current.get(e.pointerId);
+    pointers.current.delete(e.pointerId);
+    const g = gesture.current;
+    if (pointers.current.size > 0) {
+      // On passe de deux doigts à un : le déplacement repart de la position actuelle.
+      startGesture(e.timeStamp);
+      return;
+    }
+    gesture.current = null;
+    if (!g || g.moved || e.timeStamp - g.startTime > TAP_MAX_MS || !point || !stage || !image || !transform.current) return;
+
+    if (e.timeStamp - lastTap.current < DOUBLE_TAP_MS) {
+      window.clearTimeout(tapTimer.current);
+      lastTap.current = 0;
+      const zoomed = !isDefaultTransform(transform.current, stage, image);
+      commit(zoomed ? initialTransform(stage, image) : zoomAt(transform.current, DOUBLE_TAP_ZOOM, point, stage, image));
+      return;
+    }
+    lastTap.current = e.timeStamp;
+    tapTimer.current = window.setTimeout(onTap, DOUBLE_TAP_MS);
+  };
+
+  const reset = useCallback(() => {
+    if (stage && image) commit(initialTransform(stage, image));
+  }, [stage, image, commit]);
+
+  /** Recadrage normalisé, ou undefined si l'image est simplement centrée. */
+  const getCrop = useCallback((): NormalizedRect | undefined => {
+    const t = transform.current;
+    if (!t || !stage || !image || isDefaultTransform(t, stage, image)) return undefined;
+    return cropFromTransform(t, stage, image);
+  }, [stage, image]);
+
+  const setCrop = useCallback(
+    (crop: NormalizedRect) => {
+      if (stage && image) commit(transformFromCrop(crop, stage, image));
+    },
+    [stage, image, commit],
+  );
+
+  return {
+    targetRef,
+    modified,
+    reset,
+    getCrop,
+    setCrop,
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
+  };
+}

@@ -9,7 +9,9 @@ import {
   nativeErrorMessage,
   toWebUrl,
 } from '@/shared/native';
+import { goBack } from '@/app/navigation';
 import { formatBytes } from '@/shared/lib/format';
+import { Button, IconButton } from '@/shared/ui/components';
 import { renderTestWallpaper } from './testWallpaper';
 
 const TARGET_LABELS: Record<WallpaperTarget, string> = {
@@ -83,8 +85,12 @@ export function DiagnosticsScreen() {
     });
 
   return (
-    <main className="diagnostics">
-      <h1>Diagnostic</h1>
+    <div className="screen overlay-screen">
+      <header className="top-bar">
+        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
+        <h1 className="top-bar__title">Diagnostic</h1>
+      </header>
+      <main className="diagnostics">
       <section>
         <h2>Appareil</h2>
         <dl>
@@ -136,16 +142,16 @@ export function DiagnosticsScreen() {
         <h2>Appliquer un fond test</h2>
         <div className="diagnostics__actions">
           {(Object.keys(TARGET_LABELS) as WallpaperTarget[]).map((target) => (
-            <button key={target} type="button" disabled={busy} onClick={() => void applyTest(target)}>
+            <Button key={target} variant="tonal" disabled={busy} onClick={() => void applyTest(target)}>
               {TARGET_LABELS[target]}
-            </button>
+            </Button>
           ))}
-          <button type="button" disabled={busy} onClick={() => void applyFromGallery()}>
+          <Button variant="outlined" disabled={busy} onClick={() => void applyFromGallery()}>
             Depuis la galerie
-          </button>
-          <button type="button" disabled={busy} onClick={() => void showCache()}>
+          </Button>
+          <Button variant="outlined" disabled={busy} onClick={() => void showCache()}>
             Taille du cache
-          </button>
+          </Button>
         </div>
         {lastImage && <img className="diagnostics__preview" src={lastImage} alt="Dernière image appliquée" />}
       </section>
@@ -158,6 +164,7 @@ export function DiagnosticsScreen() {
           ))}
         </ol>
       </section>
-    </main>
+      </main>
+    </div>
   );
 }

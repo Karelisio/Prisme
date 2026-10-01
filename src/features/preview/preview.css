@@ -1,0 +1,304 @@
+.preview {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  animation: preview-in var(--md-duration-medium) var(--md-easing-emphasized-decelerate);
+}
+
+.preview__stage {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.preview__image,
+.preview__placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  -webkit-user-drag: none;
+}
+
+.preview__placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(6px);
+  transform: scale(1.04);
+}
+
+.preview__top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(var(--safe-top) + 8px) 12px 24px;
+  background: linear-gradient(rgb(0 0 0 / 0.45), transparent);
+}
+
+.preview__spacer {
+  flex: 1;
+}
+
+.preview__bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 16px calc(var(--safe-bottom) + 20px);
+  background: linear-gradient(transparent, rgb(0 0 0 / 0.55));
+}
+
+.preview__credit {
+  max-width: 100%;
+  overflow: hidden;
+  color: rgb(255 255 255 / 0.9);
+  font: 400 13px/18px var(--md-font);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+}
+
+.preview__modes {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--md-shape-full);
+  background: rgb(0 0 0 / 0.4);
+}
+
+.preview__mode {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 40px;
+  border: none;
+  border-radius: var(--md-shape-full);
+  background: transparent;
+  color: #fff;
+}
+
+.preview__mode[aria-checked='true'] {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.preview__apply {
+  min-width: 200px;
+}
+
+.preview__progress {
+  position: absolute;
+  right: 24px;
+  bottom: calc(var(--safe-bottom) + 24px);
+  left: 24px;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  font: 500 14px/20px var(--md-font);
+}
+
+.preview__hint {
+  position: absolute;
+  bottom: calc(var(--safe-bottom) + 120px);
+  left: 50%;
+  padding: 8px 16px;
+  border-radius: var(--md-shape-full);
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font: 400 14px/20px var(--md-font);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: fade-in var(--md-duration-medium) var(--md-easing-standard);
+}
+
+/* Simulation des écrans */
+.sim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: #fff;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
+}
+
+.sim--lock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: calc(var(--safe-top) + 28px);
+}
+
+.sim-lock__padlock {
+  opacity: 0.9;
+}
+
+.sim-lock__clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 6%;
+  font: 300 clamp(72px, 30vw, 132px) / 0.95 var(--md-font-display);
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-lock__date {
+  margin-top: 16px;
+  font: 400 16px/24px var(--md-font);
+  text-transform: capitalize;
+}
+
+.sim-lock__notification {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: calc(100% - 32px);
+  margin-top: auto;
+  margin-bottom: 18%;
+  padding: 14px 16px;
+  border-radius: var(--md-shape-xl);
+  background: rgb(255 255 255 / 0.18);
+}
+
+.sim-lock__notification-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.55);
+}
+
+.sim-lock__notification-lines {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+}
+
+.sim-lock__notification-lines span {
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.55);
+}
+
+.sim-lock__notification-lines span:last-child {
+  width: 60%;
+}
+
+.sim-lock__shortcuts {
+  position: absolute;
+  right: 28px;
+  bottom: calc(var(--safe-bottom) + 28px);
+  left: 28px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sim-lock__shortcut {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.3);
+}
+
+.sim--home {
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--safe-top) + 40px) 20px calc(var(--safe-bottom) + 20px);
+}
+
+.sim-home__glance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 400 22px/28px var(--md-font-display);
+}
+
+.sim-home__glance-date {
+  text-transform: capitalize;
+}
+
+.sim-home__glance-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 14px/20px var(--md-font);
+}
+
+.sim-home__apps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px 0;
+  margin-top: auto;
+  margin-bottom: 28px;
+}
+
+.sim-home__app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-home__label {
+  width: 40px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.8);
+}
+
+.sim-home__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--sim-icon-bg, var(--md-sys-color-primary-container));
+  color: var(--sim-icon-fg, var(--md-sys-color-on-primary-container));
+  text-shadow: none;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+}
+
+.sim-home__dock {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 18px;
+}
+
+.sim-home__search {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: var(--md-shape-full);
+  background: var(--sim-search-bg, var(--md-sys-color-surface-container-high));
+  color: var(--md-sys-color-on-surface-variant);
+  text-shadow: none;
+}
+
+@keyframes preview-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}

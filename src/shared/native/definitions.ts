@@ -60,6 +60,8 @@ export interface SetWallpaperResult {
 
 export interface LocalImage {
   path: string;
+  /** Miniature (~400 px de large) pour les grilles. */
+  thumbPath: string;
   width: number;
   height: number;
 }

@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "aube",
+      "title": "Aube",
+      "description": "Lumières douces du petit matin",
+      "colors": [
+        "#FFB59A",
+        "#C2577A"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "sunrise mist"
+        },
+        {
+          "type": "pexels-search",
+          "query": "sunrise fog"
+        }
+      ]
+    },
+    {
+      "id": "minuit",
+      "title": "Minuit",
+      "description": "Ciels nocturnes et voies lactées",
+      "colors": [
+        "#1B1F4B",
+        "#5B3A8E"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "milky way night sky"
+        },
+        {
+          "type": "pexels-search",
+          "query": "starry night sky"
+        }
+      ]
+    },
+    {
+      "id": "brume",
+      "title": "Brume",
+      "description": "Forêts et reliefs dans le brouillard",
+      "colors": [
+        "#8FA3A6",
+        "#3E5552"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "foggy forest"
+        },
+        {
+          "type": "pexels-search",
+          "query": "misty mountains"
+        }
+      ]
+    },
+    {
+      "id": "pastel",
+      "title": "Pastel",
+      "description": "Teintes douces et apaisantes",
+      "colors": [
+        "#F9C9D4",
+        "#B8C7F2"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "pastel aesthetic"
+        },
+        {
+          "type": "pexels-search",
+          "query": "pastel colors"
+        }
+      ]
+    },
+    {
+      "id": "abysses",
+      "title": "Abysses",
+      "description": "Vagues et bleus profonds",
+      "colors": [
+        "#0B3C5D",
+        "#1CA7EC"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "ocean aerial",
+          "color": "blue"
+        },
+        {
+          "type": "pexels-search",
+          "query": "ocean waves aerial",
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "id": "neon",
+      "title": "Néon",
+      "description": "Villes la nuit et lumières électriques",
+      "colors": [
+        "#FF2E97",
+        "#2E1A47"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "neon city night"
+        },
+        {
+          "type": "pexels-search",
+          "query": "neon lights"
+        }
+      ]
+    },
+    {
+      "id": "monochrome",
+      "title": "Monochrome",
+      "description": "Noir et blanc graphique",
+      "colors": [
+        "#EDEDED",
+        "#1F1F1F"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "minimal architecture",
+          "color": "black_and_white"
+        },
+        {
+          "type": "pexels-search",
+          "query": "black and white architecture"
+        }
+      ]
+    },
+    {
+      "id": "dunes",
+      "title": "Dunes",
+      "description": "Sable, lignes et lumière chaude",
+      "colors": [
+        "#E8B27D",
+        "#9C5B2E"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "desert dunes"
+        },
+        {
+          "type": "pexels-search",
+          "query": "sand dunes"
+        }
+      ]
+    },
+    {
+      "id": "vegetal",
+      "title": "Végétal",
+      "description": "Feuillages et détails en macro",
+      "colors": [
+        "#7FB77E",
+        "#1E4D2B"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "leaves macro",
+          "color": "green"
+        },
+        {
+          "type": "pexels-search",
+          "query": "green leaves macro",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "id": "cosmos",
+      "title": "Cosmos",
+      "description": "Nébuleuses et planètes",
+      "colors": [
+        "#3A1C71",
+        "#D76D77"
+      ],
+      "sources": [
+        {
+          "type": "unsplash-search",
+          "query": "nebula space"
+        },
+        {
+          "type": "pexels-search",
+          "query": "galaxy nebula"
+        }
+      ]
+    }
+  ]
+}
