@@ -108,3 +108,26 @@ test('fond animé : réglage de l’intensité et application depuis l’aperçu
   await page.getByRole('button', { name: /Fond animé \(parallaxe\)/ }).click();
   await expect.poll(() => page.evaluate(() => window.__prismeLiveWeb?.calls.length)).toBe(2);
 });
+
+test('rotation : source, intervalle, écran et changement immédiat', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('/');
+  await addFavorites(page, 3);
+  const settings = await openSettings(page);
+  await settings.getByRole('switch', { name: 'Rotation automatique' }).click();
+  await settings.getByRole('button', { name: /Rotation automatique/ }).click();
+  const screen = page.locator('.overlay-screen');
+  await expect(screen.getByText('3 fonds en rotation')).toBeVisible();
+  await screen.getByRole('button', { name: '3 h' }).click();
+  await screen.getByRole('switch', { name: 'Ordre aléatoire' }).click();
+  await screen.getByRole('button', { name: 'Verrouillage' }).click();
+  await expect.poll(async () => (await automationConfig(page))?.rotation).toMatchObject({
+    enabled: true,
+    intervalMinutes: 180,
+    shuffle: false,
+    target: 'lock',
+  });
+  expect((await automationConfig(page))?.rotation.items).toHaveLength(3);
+  await screen.getByRole('button', { name: 'Changer maintenant' }).click();
+  await expect.poll(() => page.evaluate(() => window.__prismeAutomationWeb?.rotations)).toBe(1);
+});

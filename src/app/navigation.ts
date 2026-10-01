@@ -11,7 +11,8 @@ export type Overlay =
   | { type: 'collection'; collectionId: string }
   | { type: 'diagnostics' }
   | { type: 'dynamic' }
-  | { type: 'live' };
+  | { type: 'live' }
+  | { type: 'rotation' };
 
 export type OverlayEntry = Overlay & { key: number };
 

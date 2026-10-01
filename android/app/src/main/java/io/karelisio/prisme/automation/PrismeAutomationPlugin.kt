@@ -97,6 +97,19 @@ class PrismeAutomationPlugin : Plugin() {
         call.resolve()
     }
 
+    /** Passe au fond suivant de la rotation sans attendre la fin de l'intervalle. */
+    @PluginMethod
+    fun nextRotation(call: PluginCall) {
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                val store = AutomationStore(context)
+                store.saveState(store.state().copy(lastRotationAt = 0))
+            }
+            AutomationScheduler.runNow(context)
+            call.resolve()
+        }
+    }
+
     @PluginMethod
     fun getApproximateLocation(call: PluginCall) {
         if (getPermissionState("location") != PermissionState.GRANTED) {

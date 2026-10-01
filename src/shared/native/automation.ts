@@ -47,6 +47,8 @@ export interface PrismeAutomationPlugin {
   getStatus(): Promise<AutomationStatus>;
   drainLog(): Promise<{ entries: AutomationLogEntry[] }>;
   runNow(): Promise<void>;
+  /** Passe tout de suite au fond suivant de la rotation. */
+  nextRotation(): Promise<void>;
   getApproximateLocation(): Promise<{ latitude: number; longitude: number }>;
 }
 
@@ -76,6 +78,12 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
 
   async runNow() {
     this.runs++;
+  }
+
+  rotations = 0;
+
+  async nextRotation() {
+    this.rotations++;
   }
 
   getApproximateLocation(): Promise<{ latitude: number; longitude: number }> {
