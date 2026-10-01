@@ -48,11 +48,24 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          # Diagnostic d'une clé introuvable : booléens seulement, aucune valeur ni aucun nom affiché.
+          KEYSTORE_IN_VARS: ${{ vars.KEYSTORE_BASE64 != '' || vars.KEYSTORE_PASSWORD != '' }}
+          KEYSTORE_MISNAMED: ${{ contains(toJSON(secrets), 'keystore') }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+          missing=""
+          [ -n "$KEYSTORE_BASE64" ] || missing="$missing KEYSTORE_BASE64"
+          [ -n "$KEYSTORE_PASSWORD" ] || missing="$missing KEYSTORE_PASSWORD"
+          if [ -n "$missing" ]; then
             # Une release signée avec la clé de debug bloquerait les mises à jour signées ensuite.
             if [ "$PRISME_RELEASE" = true ]; then
-              echo "::error title=Release non signée::Ajoute les secrets KEYSTORE_BASE64 et KEYSTORE_PASSWORD puis relance ce workflow (Re-run all jobs)."
+              if [ "$KEYSTORE_IN_VARS" = true ]; then
+                hint="ils sont dans l'onglet Variables : supprime-les et recrée-les dans l'onglet Secrets"
+              elif [ "$KEYSTORE_MISNAMED" = true ]; then
+                hint="un secret au nom approchant existe : le nom doit être exactement celui-ci"
+              else
+                hint="à créer dans Settings > Secrets and variables > Actions > Repository secrets"
+              fi
+              echo "::error title=Release non signée::Secret(s) introuvable(s) :$missing ($hint), puis relance ce workflow."
               exit 1
             fi
             echo "::warning title=APK signé avec une clé de debug::Ajoute les secrets KEYSTORE_BASE64 et KEYSTORE_PASSWORD pour signer l'APK release (voir README)."
