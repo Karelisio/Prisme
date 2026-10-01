@@ -63,6 +63,14 @@ jobs:
       - name: Synchronisation Capacitor
         run: npx cap sync android
 
+      # Sans clé release, Gradle signe avec la clé de debug du runner : on la conserve d'un build à
+      # l'autre pour que chaque APK s'installe par-dessus le précédent (sans désinstaller l'app).
+      - name: Clé de debug persistante
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
       - name: Clé de signature
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -80,7 +88,7 @@ jobs:
         working-directory: android
         env:
           PRISME_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+        run: ./gradlew --no-daemon testDebugUnitTest :app:lintRelease assembleRelease
 
       - name: Nommer l'APK
         id: apk

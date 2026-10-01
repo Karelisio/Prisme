@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.util.Base64
+import androidx.annotation.RequiresApi
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.FileOutputStream
@@ -87,6 +88,8 @@ internal class ImageImporter(private val resolver: ContentResolver, private val 
         }
     }
 
+    /** Android 9+ : ImageDecoder applique lui-même l'orientation EXIF et gère HEIF. */
+    @RequiresApi(28)
     private fun decodeModern(uri: Uri, maxDimension: Int): Bitmap {
         val source = ImageDecoder.createSource(resolver, uri)
         return ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
