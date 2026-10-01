@@ -131,3 +131,43 @@ test('rotation : source, intervalle, écran et changement immédiat', async ({ p
   await screen.getByRole('button', { name: 'Changer maintenant' }).click();
   await expect.poll(() => page.evaluate(() => window.__prismeAutomationWeb?.rotations)).toBe(1);
 });
+
+test('éditeur : retouche, enregistrement dans « Créations » et application', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('/');
+  const settings = await openSettings(page);
+  await settings.getByRole('switch', { name: 'Éditeur' }).click();
+  await page.getByRole('button', { name: 'Explorer' }).click();
+  await page.locator('.tab[data-active="true"] .wp-cell').first().click();
+  await page.getByRole('button', { name: 'Retoucher' }).click();
+
+  const editor = page.getByRole('dialog', { name: 'Éditeur' });
+  await expect(editor.locator('.editor__loading')).toHaveCount(0);
+  await editor.getByLabel('Intensité du flou').fill('0.5');
+  await editor.getByRole('tab', { name: 'Texte' }).click();
+  await editor.getByLabel('Texte', { exact: true }).fill('Bonjour');
+  await editor.getByRole('tab', { name: 'Grain' }).click();
+  await editor.getByLabel('Grain').fill('0.4');
+  const alpha = await editor.locator('canvas').evaluate((c: HTMLCanvasElement) => {
+    const ctx = c.getContext('2d')!;
+    return ctx.getImageData(Math.floor(c.width / 2), Math.floor(c.height / 2), 1, 1).data[3];
+  });
+  expect(alpha).toBe(255);
+
+  await editor.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Enregistré dans la collection « Créations »' })).toBeVisible();
+
+  await editor.getByRole('button', { name: 'Appliquer' }).click();
+  await page.getByRole('button', { name: "Écran d'accueil" }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Fond appliqué' })).toBeVisible();
+  const applied = await page.evaluate(() => window.__prismeWeb?.applied ?? []);
+  expect(applied.at(-1)?.uri).toMatch(/^blob:/);
+  expect(applied.at(-1)?.target).toBe('home');
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Bibliothèque' }).click();
+  const library = page.locator('.tab[data-active="true"]');
+  await library.getByRole('radio', { name: 'Collections' }).click();
+  await expect(library.getByRole('button', { name: /Créations/ })).toContainText('2 fonds');
+});

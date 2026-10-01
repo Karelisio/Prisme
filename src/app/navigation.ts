@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Wallpaper } from '@/features/sources/types';
+import type { NormalizedRect } from '@/shared/native';
 
 export type Tab = 'explore' | 'library' | 'settings';
 
@@ -12,7 +13,8 @@ export type Overlay =
   | { type: 'diagnostics' }
   | { type: 'dynamic' }
   | { type: 'live' }
-  | { type: 'rotation' };
+  | { type: 'rotation' }
+  | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect };
 
 export type OverlayEntry = Overlay & { key: number };
 

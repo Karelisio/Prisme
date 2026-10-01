@@ -16,6 +16,7 @@ export const OPTIONS: readonly OptionDef[] = [
   { key: 'dynamic', title: 'Fonds dynamiques', description: 'Selon l’heure, la météo, la saison ou la batterie', icon: 'partlyCloudy', screen: 'dynamic' },
   { key: 'live', title: 'Fond animé (parallaxe)', description: 'Le fond suit les mouvements du téléphone', icon: 'rotation3d', screen: 'live' },
   { key: 'rotation', title: 'Rotation automatique', description: 'Change de fond à intervalle régulier', icon: 'autorenew', screen: 'rotation' },
+  { key: 'editor', title: 'Éditeur', description: 'Flou, assombrissement, grain, dégradé, texte : bouton « Retoucher » de l’aperçu', icon: 'formatPaint' },
 ];
 
 /** Options désactivées par défaut : chacune s'active ici, puis se règle dans son écran. */

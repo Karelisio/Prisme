@@ -1,6 +1,6 @@
 import { SystemBars } from '@capacitor/core';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { goBack } from '@/app/navigation';
+import { goBack, useNavigation } from '@/app/navigation';
 import { CollectionsSheet } from '@/features/library/CollectionsSheet';
 import { useLibrary } from '@/features/library/store';
 import { usePreviewSrc, useThumbSrc } from '@/features/library/useImageSrc';
@@ -57,6 +57,8 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
   const favorite = useLibrary((s) => !!s.favorites[wallpaper.id]);
   const toggleFavorite = useLibrary((s) => s.toggleFavorite);
   const defaultTarget = useSettings((s) => s.defaultTarget);
+  const features = useSettings((s) => s.features);
+  const push = useNavigation((s) => s.push);
   const setBarsOverride = useTheme((s) => s.setBarsOverride);
   const wallpaperRef = useRef(wallpaper);
   wallpaperRef.current = wallpaper;
@@ -176,6 +178,14 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
               selected={favorite}
               onClick={onFavorite}
             />
+            {features.editor && (
+              <IconButton
+                icon="formatPaint"
+                label="Retoucher"
+                variant="on-image"
+                onClick={() => push({ type: 'editor', wallpaper, crop: panZoom.getCrop() })}
+              />
+            )}
             <IconButton icon="libraryAdd" label="Ajouter à une collection" variant="on-image" onClick={() => setSheet('collections')} />
             <IconButton icon="info" label="Informations" variant="on-image" onClick={() => setSheet('info')} />
           </div>

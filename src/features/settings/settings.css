@@ -22,22 +22,6 @@
   gap: 12px;
 }
 
-.seed {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  color: #fff;
-}
-
-.seed[aria-checked='true'] {
-  outline: 3px solid var(--md-sys-color-on-surface);
-  outline-offset: 2px;
-}
-
 .option-row {
   display: flex;
   align-items: center;

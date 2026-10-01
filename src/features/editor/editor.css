@@ -1,0 +1,109 @@
+.editor {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface);
+  animation: overlay-in var(--md-duration-medium) var(--md-easing-emphasized-decelerate);
+}
+
+.editor__top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: calc(56px + var(--safe-top));
+  padding: var(--safe-top) 8px 0 4px;
+}
+
+.editor__stage {
+  position: relative;
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  place-items: center;
+  margin: 8px 16px;
+  overflow: hidden;
+}
+
+.editor__canvas {
+  position: absolute;
+  display: block;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+}
+
+.editor__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.editor__panel {
+  padding: 12px 0 calc(var(--safe-bottom) + 12px);
+  border-radius: var(--md-shape-xl) var(--md-shape-xl) 0 0;
+  background: var(--md-sys-color-surface-container);
+}
+
+.editor__controls {
+  display: grid;
+  gap: 12px;
+  min-height: 96px;
+  padding: 4px 20px 12px;
+}
+
+.editor__slider {
+  display: grid;
+  gap: 4px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 12px/16px var(--md-font);
+}
+
+.editor__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editor__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seed--small {
+  width: 32px;
+  height: 32px;
+}
+
+.editor__text {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-shape-xs);
+  background: transparent;
+  font: 400 16px/22px var(--md-font);
+  resize: none;
+}
+
+.editor__tools {
+  padding-top: 0;
+}
+
+.editor__actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.editor__bold {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 14px/20px var(--md-font);
+}
