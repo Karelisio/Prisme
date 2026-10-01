@@ -37,3 +37,28 @@
   outline: 3px solid var(--md-sys-color-on-surface);
   outline-offset: 2px;
 }
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 16px;
+}
+
+.option-row__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 8px 8px 8px 16px;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface);
+  text-align: left;
+}
+
+.option-row__chevron {
+  color: var(--md-sys-color-on-surface-variant);
+}

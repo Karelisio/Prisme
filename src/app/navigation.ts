@@ -9,7 +9,8 @@ export type Overlay =
   | { type: 'search' }
   | { type: 'pack'; packId: string }
   | { type: 'collection'; collectionId: string }
-  | { type: 'diagnostics' };
+  | { type: 'diagnostics' }
+  | { type: 'dynamic' };
 
 export type OverlayEntry = Overlay & { key: number };
 

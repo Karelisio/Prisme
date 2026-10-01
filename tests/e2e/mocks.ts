@@ -111,8 +111,18 @@ export async function mockApis(page: Page): Promise<ApiLog> {
   await page.route(/https:\/\/images\.(unsplash|pexels)\.com\/.*/, (route) => {
     const url = new URL(route.request().url());
     const color = COLORS[Number(url.searchParams.get('c') ?? '0') % COLORS.length] as [number, number, number];
-    return route.fulfill({ status: 200, contentType: 'image/png', body: solidPng(90, 160, color) });
+    return route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: solidPng(90, 160, color),
+    });
   });
+
+  await page.route('https://geocoding-api.open-meteo.com/**', (route) =>
+    json(route, { results: [{ name: 'Lyon', latitude: 45.76, longitude: 4.84, country: 'France', admin1: 'Auvergne-Rhône-Alpes' }] }),
+  );
+  await page.route('https://api.open-meteo.com/**', (route) => json(route, { current: { weather_code: 61, is_day: 1 } }));
 
   // Manifeste des packs distant : indisponible, l'app utilise la copie embarquée.
   await page.route('https://raw.githubusercontent.com/**', (route) => route.fulfill({ status: 404, body: '' }));

@@ -16,4 +16,5 @@ ext {
     coroutinesVersion = '1.11.0'
     exifInterfaceVersion = '1.4.2'
     orgJsonVersion = '20251224'
+    workVersion = '2.11.2'
 }

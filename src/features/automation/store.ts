@@ -1,0 +1,33 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { type AutomationPrefs, DEFAULT_AUTOMATION } from './model';
+
+interface AutomationActions {
+  updateRotation: (patch: Partial<AutomationPrefs['rotation']>) => void;
+  updateDynamic: (patch: Partial<AutomationPrefs['dynamic']>) => void;
+  updateFocus: (patch: Partial<AutomationPrefs['focus']>) => void;
+}
+
+export const useAutomationPrefs = create<AutomationPrefs & AutomationActions>()(
+  persist(
+    (set) => ({
+      ...DEFAULT_AUTOMATION,
+      updateRotation: (patch) => set((s) => ({ rotation: { ...s.rotation, ...patch } })),
+      updateDynamic: (patch) => set((s) => ({ dynamic: { ...s.dynamic, ...patch } })),
+      updateFocus: (patch) => set((s) => ({ focus: { ...s.focus, ...patch } })),
+    }),
+    {
+      name: 'prisme-automation',
+      version: 1,
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<AutomationPrefs>;
+        return {
+          ...current,
+          rotation: { ...current.rotation, ...saved.rotation },
+          dynamic: { ...current.dynamic, ...saved.dynamic },
+          focus: { ...current.focus, ...saved.focus },
+        };
+      },
+    },
+  ),
+);

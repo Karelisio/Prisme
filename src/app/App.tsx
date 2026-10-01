@@ -2,6 +2,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { ExploreScreen } from '@/features/browse/ExploreScreen';
+import { startAutomationSync } from '@/features/automation/sync';
 import { startOfflineSync } from '@/features/library/offline';
 import { isNative } from '@/shared/native';
 import { ThemeController } from '@/shared/theme/ThemeController';
@@ -33,6 +34,7 @@ const screens = {
   pack: () => import('@/features/packs/PackScreen'),
   collection: () => import('@/features/library/CollectionScreen'),
   diagnostics: () => import('@/features/diagnostics/DiagnosticsScreen'),
+  dynamic: () => import('@/features/automation/DynamicScreen'),
 };
 
 const LibraryScreen = lazy(() => screens.library().then((m) => ({ default: m.LibraryScreen })));
@@ -42,6 +44,7 @@ const SearchScreen = lazy(() => screens.search().then((m) => ({ default: m.Searc
 const PackScreen = lazy(() => screens.pack().then((m) => ({ default: m.PackScreen })));
 const CollectionScreen = lazy(() => screens.collection().then((m) => ({ default: m.CollectionScreen })));
 const DiagnosticsScreen = lazy(() => screens.diagnostics().then((m) => ({ default: m.DiagnosticsScreen })));
+const DynamicScreen = lazy(() => screens.dynamic().then((m) => ({ default: m.DynamicScreen })));
 
 /** Précharge les écrans secondaires une fois l'app affichée, pendant que le processeur est libre. */
 function prefetchScreens() {
@@ -68,6 +71,7 @@ function AppShell() {
 
   useBackButton();
   useEffect(() => startOfflineSync(), []);
+  useEffect(() => startAutomationSync(), []);
   useEffect(prefetchScreens, []);
 
   const covered = overlays.length > 0;
@@ -108,6 +112,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <CollectionScreen collectionId={overlay.collectionId} />;
     case 'diagnostics':
       return <DiagnosticsScreen />;
+    case 'dynamic':
+      return <DynamicScreen />;
   }
 }
 

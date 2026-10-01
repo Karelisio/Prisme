@@ -4,4 +4,6 @@
     <string name="title_activity_main">Prisme</string>
     <string name="package_name">io.karelisio.prisme</string>
     <string name="custom_url_scheme">io.karelisio.prisme</string>
+    <string name="live_wallpaper_name">Prisme · parallaxe</string>
+    <string name="live_wallpaper_description">Ton fond Prisme suit les mouvements du téléphone.</string>
 </resources>

@@ -7,6 +7,7 @@ import { formatBytes } from '@/shared/lib/format';
 import { PrismeWallpaper, type WallpaperTarget } from '@/shared/native';
 import { Button, Chip, Icon, ListItem, SegmentedButtons, Switch } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
+import { AdvancedOptions } from './AdvancedOptions';
 import { type ThemeMode, useSettings } from './store';
 import './settings.css';
 
@@ -166,6 +167,8 @@ export function SettingsScreen() {
           }
         />
       </section>
+
+      <AdvancedOptions />
 
       <section className="settings-section">
         <h2 className="list-subheader">À propos</h2>

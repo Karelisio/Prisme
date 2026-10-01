@@ -12,7 +12,8 @@ interface LibraryActions {
   renameCollection: (id: string, name: string) => void;
   deleteCollection: (id: string) => void;
   setInCollection: (collectionId: string, w: Wallpaper, included: boolean) => void;
-  addHistory: (w: Wallpaper, target: WallpaperTarget, auto?: boolean) => void;
+  addHistory: (w: Wallpaper, target: WallpaperTarget, options?: { auto?: boolean; at?: number }) => void;
+  ensureCollection: (id: string, name: string) => void;
   removeHistory: (entryId: string) => void;
   clearHistory: () => void;
   setOffline: (id: string, copy: OfflineCopy | null) => void;
@@ -37,8 +38,11 @@ export const useLibrary = create<LibraryState>()(
       renameCollection: (id, name) => set((s) => model.renameCollection(s, id, name)),
       deleteCollection: (id) => set((s) => model.deleteCollection(s, id)),
       setInCollection: (collectionId, w, included) => set((s) => model.setInCollection(s, collectionId, w, included)),
-      addHistory: (w, target, auto) =>
-        set((s) => model.addHistory(s, { id: crypto.randomUUID(), wallpaperId: w.id, target, at: Date.now(), auto }, w)),
+      addHistory: (w, target, options) =>
+        set((s) =>
+          model.addHistory(s, { id: crypto.randomUUID(), wallpaperId: w.id, target, at: options?.at ?? Date.now(), auto: options?.auto }, w),
+        ),
+      ensureCollection: (id, name) => set((s) => model.ensureCollection(s, id, name, Date.now())),
       removeHistory: (entryId) => set((s) => model.removeHistory(s, entryId)),
       clearHistory: () => set((s) => model.clearHistory(s)),
       setOffline: (id, copy) =>

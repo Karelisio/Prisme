@@ -73,6 +73,12 @@ export function createCollection(state: LibraryData, id: string, name: string, n
   };
 }
 
+/** Crée la collection avec cet identifiant si elle n'existe pas (ex. « Créations »). */
+export function ensureCollection(state: LibraryData, id: string, name: string, now: number): LibraryData {
+  if (state.collections.some((c) => c.id === id)) return state;
+  return { ...state, collections: [...state.collections, { id, name, createdAt: now, itemIds: [] }] };
+}
+
 export function renameCollection(state: LibraryData, id: string, name: string): LibraryData {
   const trimmed = name.trim();
   if (!trimmed) return state;
@@ -96,7 +102,8 @@ export function setInCollection(state: LibraryData, collectionId: string, w: Wal
 }
 
 export function addHistory(state: LibraryData, entry: HistoryEntry, w: Wallpaper): LibraryData {
-  const history = [entry, ...state.history].slice(0, HISTORY_LIMIT);
+  // Trié du plus récent au plus ancien (les entrées automatiques peuvent arriver après coup).
+  const history = [entry, ...state.history].sort((a, b) => b.at - a.at).slice(0, HISTORY_LIMIT);
   return prune({ ...state, items: remember(state, w), history });
 }
 
