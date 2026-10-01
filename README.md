@@ -34,7 +34,9 @@ mode focus, puis fonds dynamiques, puis rotation.
 ## Installer l'APK
 
 Chaque push lance le workflow **Android** (onglet *Actions*). L'APK release est dans les
-artefacts du run (`Prisme-x.y.z.N`). Un tag `v*` publie aussi une release GitHub.
+artefacts du run (`Prisme-x.y.z.N`). Un tag `v*` publie aussi une release GitHub, toujours signée
+avec la vraie clé : sans les secrets `KEYSTORE_*` valides, le run échoue dès le début (ajouter les
+secrets puis *Re-run all jobs*).
 
 ## Secrets GitHub
 

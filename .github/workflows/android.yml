@@ -35,6 +35,30 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # En tête du job : une clé absente ou mal copiée échoue en quelques secondes.
+      - name: Clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            # Une release signée avec la clé de debug bloquerait les mises à jour signées ensuite.
+            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+              echo "::error title=Release non signée::Ajoute les secrets KEYSTORE_BASE64 et KEYSTORE_PASSWORD puis relance ce workflow (Re-run all jobs)."
+              exit 1
+            fi
+            echo "::warning title=APK signé avec une clé de debug::Ajoute les secrets KEYSTORE_BASE64 et KEYSTORE_PASSWORD pour signer l'APK release (voir README)."
+            exit 0
+          fi
+          # La clé n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
+          echo "$KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$RUNNER_TEMP/release.p12"
+          if ! keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/release.p12" \
+              -storepass:env KEYSTORE_PASSWORD -alias "${PRISME_KEY_ALIAS:-prisme}" > /dev/null; then
+            echo "::error title=Clé de signature invalide::KEYSTORE_BASE64 ou KEYSTORE_PASSWORD incorrect (copie incomplète ? espace en trop ?), ou alias différent de prisme."
+            exit 1
+          fi
+          echo "PRISME_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Dépendances
@@ -70,19 +94,6 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: android-debug-keystore-v1
-
-      - name: Clé de signature
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: |
-          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
-            echo "::warning title=APK signé avec une clé de debug::Ajoute les secrets KEYSTORE_BASE64 et KEYSTORE_PASSWORD pour signer l'APK release (voir README)."
-            exit 0
-          fi
-          # La clé n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.p12"
-          echo "PRISME_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
 
       - name: Tests natifs et APK release
         working-directory: android
