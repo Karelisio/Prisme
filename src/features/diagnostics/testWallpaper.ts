@@ -1,10 +1,12 @@
+import { t } from '@/shared/i18n';
+
 /** Génère un fond de test (dégradé + repères) à la taille de l'écran, en data URL JPEG. */
 export function renderTestWallpaper(width: number, height: number, label: string): string {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas indisponible');
+  if (!ctx) throw new Error(t('Canvas indisponible'));
 
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, '#3a1c71');

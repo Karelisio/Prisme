@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@/app/navigation';
+import { t } from '@/shared/i18n';
 import { BUNDLED_PACKS, type Pack, loadPacks } from './packs';
 import './packs.css';
 
@@ -31,8 +32,8 @@ function PackCard({ pack, onOpen }: { pack: Pack; onOpen: () => void }) {
       }}
       onClick={onOpen}
     >
-      <span className="pack-card__title">{pack.title}</span>
-      <span className="pack-card__description">{pack.description}</span>
+      <span className="pack-card__title">{t(pack.title)}</span>
+      <span className="pack-card__description">{t(pack.description)}</span>
     </button>
   );
 }

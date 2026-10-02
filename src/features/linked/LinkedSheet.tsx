@@ -4,6 +4,7 @@ import { type EditableImage, loadEditableImage } from '@/features/editor/source'
 import { saveCreation } from '@/features/library/creations';
 import { applyWallpaper } from '@/features/preview/applyWallpaper';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { type NormalizedRect, nativeErrorMessage } from '@/shared/native';
 import { Button, Chip, SegmentedButtons, Spinner } from '@/shared/ui/components';
@@ -64,14 +65,14 @@ export function LinkedSheet({
     setBusy(true);
     try {
       const data = await exportEdit(image.bitmap, image.size, variantCrop(variant, image.size, crop, output), variant.params, output);
-      const creation = await saveCreation(data, wallpaper.color, `${variant.label} · ${wallpaper.alt}`);
+      const creation = await saveCreation(data, wallpaper.color, `${t(variant.label)} · ${wallpaper.alt}`);
       const [home, lock] = variantOn === 'lock' ? [wallpaper, creation] : [creation, wallpaper];
       await applyWallpaper({ wallpaper: home, target: 'home', crop: home === wallpaper ? crop : undefined });
       await applyWallpaper({ wallpaper: lock, target: 'lock', crop: lock === wallpaper ? crop : undefined });
-      showSnackbar('Fonds assortis appliqués sur l’accueil et le verrouillage');
+      showSnackbar(t('Fonds assortis appliqués sur l’accueil et le verrouillage'));
       onClose();
     } catch (e) {
-      showSnackbar(`Échec : ${nativeErrorMessage(e)}`);
+      showSnackbar(t('Échec : {error}', { error: nativeErrorMessage(e) }));
     } finally {
       setBusy(false);
     }
@@ -82,18 +83,18 @@ export function LinkedSheet({
   const lockDraw = variantOn === 'lock' ? drawVariant : drawOriginal;
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Fonds assortis">
+    <BottomSheet open={open} onClose={onClose} title={t('Fonds assortis')}>
       <div className="linked">
         <div className="linked__previews">
           {image ? (
             <>
               <figure>
-                <FittedCanvas className="linked__canvas" ratio={ratio} draw={homeDraw} label="Écran d'accueil" />
-                <figcaption>Accueil</figcaption>
+                <FittedCanvas className="linked__canvas" ratio={ratio} draw={homeDraw} label={t("Écran d'accueil")} />
+                <figcaption>{t('Accueil')}</figcaption>
               </figure>
               <figure>
-                <FittedCanvas className="linked__canvas" ratio={ratio} draw={lockDraw} label="Écran de verrouillage" />
-                <figcaption>Verrouillage</figcaption>
+                <FittedCanvas className="linked__canvas" ratio={ratio} draw={lockDraw} label={t('Écran de verrouillage')} />
+                <figcaption>{t('Verrouillage')}</figcaption>
               </figure>
             </>
           ) : (
@@ -103,25 +104,25 @@ export function LinkedSheet({
           )}
         </div>
         <SegmentedButtons
-          label="Écran qui reçoit la variante"
+          label={t('Écran qui reçoit la variante')}
           options={[
-            { value: 'lock', label: 'Variante au verrouillage' },
-            { value: 'home', label: 'Variante à l’accueil' },
+            { value: 'lock', label: t('Variante au verrouillage') },
+            { value: 'home', label: t('Variante à l’accueil') },
           ]}
           value={variantOn}
           onChange={setVariantOn}
         />
-        <div className="chip-wrap" aria-label="Variante">
+        <div className="chip-wrap" aria-label={t('Variante')}>
           {VARIANTS.map((v) => (
             <Chip key={v.key} selected={v.key === variantKey} onClick={() => setVariantKey(v.key)}>
-              {v.label}
+              {t(v.label)}
             </Chip>
           ))}
         </div>
       </div>
       <div className="sheet__actions">
         <Button icon="link" disabled={!image || busy} onClick={() => void apply()}>
-          Appliquer les deux
+          {t('Appliquer les deux')}
         </Button>
       </div>
     </BottomSheet>

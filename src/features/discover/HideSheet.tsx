@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { Button, Chip, Icon, ListItem, TextField } from '@/shared/ui/components';
 import { BottomSheet } from '@/shared/ui/overlays';
 import { authorKey } from './hidden';
@@ -25,20 +26,20 @@ export function HideSheet({ wallpaper, open, onClose, onHidden }: HideSheetProps
 
   const hideThis = () => {
     store.hideWallpaper(wallpaper);
-    onHidden('Fond masqué', () => useDiscover.getState().unhideWallpaper(wallpaper.id));
+    onHidden(t('Fond masqué'), () => useDiscover.getState().unhideWallpaper(wallpaper.id));
   };
 
   const hideAuthor = () => {
     if (!key || !wallpaper.author) return;
     store.hideAuthor(wallpaper);
-    onHidden(`Fonds de ${wallpaper.author.name} masqués`, () => useDiscover.getState().unhideAuthor(key));
+    onHidden(t('Fonds de {name} masqués', { name: wallpaper.author.name }), () => useDiscover.getState().unhideAuthor(key));
   };
 
   const hideWord = (word: string) => {
     const w = word.trim();
     if (!w) return;
     store.addHiddenWord(w);
-    onHidden(`Sujet « ${w} » masqué`, () => useDiscover.getState().removeHiddenWord(w));
+    onHidden(t('Sujet « {word} » masqué', { word: w }), () => useDiscover.getState().removeHiddenWord(w));
   };
 
   const submit = (e: FormEvent) => {
@@ -48,16 +49,16 @@ export function HideSheet({ wallpaper, open, onClose, onHidden }: HideSheetProps
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Ne plus voir">
+    <BottomSheet open={open} onClose={onClose} title={t('Ne plus voir')}>
       <ul className="list">
         <li>
-          <ListItem headline="Ce fond" supporting="Retiré des grilles et des suggestions" leading={<Icon name="hideImage" />} onClick={hideThis} />
+          <ListItem headline={t('Ce fond')} supporting={t('Retiré des grilles et des suggestions')} leading={<Icon name="hideImage" />} onClick={hideThis} />
         </li>
         {wallpaper.author && key && (
           <li>
             <ListItem
-              headline={`Les fonds de ${wallpaper.author.name}`}
-              supporting="Tous ses fonds disparaissent des grilles"
+              headline={t('Les fonds de {name}', { name: wallpaper.author.name })}
+              supporting={t('Tous ses fonds disparaissent des grilles')}
               leading={<Icon name="personOff" />}
               onClick={hideAuthor}
             />
@@ -65,8 +66,8 @@ export function HideSheet({ wallpaper, open, onClose, onHidden }: HideSheetProps
         )}
         <li>
           <ListItem
-            headline="Un sujet…"
-            supporting="Les fonds dont la description contient ce mot"
+            headline={t('Un sujet…')}
+            supporting={t('Les fonds dont la description contient ce mot')}
             leading={<Icon name="label" />}
             onClick={() => setTopicsOpen((o) => !o)}
           />
@@ -75,7 +76,7 @@ export function HideSheet({ wallpaper, open, onClose, onHidden }: HideSheetProps
       {topicsOpen && (
         <div className="hide-topics">
           {suggestions.length > 0 && (
-            <div className="chip-wrap" aria-label="Sujets de ce fond">
+            <div className="chip-wrap" aria-label={t('Sujets de ce fond')}>
               {suggestions.map((word) => (
                 <Chip key={word} icon="visibilityOff" onClick={() => hideWord(word)}>
                   {word}
@@ -84,9 +85,9 @@ export function HideSheet({ wallpaper, open, onClose, onHidden }: HideSheetProps
             </div>
           )}
           <form className="hide-topics__form" onSubmit={submit}>
-            <TextField label="Autre sujet" placeholder="ex. voiture, chat" value={custom} onChange={(e) => setCustom(e.target.value)} />
+            <TextField label={t('Autre sujet')} placeholder={t('ex. voiture, chat')} value={custom} onChange={(e) => setCustom(e.target.value)} />
             <Button type="submit" variant="tonal" disabled={!custom.trim()}>
-              Masquer
+              {t('Masquer')}
             </Button>
           </form>
         </div>

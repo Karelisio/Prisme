@@ -1,4 +1,5 @@
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { useCapabilities } from '@/shared/lib/capabilities';
 import type { WallpaperTarget } from '@/shared/native';
 import { Icon, ListItem } from '@/shared/ui/components';
@@ -30,7 +31,7 @@ export function ApplySheet({
   const capabilities = useCapabilities();
   const liveAvailable = features.live && capabilities?.liveWallpaper !== false;
   return (
-    <BottomSheet open={open} onClose={onClose} title="Appliquer sur">
+    <BottomSheet open={open} onClose={onClose} title={t('Appliquer sur')}>
       <ul className="list">
         {OPTIONS.map(({ target, icon }) => (
           <li key={target}>
@@ -40,8 +41,8 @@ export function ApplySheet({
         {allowLinked && features.linked && (
           <li>
             <ListItem
-              headline="Accueil et verrouillage assortis"
-              supporting="Une variante floue, sombre ou en gros plan pour l'autre écran"
+              headline={t('Accueil et verrouillage assortis')}
+              supporting={t("Une variante floue, sombre ou en gros plan pour l'autre écran")}
               leading={<Icon name="link" />}
               onClick={() => onApply('linked')}
             />
@@ -50,8 +51,8 @@ export function ApplySheet({
         {liveAvailable && (
           <li>
             <ListItem
-              headline="Fond animé (parallaxe)"
-              supporting="Suit les mouvements du téléphone"
+              headline={t('Fond animé (parallaxe)')}
+              supporting={t('Suit les mouvements du téléphone')}
               leading={<Icon name="rotation3d" />}
               onClick={() => onApply('live')}
             />

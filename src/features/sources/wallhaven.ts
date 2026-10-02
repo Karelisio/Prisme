@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
 import { UNKNOWN_COLOR, wallhavenColor } from './filters';
 import { ApiError, type ColorChoice, type SourcePage, type Wallpaper } from './types';
@@ -33,7 +34,7 @@ export function mapWallhaven(w: WallhavenWallpaper): Wallpaper {
     width: w.dimension_x,
     height: w.dimension_y,
     color: w.colors[0] ?? UNKNOWN_COLOR,
-    alt: `Fond Wallhaven ${w.id}`,
+    alt: t('Fond Wallhaven {id}', { id: w.id }),
     thumb: w.thumbs.original,
     preview: w.path,
     full: w.path,
@@ -68,12 +69,12 @@ export async function wallhavenSearch(options: {
   try {
     res = await getJson<SearchResponse>(url);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('wallhaven', 'network', 'Wallhaven injoignable');
+    if (error instanceof NetworkError) throw new ApiError('wallhaven', 'network', t('Wallhaven injoignable'));
     throw error;
   }
-  if (res.status === 429) throw new ApiError('wallhaven', 'rate_limit', 'Trop de requêtes Wallhaven, réessaie dans une minute');
+  if (res.status === 429) throw new ApiError('wallhaven', 'rate_limit', t('Trop de requêtes Wallhaven, réessaie dans une minute'));
   if (res.status < 200 || res.status >= 300 || !Array.isArray(res.data?.data)) {
-    throw new ApiError('wallhaven', 'server', `Erreur Wallhaven (${res.status})`);
+    throw new ApiError('wallhaven', 'server', t('Erreur Wallhaven ({status})', { status: res.status }));
   }
   const { data, meta } = res.data;
   return { items: data.map(mapWallhaven), next: meta && meta.current_page < meta.last_page ? options.page + 1 : null };
@@ -88,12 +89,12 @@ export async function wallhavenWallpaper(id: string): Promise<Wallpaper | null> 
   try {
     res = await getJson<{ data?: WallhavenWallpaper & { purity?: string } }>(`${API}/w/${encodeURIComponent(id)}`);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('wallhaven', 'network', 'Wallhaven injoignable');
+    if (error instanceof NetworkError) throw new ApiError('wallhaven', 'network', t('Wallhaven injoignable'));
     throw error;
   }
   if (res.status === 404 || res.status === 401) return null;
-  if (res.status === 429) throw new ApiError('wallhaven', 'rate_limit', 'Trop de requêtes Wallhaven, réessaie dans une minute');
-  if (res.status < 200 || res.status >= 300) throw new ApiError('wallhaven', 'server', `Erreur Wallhaven (${res.status})`);
+  if (res.status === 429) throw new ApiError('wallhaven', 'rate_limit', t('Trop de requêtes Wallhaven, réessaie dans une minute'));
+  if (res.status < 200 || res.status >= 300) throw new ApiError('wallhaven', 'server', t('Erreur Wallhaven ({status})', { status: res.status }));
   const wallpaper = res.data?.data;
   if (!wallpaper?.path || !wallpaper.thumbs || !Array.isArray(wallpaper.colors)) return null;
   // L'app ne montre que du contenu tout public : un code de collection n'y change rien.

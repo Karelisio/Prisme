@@ -1,5 +1,6 @@
 import bundledManifest from '../../../packs/packs.json';
 import { env } from '@/shared/config/env';
+import { t } from '@/shared/i18n';
 import { getJson } from '@/shared/lib/http';
 import type { FeedSpec, SourceQuery } from '@/features/sources/feed';
 import type { ColorFilter, Wallpaper } from '@/features/sources/types';
@@ -67,7 +68,7 @@ function imageToWallpaper(pack: Pack, image: PackImage, index: number): Wallpape
     width: image.width,
     height: image.height,
     color: image.color ?? pack.colors[0],
-    alt: `${pack.title} ${index + 1}`,
+    alt: `${t(pack.title)} ${index + 1}`,
     thumb: image.thumb ?? image.url,
     preview: image.url,
     full: image.url,

@@ -1,4 +1,5 @@
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { PrismeSystem } from '@/shared/native/system';
 
 /** Dernier état envoyé au plugin : évite de reprogrammer pour un réglage sans rapport. */
@@ -18,10 +19,10 @@ export async function setDailyNotification(enabled: boolean, hour = useSettings.
   if (enabled && result.permission === 'denied') {
     await push(false, hour);
     useSettings.getState().update({ dailyNotification: false, dailyHour: hour });
-    return 'Notifications refusées : autorise-les pour Prisme dans les réglages du téléphone';
+    return t('Notifications refusées : autorise-les pour Prisme dans les réglages du téléphone');
   }
   useSettings.getState().update({ dailyNotification: enabled, dailyHour: hour });
-  return enabled ? `Fond du jour chaque jour à ${hour} h` : null;
+  return enabled ? t('Fond du jour chaque jour à {hour} h', { hour }) : null;
 }
 
 /** Reprogramme la notification au lancement et suit les réglages (restauration d'une sauvegarde…). */

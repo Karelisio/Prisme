@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { Icon } from '@/shared/ui/components';
 import type { IconName } from '@/shared/ui/icons';
 import { type Tab, useNavigation } from './navigation';
@@ -12,21 +13,21 @@ export function NavigationBar() {
   const tab = useNavigation((s) => s.tab);
   const setTab = useNavigation((s) => s.setTab);
   return (
-    <nav className="nav-bar" aria-label="Navigation principale">
-      {TABS.map((t) => {
-        const active = t.key === tab;
+    <nav className="nav-bar" aria-label={t('Navigation principale')}>
+      {TABS.map((item) => {
+        const active = item.key === tab;
         return (
           <button
-            key={t.key}
+            key={item.key}
             type="button"
             className="nav-bar__item"
             aria-current={active ? 'page' : undefined}
-            onClick={() => setTab(t.key)}
+            onClick={() => setTab(item.key)}
           >
             <span className="nav-bar__indicator state">
-              <Icon name={active ? t.activeIcon : t.icon} />
+              <Icon name={active ? item.activeIcon : item.icon} />
             </span>
-            {t.label}
+            {t(item.label)}
           </button>
         );
       })}

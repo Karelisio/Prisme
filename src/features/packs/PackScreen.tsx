@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { goBack } from '@/app/navigation';
 import { FeedView } from '@/features/browse/FeedView';
+import { t } from '@/shared/i18n';
 import { EmptyState, IconButton } from '@/shared/ui/components';
 import { usePacks } from './PacksList';
 import { packFeed } from './packs';
@@ -14,16 +15,16 @@ export function PackScreen({ packId }: { packId: string }) {
   return (
     <div ref={scrollRef} className="screen overlay-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">{pack?.title ?? 'Pack'}</h1>
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t(pack?.title ?? 'Pack')}</h1>
       </header>
       {pack && spec ? (
         <>
-          <p className="pack-intro">{pack.description}</p>
+          <p className="pack-intro">{t(pack.description)}</p>
           <FeedView spec={spec} scrollRef={scrollRef} />
         </>
       ) : (
-        <EmptyState icon="layers" title="Pack introuvable" />
+        <EmptyState icon="layers" title={t('Pack introuvable')} />
       )}
     </div>
   );

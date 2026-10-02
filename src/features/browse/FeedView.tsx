@@ -2,6 +2,7 @@ import { type RefObject, useCallback, useEffect } from 'react';
 import { useNavigation } from '@/app/navigation';
 import type { FeedSpec } from '@/features/sources/feed';
 import { ApiError } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { useOnline } from '@/shared/lib/useOnline';
 import { Button, EmptyState, Spinner } from '@/shared/ui/components';
 import { GridSkeleton, WallpaperGrid } from './WallpaperGrid';
@@ -36,9 +37,9 @@ export function FeedView({ spec, scrollRef, options, emptyText }: FeedViewProps)
     return (
       <EmptyState
         icon="settings"
-        title="Aucune source active"
-        text="Les sources de ce flux sont désactivées : active-les dans Réglages › Sources."
-        action={<Button variant="tonal" onClick={() => setTab('settings')}>Réglages</Button>}
+        title={t('Aucune source active')}
+        text={t('Les sources de ce flux sont désactivées : active-les dans Réglages › Sources.')}
+        action={<Button variant="tonal" onClick={() => setTab('settings')}>{t('Réglages')}</Button>}
       />
     );
   }
@@ -48,8 +49,8 @@ export function FeedView({ spec, scrollRef, options, emptyText }: FeedViewProps)
     return (
       <EmptyState
         icon="cloudOff"
-        title="Hors ligne"
-        text="Ce contenu n'a pas encore été chargé. Tes favoris et ton historique restent disponibles."
+        title={t('Hors ligne')}
+        text={t("Ce contenu n'a pas encore été chargé. Tes favoris et ton historique restent disponibles.")}
       />
     );
   }
@@ -62,17 +63,17 @@ export function FeedView({ spec, scrollRef, options, emptyText }: FeedViewProps)
     return (
       <EmptyState
         icon={offline ? 'cloudOff' : 'error'}
-        title={offline ? 'Hors ligne' : 'Chargement impossible'}
+        title={offline ? t('Hors ligne') : t('Chargement impossible')}
         text={
           offline
-            ? 'Tes favoris et ton historique restent disponibles dans la bibliothèque.'
+            ? t('Tes favoris et ton historique restent disponibles dans la bibliothèque.')
             : error instanceof ApiError
               ? error.message
-              : 'Une erreur est survenue.'
+              : t('Une erreur est survenue.')
         }
         action={
           <Button variant="tonal" icon="refresh" onClick={() => void feed.refetch()}>
-            Réessayer
+            {t('Réessayer')}
           </Button>
         }
       />
@@ -94,7 +95,7 @@ export function FeedView({ spec, scrollRef, options, emptyText }: FeedViewProps)
         feed.isFetching ? (
           <GridSkeleton />
         ) : (
-          <EmptyState icon="imageSearch" title="Aucun résultat" text={emptyText ?? "Essaie d'autres mots ou retire des filtres."} />
+          <EmptyState icon="imageSearch" title={t('Aucun résultat')} text={emptyText ?? t("Essaie d'autres mots ou retire des filtres.")} />
         )
       ) : (
         <WallpaperGrid

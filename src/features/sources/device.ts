@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { PrismeWallpaper } from '@/shared/native';
 import type { Wallpaper } from './types';
 
@@ -12,7 +13,7 @@ export async function importFromGallery(): Promise<Wallpaper | null> {
     width: result.width,
     height: result.height,
     color: '#808080',
-    alt: 'Image de la galerie',
+    alt: t('Image de la galerie'),
     thumb: result.thumbPath,
     preview: result.path,
     full: result.path,

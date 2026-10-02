@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { PrismeSystem } from '@/shared/native/system';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { CHECK_INTERVAL_MS, type ReleaseInfo, fetchLatestRelease } from './updates';
@@ -64,7 +65,7 @@ export function startUpdateCheck(delayMs = 4000): () => void {
     }
     const { available, dismissedBuild, sheetOpen } = useUpdates.getState();
     if (available && available.build !== dismissedBuild && !sheetOpen) {
-      showSnackbar(`Prisme ${available.version} est disponible`, { label: 'Voir', onAction: openUpdateSheet });
+      showSnackbar(t('Prisme {version} est disponible', { version: available.version }), { label: t('Voir'), onAction: openUpdateSheet });
     }
   }, delayMs);
   return () => window.clearTimeout(timer);

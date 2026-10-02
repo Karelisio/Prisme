@@ -2,6 +2,7 @@ import { CATEGORIES, type Category } from '@/features/browse/categories';
 import type { FeedSpec, SourceQuery } from '@/features/sources/feed';
 import { COLOR_OPTIONS, colorLabel } from '@/features/sources/filters';
 import type { ColorFilter } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { MAX_TASTE_CATEGORIES, MAX_TASTE_COLORS, type Tastes } from './store';
 
 /** Sélections générales d'Explorer : ce ne sont pas des goûts. */
@@ -40,7 +41,7 @@ export const toggleColor = (tastes: Tastes, color: ColorFilter): Tastes => ({
 
 /** Libellés des goûts, pour les afficher (« Nature, Minimal, Bleu »). */
 export function tasteLabels(tastes: Tastes): string[] {
-  return [...knownCategories(tastes).map((c) => c.label), ...knownColors(tastes).map((color) => colorLabel(color))];
+  return [...knownCategories(tastes).map((c) => t(c.label)), ...knownColors(tastes).map((color) => colorLabel(color))];
 }
 
 /** Flux « Pour toi » d'après les goûts choisis à l'introduction ; null sans goût connu. */

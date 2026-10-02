@@ -1,4 +1,5 @@
 import { type Overlay, useNavigation } from '@/app/navigation';
+import { t } from '@/shared/i18n';
 import { Icon, Switch } from '@/shared/ui/components';
 import type { IconName } from '@/shared/ui/icons';
 import { type FeatureKey, useSettings } from './store';
@@ -36,7 +37,7 @@ export function AdvancedOptions() {
 
   return (
     <section className="settings-section">
-      <h2 className="list-subheader">Options avancées</h2>
+      <h2 className="list-subheader">{t('Options avancées')}</h2>
       {OPTIONS.map((option) => {
         const enabled = features[option.key];
         const configurable = enabled && option.screen;
@@ -51,12 +52,12 @@ export function AdvancedOptions() {
                 <Icon name={option.icon} />
               </span>
               <span className="list-item__content">
-                <span className="list-item__headline">{option.title}</span>
-                <span className="list-item__supporting">{option.description}</span>
+                <span className="list-item__headline">{t(option.title)}</span>
+                <span className="list-item__supporting">{t(option.description)}</span>
               </span>
               {configurable && <Icon name="chevronRight" className="option-row__chevron" />}
             </button>
-            <Switch label={option.title} checked={enabled} onChange={(v) => setFeature(option.key, v)} />
+            <Switch label={t(option.title)} checked={enabled} onChange={(v) => setFeature(option.key, v)} />
           </div>
         );
       })}

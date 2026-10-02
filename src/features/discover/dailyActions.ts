@@ -6,6 +6,7 @@ import { thumbWidthFor } from '@/features/browse/useFeed';
 import { useSettings } from '@/features/settings/store';
 import { usableSources } from '@/features/sources/registry';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { dayKey, loadDaily } from './daily';
 import { useDiscover } from './store';
@@ -33,13 +34,13 @@ export async function openDaily(): Promise<void> {
   try {
     const wallpaper = await queryClient.fetchQuery(dailyQuery(day));
     if (!wallpaper) {
-      showSnackbar('Fond du jour indisponible pour le moment');
+      showSnackbar(t('Fond du jour indisponible pour le moment'));
       return;
     }
     const top = useNavigation.getState().overlays.at(-1);
     if (top?.type === 'preview' && top.wallpaper.id === wallpaper.id) return;
     openPreview(wallpaper);
   } catch {
-    showSnackbar('Fond du jour indisponible : vérifie ta connexion');
+    showSnackbar(t('Fond du jour indisponible : vérifie ta connexion'));
   }
 }

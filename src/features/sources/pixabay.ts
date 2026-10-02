@@ -1,4 +1,5 @@
 import { env } from '@/shared/config/env';
+import { getLanguage, t } from '@/shared/i18n';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
 import { UNKNOWN_COLOR, pixabayColor } from './filters';
 import { ApiError, type ColorChoice, type SourcePage, type Wallpaper } from './types';
@@ -38,7 +39,7 @@ export function mapPixabay(hit: PixabayHit): Wallpaper {
     source: 'pixabay',
     ...size,
     color: UNKNOWN_COLOR,
-    alt: hit.tags || 'Image Pixabay',
+    alt: hit.tags || t('Image Pixabay'),
     // « _640 » → « _340 » : miniature de 340 px de haut, servie par le CDN Pixabay.
     thumb: hit.webformatURL.replace('_640', '_340'),
     preview: hit.largeImageURL,
@@ -54,11 +55,11 @@ export async function pixabaySearch(options: {
   order: 'popular' | 'latest';
   color: ColorChoice | null;
 }): Promise<SourcePage> {
-  if (!env.pixabayKey) throw new ApiError('pixabay', 'missing_key', 'Clé Pixabay manquante');
+  if (!env.pixabayKey) throw new ApiError('pixabay', 'missing_key', t('Clé Pixabay manquante'));
   const url = withParams(API, {
     key: env.pixabayKey,
     q: options.query || undefined,
-    lang: 'fr',
+    lang: getLanguage(),
     image_type: 'photo',
     orientation: 'vertical',
     min_width: 1080,
@@ -73,13 +74,13 @@ export async function pixabaySearch(options: {
   try {
     res = await getJson<SearchResponse>(url);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('pixabay', 'network', 'Pixabay injoignable');
+    if (error instanceof NetworkError) throw new ApiError('pixabay', 'network', t('Pixabay injoignable'));
     throw error;
   }
-  if (res.status === 429) throw new ApiError('pixabay', 'rate_limit', 'Limite de requêtes Pixabay atteinte, réessaie plus tard');
-  if (res.status === 400 && /key/i.test(JSON.stringify(res.data))) throw new ApiError('pixabay', 'auth', 'Clé Pixabay refusée');
+  if (res.status === 429) throw new ApiError('pixabay', 'rate_limit', t('Limite de requêtes Pixabay atteinte, réessaie plus tard'));
+  if (res.status === 400 && /key/i.test(JSON.stringify(res.data))) throw new ApiError('pixabay', 'auth', t('Clé Pixabay refusée'));
   if (res.status < 200 || res.status >= 300 || !Array.isArray(res.data?.hits)) {
-    throw new ApiError('pixabay', 'server', `Erreur Pixabay (${res.status})`);
+    throw new ApiError('pixabay', 'server', t('Erreur Pixabay ({status})', { status: res.status }));
   }
   const { hits, totalHits } = res.data;
   return { items: hits.map(mapPixabay), next: options.page * PER_PAGE < Math.min(totalHits, 500) ? options.page + 1 : null };
@@ -87,21 +88,21 @@ export async function pixabaySearch(options: {
 
 /** Une image par son identifiant (collection reçue) ; null si elle n'existe plus. */
 export async function pixabayImage(id: string): Promise<Wallpaper | null> {
-  if (!env.pixabayKey) throw new ApiError('pixabay', 'missing_key', 'Clé Pixabay manquante');
-  const url = withParams(API, { key: env.pixabayKey, id, lang: 'fr' });
+  if (!env.pixabayKey) throw new ApiError('pixabay', 'missing_key', t('Clé Pixabay manquante'));
+  const url = withParams(API, { key: env.pixabayKey, id, lang: getLanguage() });
   let res;
   try {
     res = await getJson<SearchResponse>(url);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('pixabay', 'network', 'Pixabay injoignable');
+    if (error instanceof NetworkError) throw new ApiError('pixabay', 'network', t('Pixabay injoignable'));
     throw error;
   }
-  if (res.status === 429) throw new ApiError('pixabay', 'rate_limit', 'Limite de requêtes Pixabay atteinte, réessaie plus tard');
-  if (res.status === 400 && /key/i.test(JSON.stringify(res.data))) throw new ApiError('pixabay', 'auth', 'Clé Pixabay refusée');
+  if (res.status === 429) throw new ApiError('pixabay', 'rate_limit', t('Limite de requêtes Pixabay atteinte, réessaie plus tard'));
+  if (res.status === 400 && /key/i.test(JSON.stringify(res.data))) throw new ApiError('pixabay', 'auth', t('Clé Pixabay refusée'));
   // Identifiant hors plage : Pixabay répond 400, comme pour une image retirée (liste vide).
   if (res.status === 400 || res.status === 404) return null;
   if (res.status < 200 || res.status >= 300 || !Array.isArray(res.data?.hits)) {
-    throw new ApiError('pixabay', 'server', `Erreur Pixabay (${res.status})`);
+    throw new ApiError('pixabay', 'server', t('Erreur Pixabay ({status})', { status: res.status }));
   }
   const hit = res.data.hits.find((h) => String(h.id) === id);
   return hit ? mapPixabay(hit) : null;

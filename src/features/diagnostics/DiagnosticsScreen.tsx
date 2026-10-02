@@ -10,6 +10,7 @@ import {
   toWebUrl,
 } from '@/shared/native';
 import { goBack } from '@/app/navigation';
+import { locale, t } from '@/shared/i18n';
 import { formatBytes } from '@/shared/lib/format';
 import { type AutomationStatus, PrismeAutomation } from '@/shared/native/automation';
 import { type ErrorEntry, PrismeSystem } from '@/shared/native/system';
@@ -24,6 +25,8 @@ const TARGET_LABELS: Record<WallpaperTarget, string> = {
   both: 'Les deux',
 };
 
+const targetLabel = (target: WallpaperTarget) => t(TARGET_LABELS[target]);
+
 /** Erreurs gardées par l'app (interface et natif), à partager pour signaler un bug. */
 function ErrorLogSection({ capabilities }: { capabilities?: Capabilities }) {
   const [entries, setEntries] = useState<ErrorEntry[] | null>(null);
@@ -33,22 +36,22 @@ function ErrorLogSection({ capabilities }: { capabilities?: Capabilities }) {
   const share = async () => {
     const device = capabilities ? ` · ${capabilities.manufacturer} ${capabilities.model} (SDK ${capabilities.sdkInt})` : '';
     try {
-      await PrismeSystem.shareText({ text: formatErrorLog(entries ?? [], `version ${__APP_VERSION__}${device}`), title: 'Journal d’erreurs Prisme' });
+      await PrismeSystem.shareText({ text: formatErrorLog(entries ?? [], `version ${__APP_VERSION__}${device}`), title: t('Journal d’erreurs Prisme') });
     } catch (error) {
-      showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+      showSnackbar(t('Échec : {error}', { error: nativeErrorMessage(error) }));
     }
   };
 
   const clear = async () => {
     await clearErrorLog();
     reload();
-    showSnackbar('Journal effacé');
+    showSnackbar(t('Journal effacé'));
   };
 
   return (
     <section aria-labelledby="errors-title">
-      <h2 id="errors-title">Journal d’erreurs</h2>
-      {entries && entries.length === 0 && <p className="diagnostics__empty">Aucune erreur enregistrée.</p>}
+      <h2 id="errors-title">{t('Journal d’erreurs')}</h2>
+      {entries && entries.length === 0 && <p className="diagnostics__empty">{t('Aucune erreur enregistrée.')}</p>}
       {entries && entries.length > 0 && (
         <ol className="diagnostics__errors">
           {entries.map((e, i) => (
@@ -56,7 +59,7 @@ function ErrorLogSection({ capabilities }: { capabilities?: Capabilities }) {
               <details>
                 <summary>
                   <span className="diagnostics__error-meta">
-                    {new Date(e.at).toLocaleString('fr-FR')} · {e.source === 'native' ? 'Natif' : 'Interface'} · {e.where}
+                    {new Date(e.at).toLocaleString(locale())} · {e.source === 'native' ? t('Natif') : t('Interface')} · {t(e.where)}
                   </span>
                   <span>{e.message}</span>
                 </summary>
@@ -68,10 +71,10 @@ function ErrorLogSection({ capabilities }: { capabilities?: Capabilities }) {
       )}
       <div className="diagnostics__actions">
         <Button variant="tonal" icon="share" disabled={!entries?.length} onClick={() => void share()}>
-          Partager
+          {t('Partager')}
         </Button>
         <Button variant="outlined" icon="delete" disabled={!entries?.length} onClick={() => void clear()}>
-          Effacer
+          {t('Effacer')}
         </Button>
       </div>
     </section>
@@ -88,7 +91,7 @@ export function DiagnosticsScreen() {
   const [lastImage, setLastImage] = useState<string>();
   const [automation, setAutomation] = useState<AutomationStatus>();
 
-  const append = (line: string) => setLog((lines) => [`${new Date().toLocaleTimeString('fr-FR')} · ${line}`, ...lines].slice(0, 30));
+  const append = (line: string) => setLog((lines) => [`${new Date().toLocaleTimeString(locale())} · ${line}`, ...lines].slice(0, 30));
 
   useEffect(() => {
     void PrismeWallpaper.getCapabilities().then(setCapabilities);
@@ -96,11 +99,11 @@ export function DiagnosticsScreen() {
     void PrismeWallpaper.getSystemTheme().then(setTheme);
     void PrismeAutomation.getStatus().then(setAutomation, () => undefined);
     const handles = [
-      PrismeWallpaper.addListener('systemThemeChanged', (t) => {
-        setTheme(t);
-        append(`Thème système mis à jour (${t.isDark ? 'sombre' : 'clair'})`);
+      PrismeWallpaper.addListener('systemThemeChanged', (next) => {
+        setTheme(next);
+        append(t('Thème système mis à jour ({mode})', { mode: next.isDark ? t('sombre') : t('clair') }));
       }),
-      PrismeWallpaper.addListener('applyProgress', (e) => append(`Téléchargement ${Math.round(e.progress * 100)} %`)),
+      PrismeWallpaper.addListener('applyProgress', (e) => append(t('Téléchargement {percent} %', { percent: Math.round(e.progress * 100) }))),
     ];
     return () => {
       for (const handle of handles) void handle.then((h) => h.remove());
@@ -113,80 +116,78 @@ export function DiagnosticsScreen() {
       append(`${label}…`);
       append(await task());
     } catch (error) {
-      append(`Échec : ${nativeErrorMessage(error)}`);
+      append(t('Échec : {error}', { error: nativeErrorMessage(error) }));
     } finally {
       setBusy(false);
     }
   }
 
   const applyTest = (target: WallpaperTarget) =>
-    run(`Fond test → ${TARGET_LABELS[target]}`, async () => {
+    run(t('Fond test → {screen}', { screen: targetLabel(target) }), async () => {
       const size = screen ?? (await PrismeWallpaper.getScreenInfo());
-      const data = renderTestWallpaper(size.width, size.height, TARGET_LABELS[target]);
+      const data = renderTestWallpaper(size.width, size.height, targetLabel(target));
       const saved = await PrismeWallpaper.saveImage({ data, name: `test-${target}` });
       setLastImage(toWebUrl(saved.path));
       const result = await PrismeWallpaper.setWallpaper({ uri: saved.path, target, id: `test-${target}` });
-      return `Appliqué (${TARGET_LABELS[result.target]}, ${result.width}×${result.height})`;
+      return t('Appliqué ({screen}, {width}×{height})', { screen: targetLabel(result.target), width: result.width, height: result.height });
     });
 
   const applyFromGallery = () =>
-    run('Import galerie', async () => {
+    run(t('Import galerie'), async () => {
       const picked = await PrismeWallpaper.pickImage();
-      if (picked.cancelled) return 'Import annulé';
+      if (picked.cancelled) return t('Import annulé');
       setLastImage(toWebUrl(picked.path));
       await PrismeWallpaper.setWallpaper({ uri: picked.path, target: 'both' });
-      return `Image ${picked.width}×${picked.height} appliquée sur les deux écrans`;
+      return t('Image {width}×{height} appliquée sur les deux écrans', { width: picked.width, height: picked.height });
     });
 
   const showCache = () =>
-    run('Cache', async () => {
+    run(t('Cache'), async () => {
       const info = await PrismeWallpaper.getCacheInfo();
-      return `Cache ${formatBytes(info.cacheBytes)} · hors ligne ${formatBytes(info.offlineBytes)}`;
+      return t('Cache {cache} · hors ligne {offline}', { cache: formatBytes(info.cacheBytes), offline: formatBytes(info.offlineBytes) });
     });
 
   return (
     <div className="screen overlay-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Diagnostic</h1>
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Diagnostic')}</h1>
       </header>
       <main className="diagnostics">
       <section>
-        <h2>Appareil</h2>
+        <h2>{t('Appareil')}</h2>
         <dl>
-          <dt>Plateforme</dt>
-          <dd>{isNative ? 'Android' : 'Navigateur (simulation)'}</dd>
+          <dt>{t('Plateforme')}</dt>
+          <dd>{isNative ? 'Android' : t('Navigateur (simulation)')}</dd>
           {capabilities && (
             <>
-              <dt>Modèle</dt>
+              <dt>{t('Modèle')}</dt>
               <dd>
                 {capabilities.manufacturer} {capabilities.model} · SDK {capabilities.sdkInt}
               </dd>
-              <dt>Fond modifiable</dt>
-              <dd>{capabilities.supported && capabilities.settable ? 'Oui' : 'Non'}</dd>
-              <dt>Fond animé</dt>
-              <dd>{capabilities.liveWallpaper ? 'Disponible' : 'Indisponible'}</dd>
-              <dt>Couleurs dynamiques</dt>
-              <dd>{capabilities.dynamicColor ? 'Oui (Android 12+)' : 'Non'}</dd>
+              <dt>{t('Fond modifiable')}</dt>
+              <dd>{capabilities.supported && capabilities.settable ? t('Oui') : t('Non')}</dd>
+              <dt>{t('Fond animé')}</dt>
+              <dd>{capabilities.liveWallpaper ? t('Disponible') : t('Indisponible')}</dd>
+              <dt>{t('Couleurs dynamiques')}</dt>
+              <dd>{capabilities.dynamicColor ? t('Oui (Android 12+)') : t('Non')}</dd>
             </>
           )}
           {screen && (
             <>
-              <dt>Écran</dt>
-              <dd>
-                {screen.width} × {screen.height} px · densité {screen.density}
-              </dd>
+              <dt>{t('Écran')}</dt>
+              <dd>{t('{width} × {height} px · densité {density}', { width: screen.width, height: screen.height, density: screen.density })}</dd>
             </>
           )}
           {theme && (
             <>
-              <dt>Thème système</dt>
-              <dd>{theme.isDark ? 'Sombre' : 'Clair'}</dd>
+              <dt>{t('Thème système')}</dt>
+              <dd>{theme.isDark ? t('Sombre') : t('Clair')}</dd>
             </>
           )}
         </dl>
         {theme?.palettes && (
-          <div className="diagnostics__palettes" aria-label="Palettes Material You">
+          <div className="diagnostics__palettes" aria-label={t('Palettes Material You')}>
             {Object.entries(theme.palettes).map(([name, tones]) => (
               <div key={name} className="diagnostics__palette">
                 {Object.entries(tones).map(([tone, color]) => (
@@ -199,32 +200,32 @@ export function DiagnosticsScreen() {
       </section>
 
       <section>
-        <h2>Appliquer un fond test</h2>
+        <h2>{t('Appliquer un fond test')}</h2>
         <div className="diagnostics__actions">
           {(Object.keys(TARGET_LABELS) as WallpaperTarget[]).map((target) => (
             <Button key={target} variant="tonal" disabled={busy} onClick={() => void applyTest(target)}>
-              {TARGET_LABELS[target]}
+              {targetLabel(target)}
             </Button>
           ))}
           <Button variant="outlined" disabled={busy} onClick={() => void applyFromGallery()}>
-            Depuis la galerie
+            {t('Depuis la galerie')}
           </Button>
           <Button variant="outlined" disabled={busy} onClick={() => void showCache()}>
-            Taille du cache
+            {t('Taille du cache')}
           </Button>
         </div>
-        {lastImage && <img className="diagnostics__preview" src={lastImage} alt="Dernière image appliquée" />}
+        {lastImage && <img className="diagnostics__preview" src={lastImage} alt={t('Dernière image appliquée')} />}
       </section>
 
       {automation && (
         <section>
-          <h2>Automatismes</h2>
+          <h2>{t('Automatismes')}</h2>
           <dl>
-            <dt>Actifs</dt>
-            <dd>{automation.enabled ? 'Oui' : 'Non'}</dd>
-            <dt>Dernière vérification</dt>
-            <dd>{automation.lastRunAt ? new Date(automation.lastRunAt).toLocaleString('fr-FR') : 'Jamais'}</dd>
-            <dt>Fonds pour « Fond suivant »</dt>
+            <dt>{t('Actifs')}</dt>
+            <dd>{automation.enabled ? t('Oui') : t('Non')}</dd>
+            <dt>{t('Dernière vérification')}</dt>
+            <dd>{automation.lastRunAt ? new Date(automation.lastRunAt).toLocaleString(locale()) : t('Jamais')}</dd>
+            <dt>{t('Fonds pour « Fond suivant »')}</dt>
             <dd>{automation.quickPoolSize ?? 0}</dd>
           </dl>
         </section>
@@ -233,7 +234,7 @@ export function DiagnosticsScreen() {
       <ErrorLogSection capabilities={capabilities} />
 
       <section>
-        <h2>Journal des tests</h2>
+        <h2>{t('Journal des tests')}</h2>
         <ol className="diagnostics__log" aria-live="polite">
           {log.map((line, i) => (
             <li key={`${i}-${line}`}>{line}</li>

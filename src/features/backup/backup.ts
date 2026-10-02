@@ -27,6 +27,7 @@ import {
 import { DEFAULT_SETTINGS, type Settings, migrateSettings } from '@/features/settings/store';
 import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 
 export const BACKUP_FORMAT = 'prisme-backup';
 export const BACKUP_VERSION = 1;
@@ -227,11 +228,11 @@ export function parseBackup(text: string): Backup {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new BackupError("Ce fichier n'est pas une sauvegarde Prisme");
+    throw new BackupError(t("Ce fichier n'est pas une sauvegarde Prisme"));
   }
-  if (!isPlain(data) || data.format !== BACKUP_FORMAT) throw new BackupError("Ce fichier n'est pas une sauvegarde Prisme");
+  if (!isPlain(data) || data.format !== BACKUP_FORMAT) throw new BackupError(t("Ce fichier n'est pas une sauvegarde Prisme"));
   if (typeof data.version !== 'number' || data.version > BACKUP_VERSION) {
-    throw new BackupError('Sauvegarde créée par une version plus récente de Prisme : mets l’app à jour');
+    throw new BackupError(t('Sauvegarde créée par une version plus récente de Prisme : mets l’app à jour'));
   }
   const library = isPlain(data.library) ? data.library : {};
   const items = Object.fromEntries(Object.entries(isPlain(library.items) ? library.items : {}).filter(([id, w]) => isWallpaper(w) && w.id === id)) as Record<

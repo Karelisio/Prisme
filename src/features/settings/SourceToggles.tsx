@@ -1,5 +1,6 @@
 import { REMOTE_SOURCES, SOURCE_INFO, hasKey } from '@/features/sources/registry';
 import type { RemoteSource } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { Icon, ListItem, Switch } from '@/shared/ui/components';
 import type { IconName } from '@/shared/ui/icons';
 import { useSettings } from './store';
@@ -29,7 +30,7 @@ export function SourceToggles() {
           <ListItem
             key={source}
             headline={info.name}
-            supporting={usable ? info.description : 'Clé API absente de ce build'}
+            supporting={usable ? t(info.description) : t('Clé API absente de ce build')}
             leading={<Icon name={SOURCE_ICONS[source]} />}
             trailing={
               <Switch

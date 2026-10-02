@@ -4,6 +4,7 @@ import { FeedView } from '@/features/browse/FeedView';
 import '@/features/browse/browse.css';
 import type { FeedSpec } from '@/features/sources/feed';
 import { DEFAULT_FILTERS } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { haptic } from '@/shared/lib/haptics';
 import { Button, Icon, IconButton } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
@@ -23,15 +24,15 @@ export function FollowButton({ photographer }: { photographer: Photographer }) {
     haptic('tick');
     if (following) {
       unfollow(photographer.username);
-      showSnackbar(`Tu ne suis plus ${photographer.name}`);
+      showSnackbar(t('Tu ne suis plus {name}', { name: photographer.name }));
     } else {
       follow(photographer);
-      showSnackbar(`Tu suis ${photographer.name} : ses fonds sont dans Explorer › Abonnements`);
+      showSnackbar(t('Tu suis {name} : ses fonds sont dans Explorer › Abonnements', { name: photographer.name }));
     }
   };
   return (
     <Button variant={following ? 'tonal' : 'filled'} icon={following ? 'personCheck' : 'personAdd'} onClick={toggle} aria-pressed={following}>
-      {following ? 'Abonné' : 'Suivre'}
+      {following ? t('Abonné') : t('Suivre')}
     </Button>
   );
 }
@@ -44,7 +45,7 @@ export function PhotographerScreen({ photographer }: { photographer: Photographe
   return (
     <div ref={scrollRef} className="screen overlay-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
         <h1 className="top-bar__title">{photographer.name}</h1>
       </header>
       <div className="photographer-head">
@@ -54,12 +55,12 @@ export function PhotographerScreen({ photographer }: { photographer: Photographe
         <div className="photographer-head__text">
           <p className="photographer-head__name">{photographer.name}</p>
           <a className="photographer-head__link" href={photographer.url} target="_blank" rel="noopener noreferrer">
-            Profil Unsplash
+            {t('Profil Unsplash')}
           </a>
         </div>
         <FollowButton photographer={photographer} />
       </div>
-      <FeedView spec={spec} scrollRef={scrollRef} options={options} emptyText="Aucun fond portrait chez ce photographe." />
+      <FeedView spec={spec} scrollRef={scrollRef} options={options} emptyText={t('Aucun fond portrait chez ce photographe.')} />
     </div>
   );
 }

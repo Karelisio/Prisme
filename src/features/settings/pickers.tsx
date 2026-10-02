@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { t } from '@/shared/i18n';
 import type { GridLayout, ThemeMode } from './store';
 import './pickers.css';
 
@@ -35,7 +36,7 @@ export function OptionCards<T extends string>({
           <span className="option-card__preview" aria-hidden="true">
             {option.preview}
           </span>
-          <span className="option-card__label">{option.label}</span>
+          <span className="option-card__label">{t(option.label)}</span>
         </button>
       ))}
     </div>
@@ -75,7 +76,7 @@ function ThemePreview({ mode }: { mode: ThemeMode }) {
 const THEME_OPTIONS = THEME_ORDER.map((value) => ({ value, label: THEME_LABELS[value], preview: <ThemePreview mode={value} /> }));
 
 export function ThemePicker({ value, onChange }: { value: ThemeMode; onChange: (mode: ThemeMode) => void }) {
-  return <OptionCards label="Thème" options={THEME_OPTIONS} value={value} onChange={onChange} />;
+  return <OptionCards label={t('Thème')} options={THEME_OPTIONS} value={value} onChange={onChange} />;
 }
 
 /** Mini galerie : `columns` colonnes égales, ou deux colonnes de hauteurs variées pour la mosaïque. */
@@ -110,5 +111,5 @@ const GRID_ORDER: readonly GridLayout[] = ['2', '3', '4', 'mosaic'];
 const GRID_OPTIONS = GRID_ORDER.map((value) => ({ value, label: GRID_LABELS[value], preview: <GridMini layout={value} /> }));
 
 export function GridPicker({ value, onChange }: { value: GridLayout; onChange: (layout: GridLayout) => void }) {
-  return <OptionCards label="Disposition de la grille" options={GRID_OPTIONS} value={value} onChange={onChange} />;
+  return <OptionCards label={t('Disposition de la grille')} options={GRID_OPTIONS} value={value} onChange={onChange} />;
 }

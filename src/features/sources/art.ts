@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
 import { UNKNOWN_COLOR } from './filters';
 import { ApiError, type SourcePage, type Wallpaper } from './types';
@@ -72,12 +73,12 @@ export async function artSearch(options: { query?: string; page: number }): Prom
   try {
     res = await getJson<SearchResponse>(url);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('art', 'network', 'Musée injoignable');
+    if (error instanceof NetworkError) throw new ApiError('art', 'network', t('Musée injoignable'));
     throw error;
   }
-  if (res.status === 429) throw new ApiError('art', 'rate_limit', 'Trop de requêtes au musée, réessaie plus tard');
+  if (res.status === 429) throw new ApiError('art', 'rate_limit', t('Trop de requêtes au musée, réessaie plus tard'));
   if (res.status < 200 || res.status >= 300 || !Array.isArray(res.data?.data)) {
-    throw new ApiError('art', 'server', `Erreur du musée (${res.status})`);
+    throw new ApiError('art', 'server', t('Erreur du musée ({status})', { status: res.status }));
   }
   const { data, info } = res.data;
   const items = data.map(mapArtwork).filter((w): w is Wallpaper => w !== null);
@@ -92,13 +93,13 @@ export async function artArtwork(id: string): Promise<Wallpaper | null> {
   try {
     res = await getJson<{ data?: ClevelandArtwork | ClevelandArtwork[] } & Partial<ClevelandArtwork>>(url);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('art', 'network', 'Musée injoignable');
+    if (error instanceof NetworkError) throw new ApiError('art', 'network', t('Musée injoignable'));
     throw error;
   }
   if (res.status === 404) return null;
-  if (res.status === 429) throw new ApiError('art', 'rate_limit', 'Trop de requêtes au musée, réessaie plus tard');
+  if (res.status === 429) throw new ApiError('art', 'rate_limit', t('Trop de requêtes au musée, réessaie plus tard'));
   if (res.status < 200 || res.status >= 300 || !res.data || typeof res.data !== 'object') {
-    throw new ApiError('art', 'server', `Erreur du musée (${res.status})`);
+    throw new ApiError('art', 'server', t('Erreur du musée ({status})', { status: res.status }));
   }
   // Selon le point d'accès, l'œuvre est enveloppée dans « data » ou renvoyée telle quelle.
   const { data } = res.data;

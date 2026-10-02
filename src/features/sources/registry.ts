@@ -1,4 +1,5 @@
 import { env } from '@/shared/config/env';
+import { t } from '@/shared/i18n';
 import type { RemoteSource, WallpaperSource } from './types';
 
 export interface SourceInfo {
@@ -69,7 +70,7 @@ const LOCAL_NAMES: Record<Exclude<WallpaperSource, RemoteSource>, string> = {
 };
 
 export function sourceLabel(source: WallpaperSource): string {
-  return source in SOURCE_INFO ? SOURCE_INFO[source as RemoteSource].name : LOCAL_NAMES[source as keyof typeof LOCAL_NAMES];
+  return source in SOURCE_INFO ? SOURCE_INFO[source as RemoteSource].name : t(LOCAL_NAMES[source as keyof typeof LOCAL_NAMES]);
 }
 
 export type SourceToggles = Record<RemoteSource, boolean>;

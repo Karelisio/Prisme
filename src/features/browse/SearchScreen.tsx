@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { goBack } from '@/app/navigation';
+import { t } from '@/shared/i18n';
 import { Chip, Icon, IconButton, ListItem } from '@/shared/ui/components';
 import { searchFeed } from './categories';
 import { FeedView } from './FeedView';
@@ -42,21 +43,21 @@ export function SearchScreen() {
             submit(text);
           }}
         >
-          <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
+          <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
           <input
             ref={inputRef}
             type="search"
             enterKeyHint="search"
             autoFocus
-            placeholder="Rechercher des fonds d'écran"
-            aria-label="Rechercher"
+            placeholder={t("Rechercher des fonds d'écran")}
+            aria-label={t('Rechercher')}
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
           {text && (
             <IconButton
               icon="close"
-              label="Effacer"
+              label={t('Effacer')}
               onClick={() => {
                 setText('');
                 setQuery(null);
@@ -64,7 +65,7 @@ export function SearchScreen() {
               }}
             />
           )}
-          <IconButton icon="tune" label="Filtres" selected={filtersActive(filters)} onClick={() => setFiltersOpen(true)} />
+          <IconButton icon="tune" label={t('Filtres')} selected={filtersActive(filters)} onClick={() => setFiltersOpen(true)} />
         </form>
       </div>
 
@@ -76,22 +77,22 @@ export function SearchScreen() {
         <div className="search-suggestions">
           {recent.length > 0 && (
             <>
-              <h2 className="list-subheader">Recherches récentes</h2>
+              <h2 className="list-subheader">{t('Recherches récentes')}</h2>
               <ul className="list">
                 {recent.map((r) => (
                   <li key={r} className="recent-item">
                     <ListItem headline={r} leading={<Icon name="history" />} onClick={() => submit(r)} />
-                    <IconButton icon="close" label={`Oublier « ${r} »`} onClick={() => removeRecent(r)} />
+                    <IconButton icon="close" label={t('Oublier « {query} »', { query: r })} onClick={() => removeRecent(r)} />
                   </li>
                 ))}
               </ul>
             </>
           )}
-          <h2 className="list-subheader">Idées</h2>
+          <h2 className="list-subheader">{t('Idées')}</h2>
           <div className="chip-wrap chip-wrap--padded">
             {IDEAS.map((idea) => (
-              <Chip key={idea} onClick={() => submit(idea)}>
-                {idea}
+              <Chip key={idea} onClick={() => submit(t(idea))}>
+                {t(idea)}
               </Chip>
             ))}
           </div>

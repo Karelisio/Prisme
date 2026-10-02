@@ -1,4 +1,5 @@
 import { env } from '@/shared/config/env';
+import { getLanguage, t } from '@/shared/i18n';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
 import { UNKNOWN_COLOR, unsplashColor } from './filters';
 import { ApiError, type ColorChoice, type SourcePage, type Wallpaper } from './types';
@@ -39,7 +40,7 @@ export function mapUnsplash(photo: UnsplashPhoto, thumbWidth: number): Wallpaper
     width: photo.width,
     height: photo.height,
     color: photo.color ?? UNKNOWN_COLOR,
-    alt: photo.alt_description ?? photo.description ?? 'Photo Unsplash',
+    alt: photo.alt_description ?? photo.description ?? t('Photo Unsplash'),
     thumb: withParams(photo.urls.raw, { w: thumbWidth, h: thumbHeight, fit: 'crop', q: 60, auto: 'format' }),
     preview: withParams(photo.urls.raw, { w: 1080, fit: 'max', q: 80, auto: 'format' }),
     full: withParams(photo.urls.raw, { w: Math.min(photo.width, 3200), fit: 'max', q: 90, fm: 'jpg' }),
@@ -59,7 +60,7 @@ type Params = Record<string, string | number | undefined>;
 async function request<T>(path: string, params: Params, optional: true): Promise<T | null>;
 async function request<T>(path: string, params: Params): Promise<T>;
 async function request<T>(path: string, params: Params, optional = false): Promise<T | null> {
-  if (!env.unsplashKey) throw new ApiError('unsplash', 'missing_key', 'Clé Unsplash manquante');
+  if (!env.unsplashKey) throw new ApiError('unsplash', 'missing_key', t('Clé Unsplash manquante'));
   let res;
   try {
     res = await getJson<T>(withParams(`${API}${path}`, params), {
@@ -67,7 +68,7 @@ async function request<T>(path: string, params: Params, optional = false): Promi
       'Accept-Version': 'v1',
     });
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('unsplash', 'network', 'Unsplash injoignable');
+    if (error instanceof NetworkError) throw new ApiError('unsplash', 'network', t('Unsplash injoignable'));
     throw error;
   }
   if (res.status >= 200 && res.status < 300) return res.data;
@@ -78,10 +79,10 @@ async function request<T>(path: string, params: Params, optional = false): Promi
 export function unsplashError(status: number, headers: Record<string, string>, body: unknown): ApiError {
   const text = typeof body === 'string' ? body : JSON.stringify(body ?? '');
   if (status === 429 || headers['x-ratelimit-remaining'] === '0' || /rate limit/i.test(text)) {
-    return new ApiError('unsplash', 'rate_limit', 'Limite de requêtes Unsplash atteinte, réessaie dans une heure');
+    return new ApiError('unsplash', 'rate_limit', t('Limite de requêtes Unsplash atteinte, réessaie dans une heure'));
   }
-  if (status === 401 || status === 403) return new ApiError('unsplash', 'auth', 'Clé Unsplash refusée');
-  return new ApiError('unsplash', 'server', `Erreur Unsplash (${status})`);
+  if (status === 401 || status === 403) return new ApiError('unsplash', 'auth', t('Clé Unsplash refusée'));
+  return new ApiError('unsplash', 'server', t('Erreur Unsplash ({status})', { status }));
 }
 
 function arrayPage(photos: UnsplashPhoto[], page: number, thumbWidth: number): SourcePage {
@@ -132,7 +133,7 @@ export async function unsplashSearch(
     orientation: 'portrait',
     color: color ? (unsplashColor(color) ?? undefined) : undefined,
     order_by: order,
-    lang: 'fr',
+    lang: getLanguage(),
   });
   return {
     items: data.results.map((p) => mapUnsplash(p, thumbWidth)),

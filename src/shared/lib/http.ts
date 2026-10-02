@@ -1,4 +1,5 @@
 import { CapacitorHttp } from '@capacitor/core';
+import { t } from '@/shared/i18n';
 import { isNative } from '@/shared/native';
 
 export interface HttpResponse<T> {
@@ -9,7 +10,7 @@ export interface HttpResponse<T> {
 
 export class NetworkError extends Error {
   constructor(cause: unknown) {
-    super('Réseau indisponible', { cause });
+    super(t('Réseau indisponible'), { cause });
     this.name = 'NetworkError';
   }
 }

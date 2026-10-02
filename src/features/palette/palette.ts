@@ -1,5 +1,6 @@
 import { QuantizerCelebi, Score, argbFromRgb, hexFromArgb } from '@material/material-color-utilities';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { PrismeWallpaper, isNative, toWebUrl } from '@/shared/native';
 import { type ColorScheme, schemeFromSeed } from '@/shared/theme/scheme';
 
@@ -40,7 +41,7 @@ export async function paletteOf(w: Wallpaper): Promise<PaletteResult> {
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error('Canvas indisponible');
+  if (!ctx) throw new Error(t('Canvas indisponible'));
   ctx.drawImage(probe, 0, 0, width, height);
   probe.close();
   const seeds = seedsFromPixels(ctx.getImageData(0, 0, width, height).data).map(hexFromArgb);
