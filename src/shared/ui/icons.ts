@@ -35,6 +35,11 @@ import cloudOff from '@material-symbols/svg-400/rounded/cloud_off.svg?raw';
 import image from '@material-symbols/svg-400/rounded/image.svg?raw';
 import addPhoto from '@material-symbols/svg-400/rounded/add_photo_alternate.svg?raw';
 import crop from '@material-symbols/svg-400/rounded/crop.svg?raw';
+import cropRotate from '@material-symbols/svg-400/rounded/crop_rotate.svg?raw';
+import rotateLeft from '@material-symbols/svg-400/rounded/rotate_left.svg?raw';
+import rotateRight from '@material-symbols/svg-400/rounded/rotate_right.svg?raw';
+import flip from '@material-symbols/svg-400/rounded/flip.svg?raw';
+import filterVintage from '@material-symbols/svg-400/rounded/filter_vintage.svg?raw';
 import restart from '@material-symbols/svg-400/rounded/restart_alt.svg?raw';
 import formatPaint from '@material-symbols/svg-400/rounded/format_paint.svg?raw';
 import wandStars from '@material-symbols/svg-400/rounded/wand_stars.svg?raw';
@@ -148,6 +153,11 @@ export const ICONS = {
   image,
   addPhoto,
   crop,
+  cropRotate,
+  rotateLeft,
+  rotateRight,
+  flip,
+  filterVintage,
   restart,
   formatPaint,
   wandStars,
