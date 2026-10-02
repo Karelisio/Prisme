@@ -19,7 +19,7 @@ export const OPTIONS: readonly OptionDef[] = [
   { key: 'music', title: 'Pochette de la musique', description: 'Le fond devient la pochette du morceau en cours', icon: 'musicNote', screen: 'music' },
   { key: 'places', title: 'Selon le lieu', description: 'Un fond à la maison, un autre au travail', icon: 'place', screen: 'places' },
   { key: 'editor', title: 'Éditeur', description: 'Flou, assombrissement, grain, dégradé, texte : bouton « Retoucher » de l’aperçu', icon: 'formatPaint' },
-  { key: 'generator', title: 'Générateur minimaliste', description: 'Fonds unis, dégradés, aurores, vagues, formes', icon: 'wandStars', screen: 'generator' },
+  { key: 'generator', title: 'Générateur minimaliste', description: 'Unis, dégradés, dégradés organiques, motifs géométriques, Bauhaus, terrazzo…', icon: 'wandStars', screen: 'generator' },
   { key: 'palette', title: 'Palette Material You', description: 'Couleurs que donnera le fond : bouton palette de l’aperçu', icon: 'palette' },
   { key: 'linked', title: 'Fonds accueil et verrouillage liés', description: 'Variante assortie pour l’autre écran, au moment d’appliquer', icon: 'link' },
   { key: 'focus', title: 'Mode focus', description: 'Fond épuré pendant des plages horaires choisies', icon: 'focus', screen: 'focus' },
