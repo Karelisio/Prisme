@@ -368,7 +368,7 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
             <li>
               <ListItem
                 headline="Retoucher"
-                supporting="Flou, grain, dégradé, texte…"
+                supporting="Filtres, effets, recadrage, texte…"
                 leading={<Icon name="formatPaint" />}
                 onClick={() => {
                   setSheet(null);
