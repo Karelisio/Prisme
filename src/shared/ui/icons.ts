@@ -79,6 +79,7 @@ import timer from '@material-symbols/svg-400/rounded/timer.svg?raw';
 import shuffle from '@material-symbols/svg-400/rounded/shuffle.svg?raw';
 import play from '@material-symbols/svg-400/rounded/play_arrow.svg?raw';
 import pause from '@material-symbols/svg-400/rounded/pause.svg?raw';
+import musicNote from '@material-symbols/svg-400/rounded/music_note.svg?raw';
 import eco from '@material-symbols/svg-400/rounded/eco.svg?raw';
 import twilight from '@material-symbols/svg-400/rounded/wb_twilight.svg?raw';
 import batteryAlert from '@material-symbols/svg-400/rounded/battery_alert.svg?raw';
@@ -188,6 +189,7 @@ export const ICONS = {
   shuffle,
   play,
   pause,
+  musicNote,
   eco,
   twilight,
   batteryAlert,

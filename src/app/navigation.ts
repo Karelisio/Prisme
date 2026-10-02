@@ -16,6 +16,7 @@ export type Overlay =
   | { type: 'dynamic' }
   | { type: 'live' }
   | { type: 'rotation' }
+  | { type: 'music' }
   | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect }
   | { type: 'generator' }
   | { type: 'focus' }

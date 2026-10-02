@@ -5,6 +5,7 @@ import { ExploreScreen } from '@/features/browse/ExploreScreen';
 import { startAutomationSync } from '@/features/automation/sync';
 import { startDailySync } from '@/features/discover/dailySync';
 import { startOfflineSync } from '@/features/library/offline';
+import { startMusicSync } from '@/features/music/musicSync';
 import { UpdateSheet } from '@/features/updates/UpdateSheet';
 import { startUpdateCheck } from '@/features/updates/useUpdates';
 import { startNetworkWatch } from '@/shared/lib/network';
@@ -46,6 +47,7 @@ const screens = {
   dynamic: () => import('@/features/automation/DynamicScreen'),
   live: () => import('@/features/live/LiveScreen'),
   rotation: () => import('@/features/automation/RotationScreen'),
+  music: () => import('@/features/music/MusicScreen'),
   editor: () => import('@/features/editor/EditorScreen'),
   generator: () => import('@/features/generator/GeneratorScreen'),
   focus: () => import('@/features/automation/FocusScreen'),
@@ -64,6 +66,7 @@ const DiagnosticsScreen = lazy(() => screens.diagnostics().then((m) => ({ defaul
 const DynamicScreen = lazy(() => screens.dynamic().then((m) => ({ default: m.DynamicScreen })));
 const LiveScreen = lazy(() => screens.live().then((m) => ({ default: m.LiveScreen })));
 const RotationScreen = lazy(() => screens.rotation().then((m) => ({ default: m.RotationScreen })));
+const MusicScreen = lazy(() => screens.music().then((m) => ({ default: m.MusicScreen })));
 const EditorScreen = lazy(() => screens.editor().then((m) => ({ default: m.EditorScreen })));
 const GeneratorScreen = lazy(() => screens.generator().then((m) => ({ default: m.GeneratorScreen })));
 const FocusScreen = lazy(() => screens.focus().then((m) => ({ default: m.FocusScreen })));
@@ -98,6 +101,7 @@ function AppShell() {
   useEffect(() => startNetworkWatch(), []);
   useEffect(() => startOfflineSync(), []);
   useEffect(() => startAutomationSync(), []);
+  useEffect(() => startMusicSync(), []);
   useEffect(() => startDailySync(), []);
   useEffect(() => startAppActions(), []);
   useEffect(() => startUpdateCheck(), []);
@@ -147,6 +151,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <LiveScreen />;
     case 'rotation':
       return <RotationScreen />;
+    case 'music':
+      return <MusicScreen />;
     case 'editor':
       return <EditorScreen wallpaper={overlay.wallpaper} crop={overlay.crop} />;
     case 'generator':

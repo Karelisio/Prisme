@@ -1,6 +1,7 @@
 package io.karelisio.prisme.automation
 
 import android.content.Context
+import io.karelisio.prisme.music.MusicArtwork
 import io.karelisio.prisme.wallpaper.AppliedWallpapers
 import io.karelisio.prisme.wallpaper.ScreenInfo
 import io.karelisio.prisme.wallpaper.WallpaperApplier
@@ -27,6 +28,8 @@ internal object AutomationRunner {
     private val lock = Any()
 
     fun run(context: Context, prefetch: Boolean, force: Boolean): Outcome = synchronized(lock) {
+        // Pochette de la musique affichée : on ne l'écrase pas, le fond revient avec elle (voir MusicArtwork).
+        if (MusicArtwork.isShowing(context)) return Outcome.DONE
         val store = AutomationStore(context)
         val config = store.config()
         if (!config.anyEnabled) return Outcome.DONE

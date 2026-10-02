@@ -70,6 +70,17 @@
             </intent-filter>
         </service>
 
+        <!-- Pochette de la musique : écoute les sessions média des applis de musique (accès aux notifications
+             accordé dans les réglages Android ; aucune notification n'est lue). Inactif tant que l'option est coupée. -->
+        <service
+            android:name=".music.MusicListenerService"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Fond animé avec parallaxe (option désactivée par défaut dans l'app). -->
         <service
             android:name=".live.ParallaxWallpaperService"
