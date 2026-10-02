@@ -110,7 +110,7 @@ test.describe('interface en anglais', () => {
     const sheet = page.getByRole('dialog', { name: 'Filters' });
     await expect(sheet.getByRole('heading', { name: 'Color' })).toBeVisible();
     await expect(sheet.getByRole('heading', { name: 'Aspect ratio' })).toBeVisible();
-    await expect(sheet.getByRole('button', { name: 'Black and white' })).toBeVisible();
+    await expect(sheet.getByRole('button', { name: 'Black & white' })).toBeVisible();
     await expect(sheet.getByRole('button', { name: 'My screen' })).toBeVisible();
     await sheet.getByRole('button', { name: 'Blue' }).click();
     await sheet.getByRole('button', { name: 'Apply' }).click();

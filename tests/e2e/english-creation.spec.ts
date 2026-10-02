@@ -260,7 +260,7 @@ test.describe('bibliothèque en anglais', () => {
     // Historique : « Yesterday », entrées automatiques, retour au fond précédent, effacement.
     await lib.getByRole('radio', { name: 'History' }).click();
     await expect(lib.getByRole('heading', { name: 'Yesterday' })).toBeVisible();
-    await expect(lib.getByRole('button', { name: 'Revert to previous wallpaper' })).toBeVisible();
+    await expect(lib.getByRole('button', { name: 'Restore previous wallpaper' })).toBeVisible();
     const yesterday = lib.locator('section').filter({ has: page.getByRole('heading', { name: 'Yesterday' }) });
     await expect(yesterday.locator('.list-item')).toContainText(['Home and lock screens']);
     await expect(yesterday.locator('.list-item')).toContainText([/\d{2}:\d{2} · automatic$/]);
