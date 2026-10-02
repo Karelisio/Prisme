@@ -1,4 +1,5 @@
 import type { WallpaperSource } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import type { WallpaperTarget } from '@/shared/native';
 import type { HistoryEntry, LibraryData, Screen } from './model';
 
@@ -109,10 +110,10 @@ export function longestShown(stats: Stats, limit: number): Usage[] {
 /** Durée lisible : « 12 min », « 5 h 20 min », « 3 j 4 h ». */
 export function formatDuration(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
-  if (minutes < 1) return 'moins d’une minute';
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 1) return t('moins d’une minute');
+  if (minutes < 60) return t('{minutes} min', { minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return minutes % 60 === 0 ? `${hours} h` : `${hours} h ${minutes % 60} min`;
+  if (hours < 24) return minutes % 60 === 0 ? t('{hours} h', { hours }) : t('{hours} h {minutes} min', { hours, minutes: minutes % 60 });
   const days = Math.floor(hours / 24);
-  return hours % 24 === 0 ? `${days} j` : `${days} j ${hours % 24} h`;
+  return hours % 24 === 0 ? t('{days} j', { days }) : t('{days} j {hours} h', { days, hours: hours % 24 });
 }

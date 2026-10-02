@@ -1,4 +1,5 @@
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef } from 'react';
+import { t } from '@/shared/i18n';
 import { Icon, Spinner } from '@/shared/ui/components';
 import { type Framing, type Point, panFraming, toCellFrame, zoomFraming } from './framing';
 import { type Cell, type Size, photoWindow } from './layouts';
@@ -192,14 +193,14 @@ export function CollageCell({ cell, photo, label, selected, swapTarget, onTap, o
       {!photo && (
         <span className="collage-cell__empty">
           <Icon name="addPhoto" size={28} />
-          <span>Ajouter</span>
+          <span>{t('Ajouter')}</span>
         </span>
       )}
-      {loading && <Spinner size={28} label="Chargement de la photo" />}
+      {loading && <Spinner size={28} label={t('Chargement de la photo')} />}
       {photo?.failed && (
         <span className="collage-cell__empty">
           <Icon name="error" size={28} />
-          <span>Indisponible</span>
+          <span>{t('Indisponible')}</span>
         </span>
       )}
     </button>

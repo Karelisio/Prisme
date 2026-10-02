@@ -1,6 +1,7 @@
 import { UNKNOWN_COLOR, classifyColor } from '@/features/sources/filters';
 import { sourceLabel } from '@/features/sources/registry';
 import type { ColorFilter, Wallpaper, WallpaperSource } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import type { LibraryData } from './model';
 
 /**
@@ -25,7 +26,7 @@ export const isAutoId = (id: string): boolean => id.startsWith(AUTO_PREFIX);
 
 type ColorFamily = Exclude<ColorFilter, 'black_and_white'>;
 
-/** Familles de teintes, dans l'ordre d'affichage : le spectre, puis les neutres. */
+/** Familles de teintes, dans l'ordre d'affichage : le spectre, puis les neutres (noms en français, traduits dans `buildAutoCollections`). */
 export const COLOR_FAMILIES: readonly { family: ColorFamily; name: string }[] = [
   { family: 'red', name: 'Rouges' },
   { family: 'orange', name: 'Oranges' },
@@ -80,10 +81,14 @@ export function buildAutoCollections(lib: Pick<LibraryData, 'items' | 'favorites
   const applied = new Set(lib.history.map((h) => h.wallpaperId));
 
   const recent = recentlyAppliedIds(lib.history, lib.items);
-  if (recent.length > 0) out.push({ id: `${AUTO_PREFIX}recent`, name: 'Récemment appliqués', hint: `Les ${RECENT_LIMIT} derniers fonds appliqués`, ids: recent });
+  if (recent.length > 0) {
+    out.push({ id: `${AUTO_PREFIX}recent`, name: t('Récemment appliqués'), hint: t('Les {limit} derniers fonds appliqués', { limit: RECENT_LIMIT }), ids: recent });
+  }
 
   const never = saved.filter((id) => !applied.has(id));
-  if (never.length > 0) out.push({ id: `${AUTO_PREFIX}never`, name: 'Jamais appliqués', hint: 'Favoris et collections absents de l’historique', ids: never });
+  if (never.length > 0) {
+    out.push({ id: `${AUTO_PREFIX}never`, name: t('Jamais appliqués'), hint: t('Favoris et collections absents de l’historique'), ids: never });
+  }
 
   const byFamily = new Map<ColorFamily, string[]>();
   const bySource = new Map<WallpaperSource, string[]>();
@@ -96,10 +101,10 @@ export function buildAutoCollections(lib: Pick<LibraryData, 'items' | 'favorites
   }
   for (const { family, name } of COLOR_FAMILIES) {
     const ids = byFamily.get(family);
-    if (ids) out.push({ id: `${AUTO_PREFIX}color:${family}`, name, hint: 'Couleur dominante', ids });
+    if (ids) out.push({ id: `${AUTO_PREFIX}color:${family}`, name: t(name), hint: t('Couleur dominante'), ids });
   }
   for (const [source, ids] of [...bySource.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))) {
-    out.push({ id: `${AUTO_PREFIX}source:${source}`, name: sourceLabel(source), hint: 'Source', ids });
+    out.push({ id: `${AUTO_PREFIX}source:${source}`, name: t(sourceLabel(source)), hint: t('Source'), ids });
   }
   return out;
 }

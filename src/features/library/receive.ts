@@ -1,4 +1,5 @@
 import { useNavigation } from '@/app/navigation';
+import { t } from '@/shared/i18n';
 import { nativeErrorMessage } from '@/shared/native';
 import { PrismeLibrary } from '@/shared/native/library';
 import { nativeErrorCode } from '@/shared/native/system';
@@ -23,7 +24,7 @@ export async function openReceived(text: string): Promise<boolean> {
     showReceived(code, collection);
     return true;
   } catch (error) {
-    showSnackbar(error instanceof ShareError ? error.message : 'Impossible de lire ce code');
+    showSnackbar(t(error instanceof ShareError ? error.message : 'Impossible de lire ce code'));
     return false;
   }
 }
@@ -36,6 +37,6 @@ export async function scanAndOpen(): Promise<void> {
   } catch (error) {
     // Les messages du plugin sont des phrases complètes ; sans scanner, le code collé reste possible.
     const message = nativeErrorMessage(error).replace(/\.$/, '');
-    showSnackbar(nativeErrorCode(error) === 'UNAVAILABLE' ? `${message}. Utilise « Coller un code » à la place.` : message);
+    showSnackbar(nativeErrorCode(error) === 'UNAVAILABLE' ? t('{message}. Utilise « Coller un code » à la place.', { message }) : message);
   }
 }

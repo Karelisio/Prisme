@@ -1,8 +1,10 @@
 import { UNKNOWN_COLOR } from '@/features/sources/filters';
 import { sourceLabel } from '@/features/sources/registry';
 import type { Wallpaper } from '@/features/sources/types';
+import { locale, t } from '@/shared/i18n';
 import type { LibrarySort } from './model';
 
+/** Libellés en français : traduits à l'affichage (`t`). */
 export const SORT_OPTIONS: readonly { value: LibrarySort; label: string; hint: string }[] = [
   { value: 'added', label: 'Date d’ajout', hint: 'Les derniers ajoutés d’abord' },
   { value: 'color', label: 'Couleur', hint: 'Du rouge au rose, puis les gris' },
@@ -10,7 +12,7 @@ export const SORT_OPTIONS: readonly { value: LibrarySort; label: string; hint: s
   { value: 'name', label: 'Nom', hint: 'Ordre alphabétique' },
 ];
 
-export const sortLabel = (sort: LibrarySort): string => SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Date d’ajout';
+export const sortLabel = (sort: LibrarySort): string => t(SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Date d’ajout');
 
 export interface Hsl {
   /** Teinte en degrés, 0 à 360 (exclu). */
@@ -64,7 +66,8 @@ export interface FavoriteEntry {
   addedAt: number;
 }
 
-const collator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
+/** Ordre alphabétique de la langue de l'interface. */
+const collator = () => new Intl.Collator(locale(), { sensitivity: 'base', numeric: true });
 
 function compareColor(a: Wallpaper, b: Wallpaper): number {
   const ka = colorSortKey(a.color);
@@ -74,13 +77,14 @@ function compareColor(a: Wallpaper, b: Wallpaper): number {
 
 /** Trie les favoris ; à égalité, le plus récemment ajouté passe devant. */
 export function sortFavorites(entries: readonly FavoriteEntry[], sort: LibrarySort): Wallpaper[] {
-  const byDate = (a: FavoriteEntry, b: FavoriteEntry) => b.addedAt - a.addedAt || collator.compare(a.wallpaper.id, b.wallpaper.id);
+  const { compare: collate } = collator();
+  const byDate = (a: FavoriteEntry, b: FavoriteEntry) => b.addedAt - a.addedAt || collate(a.wallpaper.id, b.wallpaper.id);
   const compare: (a: FavoriteEntry, b: FavoriteEntry) => number = {
     added: byDate,
     color: (a: FavoriteEntry, b: FavoriteEntry) => compareColor(a.wallpaper, b.wallpaper) || byDate(a, b),
     source: (a: FavoriteEntry, b: FavoriteEntry) =>
-      collator.compare(sourceLabel(a.wallpaper.source), sourceLabel(b.wallpaper.source)) || byDate(a, b),
-    name: (a: FavoriteEntry, b: FavoriteEntry) => collator.compare(a.wallpaper.alt, b.wallpaper.alt) || byDate(a, b),
+      collate(t(sourceLabel(a.wallpaper.source)), t(sourceLabel(b.wallpaper.source))) || byDate(a, b),
+    name: (a: FavoriteEntry, b: FavoriteEntry) => collate(a.wallpaper.alt, b.wallpaper.alt) || byDate(a, b),
   }[sort];
   return [...entries].sort(compare).map((e) => e.wallpaper);
 }

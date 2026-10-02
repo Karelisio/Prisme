@@ -5,6 +5,7 @@ import { importAndPreview } from '@/features/browse/importAction';
 import { useSettings } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
 import { TARGET_LABELS, undoLastApply } from '@/features/preview/applyWallpaper';
+import { locale, t, tn } from '@/shared/i18n';
 import { haptic } from '@/shared/lib/haptics';
 import { nativeErrorMessage } from '@/shared/native';
 import { Button, Chip, EmptyState, Fab, Icon, IconButton, ListItem, SegmentedButtons, TextField } from '@/shared/ui/components';
@@ -39,32 +40,32 @@ export function LibraryScreen() {
   return (
     <div ref={scrollRef} className="screen screen--tab">
       <header className="top-bar">
-        <h1 className="top-bar__title">Bibliothèque</h1>
-        <IconButton icon="barChart" label="Statistiques" onClick={() => push({ type: 'stats' })} />
+        <h1 className="top-bar__title">{t('Bibliothèque')}</h1>
+        <IconButton icon="barChart" label={t('Statistiques')} onClick={() => push({ type: 'stats' })} />
         {section === 'history' && historyCount > 0 && (
-          <IconButton icon="delete" label="Effacer l'historique" onClick={() => setConfirmClear(true)} />
+          <IconButton icon="delete" label={t("Effacer l'historique")} onClick={() => setConfirmClear(true)} />
         )}
       </header>
       <div className="library-tabs">
-        <SegmentedButtons label="Section" options={SECTIONS} value={section} onChange={setSection} />
+        <SegmentedButtons label={t('Section')} options={SECTIONS.map((s) => ({ ...s, label: t(s.label) }))} value={section} onChange={setSection} />
       </div>
       {section === 'favorites' && <Favorites scrollRef={scrollRef} />}
       {section === 'collections' && <Collections />}
       {section === 'history' && <History />}
       <Fab icon="addPhoto" className="library-fab" onClick={() => void importAndPreview()}>
-        Importer
+        {t('Importer')}
       </Fab>
       <Dialog
         open={confirmClear}
-        title="Effacer l'historique ?"
-        confirmLabel="Effacer"
+        title={t("Effacer l'historique ?")}
+        confirmLabel={t('Effacer')}
         onConfirm={() => {
           clearHistory();
           setConfirmClear(false);
         }}
         onCancel={() => setConfirmClear(false)}
       >
-        Les fonds déjà appliqués ne changent pas.
+        {t('Les fonds déjà appliqués ne changent pas.')}
       </Dialog>
     </div>
   );
@@ -98,22 +99,22 @@ function Favorites({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> 
   );
   const onLongPress = useCallback((w: Wallpaper) => setTagging(w), []);
   if (Object.keys(favorites).length === 0) {
-    return <EmptyState icon="favorite" title="Aucun favori" text="Touche le cœur dans l'aperçu d'un fond pour le retrouver ici, même hors ligne." />;
+    return <EmptyState icon="favorite" title={t('Aucun favori')} text={t("Touche le cœur dans l'aperçu d'un fond pour le retrouver ici, même hors ligne.")} />;
   }
   return (
     <>
       <div className="library-toolbar">
         <Button variant="text" icon="sort" onClick={() => setSorting(true)}>
-          Tri : {sortLabel(sort).toLowerCase()}
+          {t('Tri : {sort}', { sort: sortLabel(sort).toLowerCase() })}
         </Button>
       </div>
       {counts.length > 0 && (
-        <div className="library-chips" role="group" aria-label="Filtrer par étiquette">
+        <div className="library-chips" role="group" aria-label={t('Filtrer par étiquette')}>
           {counts.map(({ tag, count }) => (
             <Chip
               key={tag}
               selected={active !== null && sameTag(active, tag)}
-              aria-label={`${tag}, ${count} fond${count > 1 ? 's' : ''}`}
+              aria-label={`${tag}, ${tn(count, '{count} fond', '{count} fonds')}`}
               onClick={() => setFilter(active !== null && sameTag(active, tag) ? null : tag)}
             >
               {tag}
@@ -125,7 +126,7 @@ function Favorites({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> 
       {collageEnabled && list.length >= 2 && (
         <div className="library-actions">
           <Button variant="tonal" icon="collage" onClick={() => push({ type: 'collage', wallpapers: list.slice(0, 4) })}>
-            Collage avec mes favoris
+            {t('Collage avec mes favoris')}
           </Button>
         </div>
       )}
@@ -149,17 +150,21 @@ function Collections() {
     <>
       <div className="library-actions">
         <Button variant="tonal" icon="add" onClick={() => setCreating(true)}>
-          Nouvelle collection
+          {t('Nouvelle collection')}
         </Button>
         <Button variant="tonal" icon="contentPaste" onClick={() => setPasting(true)}>
-          Coller un code
+          {t('Coller un code')}
         </Button>
         <Button variant="tonal" icon="qrScanner" onClick={() => void scanAndOpen()}>
-          Scanner un QR
+          {t('Scanner un QR')}
         </Button>
       </div>
       {collections.length === 0 ? (
-        <EmptyState icon="collections" title="Aucune collection" text="Regroupe tes fonds par thème : plages, nuit, minimal… ou ajoute celle d'un ami avec un code." />
+        <EmptyState
+          icon="collections"
+          title={t('Aucune collection')}
+          text={t("Regroupe tes fonds par thème : plages, nuit, minimal… ou ajoute celle d'un ami avec un code.")}
+        />
       ) : (
         <div className="collection-grid">
           {collections.map((c) => (
@@ -170,7 +175,7 @@ function Collections() {
       {auto.length > 0 && (
         <section aria-labelledby="auto-collections">
           <h2 id="auto-collections" className="list-subheader">
-            Collections automatiques
+            {t('Collections automatiques')}
           </h2>
           <div className="collection-grid">
             {auto.map((c) => (
@@ -182,8 +187,8 @@ function Collections() {
       <PasteCodeDialog open={pasting} onClose={() => setPasting(false)} />
       <Dialog
         open={creating}
-        title="Nouvelle collection"
-        confirmLabel="Créer"
+        title={t('Nouvelle collection')}
+        confirmLabel={t('Créer')}
         confirmDisabled={!name.trim()}
         onConfirm={() => {
           createCollection(name);
@@ -192,7 +197,7 @@ function Collections() {
         }}
         onCancel={() => setCreating(false)}
       >
-        <TextField label="Nom" value={name} onChange={(e) => setName(e.target.value)} autoFocus maxLength={40} />
+        <TextField label={t('Nom')} value={name} onChange={(e) => setName(e.target.value)} autoFocus maxLength={40} />
       </Dialog>
     </>
   );
@@ -212,7 +217,7 @@ function CollectionCard({ name, ids, onOpen }: { name: string; ids: string[]; on
       </span>
       <span className="collection-card__name">{name}</span>
       <span className="collection-card__count">
-        {ids.length} fond{ids.length > 1 ? 's' : ''}
+        {tn(ids.length, '{count} fond', '{count} fonds')}
       </span>
     </button>
   );
@@ -230,7 +235,7 @@ async function restorePrevious() {
     showSnackbar(message);
   } catch (error) {
     haptic('reject');
-    showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+    showSnackbar(t('Échec : {message}', { message: nativeErrorMessage(error) }));
   }
 }
 
@@ -240,7 +245,7 @@ function History() {
   const groups = useMemo(() => groupByDay(history), [history]);
   const [restoring, setRestoring] = useState(false);
   if (history.length === 0) {
-    return <EmptyState icon="history" title="Historique vide" text="Les fonds que tu appliques apparaîtront ici." />;
+    return <EmptyState icon="history" title={t('Historique vide')} text={t('Les fonds que tu appliques apparaîtront ici.')} />;
   }
   return (
     <div className="history">
@@ -255,7 +260,7 @@ function History() {
               void restorePrevious().finally(() => setRestoring(false));
             }}
           >
-            Revenir au fond précédent
+            {t('Revenir au fond précédent')}
           </Button>
         </div>
       )}
@@ -270,10 +275,10 @@ function History() {
                 <li key={entry.id}>
                   <ListItem
                     leading={<HistoryThumb wallpaper={w} />}
-                    headline={TARGET_LABELS[entry.target]}
-                    supporting={`${new Date(entry.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}${
+                    headline={t(TARGET_LABELS[entry.target])}
+                    supporting={`${new Date(entry.at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}${
                       w.author ? ` · ${w.author.name}` : ''
-                    }${entry.auto ? ' · automatique' : ''}`}
+                    }${entry.auto ? ` · ${t('automatique')}` : ''}`}
                     onClick={() => openPreview(w)}
                   />
                 </li>
@@ -299,10 +304,10 @@ export function groupByDay(entries: HistoryEntry[], now = new Date()): [string, 
     const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const label =
       day === today
-        ? "Aujourd'hui"
+        ? t("Aujourd'hui")
         : day === today - 86_400_000
-          ? 'Hier'
-          : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+          ? t('Hier')
+          : d.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
     groups.set(label, [...(groups.get(label) ?? []), entry]);
   }
   return [...groups.entries()];

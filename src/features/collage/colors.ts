@@ -1,5 +1,6 @@
 /** Couleurs de fond proposées pour le collage : dominantes des photos, Material You, neutres. */
 import { QuantizerCelebi, argbFromRgb, hexFromArgb } from '@material/material-color-utilities';
+import { t } from '@/shared/i18n';
 import type { ColorScheme } from '@/shared/theme/scheme';
 
 /** Couleur la plus présente d'une image (pixels RGBA), ou null si elle est transparente. */
@@ -24,7 +25,7 @@ export function dominantFromPixels(rgba: ArrayLike<number>): string | null {
 
 export interface BackgroundChoice {
   color: string;
-  /** Intitulé accessible. */
+  /** Intitulé accessible (dans la langue de l'interface). */
   label: string;
 }
 
@@ -45,28 +46,28 @@ export function backgroundGroups(dominants: readonly (string | null | undefined)
   dominants.forEach((color, i) => {
     if (!color || seen.has(color)) return;
     seen.add(color);
-    photos.push({ color, label: `Couleur dominante de la photo ${i + 1}` });
+    photos.push({ color, label: t('Couleur dominante de la photo {n}', { n: i + 1 }) });
   });
-  if (photos.length > 0) groups.push({ id: 'photos', label: 'Photos', choices: photos });
+  if (photos.length > 0) groups.push({ id: 'photos', label: t('Photos'), choices: photos });
   if (scheme) {
     groups.push({
       id: 'material',
       label: 'Material You',
       choices: [
-        { color: scheme.primary, label: 'Material You : couleur principale' },
-        { color: scheme.primaryContainer, label: 'Material You : principale adoucie' },
-        { color: scheme.secondaryContainer, label: 'Material You : secondaire' },
-        { color: scheme.tertiaryContainer, label: 'Material You : tertiaire' },
-        { color: scheme.inverseSurface, label: 'Material You : surface inversée' },
+        { color: scheme.primary, label: t('Material You : couleur principale') },
+        { color: scheme.primaryContainer, label: t('Material You : principale adoucie') },
+        { color: scheme.secondaryContainer, label: t('Material You : secondaire') },
+        { color: scheme.tertiaryContainer, label: t('Material You : tertiaire') },
+        { color: scheme.inverseSurface, label: t('Material You : surface inversée') },
       ],
     });
   }
   groups.push({
     id: 'neutral',
-    label: 'Neutres',
+    label: t('Neutres'),
     choices: [
-      { color: '#ffffff', label: 'Blanc' },
-      { color: '#000000', label: 'Noir' },
+      { color: '#ffffff', label: t('Blanc') },
+      { color: '#000000', label: t('Noir') },
     ],
   });
   return groups;

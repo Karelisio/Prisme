@@ -3,6 +3,7 @@ import { goBack, openPreview } from '@/app/navigation';
 import { importAutomationLog } from '@/features/automation/sync';
 import { sourceLabel } from '@/features/sources/registry';
 import type { Wallpaper } from '@/features/sources/types';
+import { locale, t, tn } from '@/shared/i18n';
 import { EmptyState, IconButton } from '@/shared/ui/components';
 import { HISTORY_LIMIT } from './model';
 import { type Usage, computeStats, formatDuration, longestShown } from './stats';
@@ -13,7 +14,7 @@ import './library.css';
 /** Nombre de fonds listés dans chaque classement. */
 const TOP = 5;
 
-const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
+const applications = (count: number) => tn(count, '{count} application', '{count} applications');
 
 /** Ligne de classement : libellé, barre horizontale proportionnelle (`ratio` de 0 à 1) et valeur. */
 function StatRow({
@@ -84,24 +85,28 @@ export function StatsScreen() {
   return (
     <div className="screen overlay-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Statistiques</h1>
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Statistiques')}</h1>
       </header>
       {stats.total === 0 ? (
-        <EmptyState icon="barChart" title="Pas encore de statistiques" text="Les fonds que tu appliques, à la main ou automatiquement, seront comptés ici." />
+        <EmptyState
+          icon="barChart"
+          title={t('Pas encore de statistiques')}
+          text={t('Les fonds que tu appliques, à la main ou automatiquement, seront comptés ici.')}
+        />
       ) : (
         <div className="stats">
-          <section className="stats__summary" aria-label="Résumé">
-            <p className="stats__figure">{plural(stats.total, 'application')}</p>
+          <section className="stats__summary" aria-label={t('Résumé')}>
+            <p className="stats__figure">{applications(stats.total)}</p>
             <p className="stats__since">
-              depuis le {new Date(stats.since ?? 0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-              {stats.auto > 0 ? `, dont ${stats.auto} automatique${stats.auto > 1 ? 's' : ''}` : ''}
+              {t('depuis le {date}', { date: new Date(stats.since ?? 0).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) })}
+              {stats.auto > 0 ? `, ${tn(stats.auto, 'dont {count} automatique', 'dont {count} automatiques')}` : ''}
             </p>
           </section>
 
           <section aria-labelledby="stats-top">
             <h2 id="stats-top" className="list-subheader">
-              Les plus appliqués
+              {t('Les plus appliqués')}
             </h2>
             <ul className="stats__list">
               {mostApplied.map(({ usage, wallpaper }) => (
@@ -109,7 +114,7 @@ export function StatsScreen() {
                   key={usage.id}
                   leading={<Thumb wallpaper={wallpaper} />}
                   label={wallpaper.alt}
-                  value={`${usage.count} fois`}
+                  value={t('{count} fois', { count: usage.count })}
                   ratio={usage.count / maxCount}
                   onClick={() => openPreview(wallpaper)}
                 />
@@ -120,7 +125,7 @@ export function StatsScreen() {
           {longest.length > 0 && (
             <section aria-labelledby="stats-time">
               <h2 id="stats-time" className="list-subheader">
-                Temps passé à l’écran
+                {t('Temps passé à l’écran')}
               </h2>
               <ul className="stats__list">
                 {longest.map(({ usage, wallpaper }) => (
@@ -139,15 +144,15 @@ export function StatsScreen() {
 
           <section aria-labelledby="stats-source">
             <h2 id="stats-source" className="list-subheader">
-              Par source
+              {t('Par source')}
             </h2>
             <ul className="stats__list">
               {stats.bySource.map((row) => (
                 <StatRow
                   key={row.source}
-                  label={sourceLabel(row.source)}
-                  detail={`${plural(row.count, 'application')} · ${formatDuration(row.ms)}`}
-                  value={`${Math.round((row.count / sourceTotal) * 100)} %`}
+                  label={t(sourceLabel(row.source))}
+                  detail={`${applications(row.count)} · ${formatDuration(row.ms)}`}
+                  value={t('{percent} %', { percent: Math.round((row.count / sourceTotal) * 100) })}
                   ratio={row.count / sourceTotal}
                 />
               ))}
@@ -155,8 +160,10 @@ export function StatsScreen() {
           </section>
 
           <p className="stats__note">
-            Calculé d’après l’historique ({HISTORY_LIMIT} applications au plus, automatismes compris). Un fond compte jusqu’à l’application suivante sur le même écran ; le fond
-            actuel, jusqu’à maintenant.
+            {t(
+              'Calculé d’après l’historique ({limit} applications au plus, automatismes compris). Un fond compte jusqu’à l’application suivante sur le même écran ; le fond actuel, jusqu’à maintenant.',
+              { limit: HISTORY_LIMIT },
+            )}
           </p>
         </div>
       )}

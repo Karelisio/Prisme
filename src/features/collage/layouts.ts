@@ -31,7 +31,7 @@ export interface LayoutInfo {
   description: string;
 }
 
-/** Dans l'ordre d'affichage des vignettes : 2 photos, puis 3, puis 4. */
+/** Dans l'ordre d'affichage des vignettes : 2 photos, puis 3, puis 4 (textes en français : traduits à l'affichage, `t`). */
 export const LAYOUTS: readonly LayoutInfo[] = [
   { id: 'stack2', count: 2, label: 'Haut / bas', description: 'Deux photos, l’une au-dessus de l’autre' },
   { id: 'side2', count: 2, label: 'Côte à côte', description: 'Deux photos côte à côte' },

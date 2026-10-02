@@ -4,6 +4,7 @@ import { saveCreation } from '@/features/library/creations';
 import { type ApplyChoice, ApplySheet } from '@/features/preview/ApplySheet';
 import { applyCreation } from '@/features/preview/applyWallpaper';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { type NormalizedRect, nativeErrorMessage } from '@/shared/native';
 import { useTheme } from '@/shared/theme/ThemeController';
@@ -30,7 +31,7 @@ import './tools.css';
 
 type Tool = 'frame' | 'fit' | 'filter' | 'effect' | 'blur' | 'dim' | 'grain' | 'gradient' | 'text';
 
-// Dans l'ordre du rendu : cadrage, ajustement, filtre, effet, puis les réglages.
+// Dans l'ordre du rendu : cadrage, ajustement, filtre, effet, puis les réglages (libellés en français : traduits à l'affichage).
 const TOOLS: { key: Tool; label: string; icon: IconName }[] = [
   { key: 'frame', label: 'Recadrage', icon: 'cropRotate' },
   { key: 'fit', label: 'Ajustement', icon: 'aspectRatio' },
@@ -139,9 +140,9 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
     setBusy(true);
     try {
       const data = await render(image, output);
-      return await saveCreation(data, wallpaper.color, `Retouche de ${wallpaper.alt}`);
+      return await saveCreation(data, wallpaper.color, t('Retouche de {alt}', { alt: wallpaper.alt }));
     } catch (e) {
-      showSnackbar(`Enregistrement impossible : ${nativeErrorMessage(e)}`);
+      showSnackbar(t('Enregistrement impossible : {message}', { message: nativeErrorMessage(e) }));
       return null;
     } finally {
       setBusy(false);
@@ -150,7 +151,7 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
 
   const onSave = async () => {
     const creation = await save();
-    if (creation) showSnackbar('Enregistré dans la collection « Créations »', { label: 'Voir', onAction: () => replace({ type: 'preview', wallpaper: creation }) });
+    if (creation) showSnackbar(t('Enregistré dans la collection « Créations »'), { label: t('Voir'), onAction: () => replace({ type: 'preview', wallpaper: creation }) });
   };
 
   const onApply = async (choice: ApplyChoice) => {
@@ -160,27 +161,27 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
     try {
       if (choice !== 'linked') showSnackbar(await applyCreation(creation, choice));
     } catch (e) {
-      showSnackbar(`Échec : ${nativeErrorMessage(e)}`);
+      showSnackbar(t('Échec : {message}', { message: nativeErrorMessage(e) }));
     }
   };
 
   return (
-    <div className="editor" role="dialog" aria-label="Éditeur">
+    <div className="editor" role="dialog" aria-label={t('Éditeur')}>
       <header className="editor__top">
-        <IconButton icon="close" label="Fermer l'éditeur" onClick={goBack} />
-        <h1 className="top-bar__title">Retoucher</h1>
+        <IconButton icon="close" label={t("Fermer l'éditeur")} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Retoucher')}</h1>
         <Button variant="text" disabled={!image || busy} onClick={() => void onSave()}>
-          Enregistrer
+          {t('Enregistrer')}
         </Button>
       </header>
 
       {error ? (
         <div className="editor__stage">
-          <EmptyState icon="error" title="Image indisponible" text={error} />
+          <EmptyState icon="error" title={t('Image indisponible')} text={error} />
         </div>
       ) : (
         <div className="editor__stage-wrap" ref={framing.ref} data-framing={framingOn ? 'true' : undefined} {...framing.handlers}>
-          <FittedCanvas className="editor__stage" ratio={ratio} draw={image ? draw : null} label="Aperçu de la retouche" />
+          <FittedCanvas className="editor__stage" ratio={ratio} draw={image ? draw : null} label={t('Aperçu de la retouche')} />
           {!image && (
             <div className="editor__loading">
               <Spinner />
@@ -188,8 +189,8 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
           )}
           {image && (rendering || busy) && (
             <div className="editor__rendering" role="status">
-              <Spinner size={18} label="Rendu en cours" />
-              Rendu…
+              <Spinner size={18} label={t('Rendu en cours')} />
+              {t('Rendu…')}
             </div>
           )}
         </div>
@@ -210,22 +211,22 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
           {tool === 'fit' && <FitPanel fit={fit} palette={palette} landscape={!!image && isLandscape(image.size)} onChange={(next) => set({ fit: next })} />}
           {tool === 'filter' && <FilterPanel image={image} params={params} ratio={ratio} scheme={scheme} onChange={(next) => set({ filter: next })} />}
           {tool === 'effect' && <EffectPanel effect={effect} onChange={(next) => set({ effect: next })} />}
-          {tool === 'blur' && <Slider label="Intensité du flou" value={params.blur} onChange={(blur) => set({ blur })} />}
-          {tool === 'dim' && <Slider label="Assombrissement" value={params.dim} onChange={(dim) => set({ dim })} />}
-          {tool === 'grain' && <Slider label="Grain" value={params.grain} onChange={(grain) => set({ grain })} />}
+          {tool === 'blur' && <Slider label={t('Intensité du flou')} value={params.blur} onChange={(blur) => set({ blur })} />}
+          {tool === 'dim' && <Slider label={t('Assombrissement')} value={params.dim} onChange={(dim) => set({ dim })} />}
+          {tool === 'grain' && <Slider label={t('Grain')} value={params.grain} onChange={(grain) => set({ grain })} />}
           {tool === 'gradient' && (
             <>
               <div className="chip-wrap">
                 {GRADIENTS.map((g) => (
                   <Chip key={g.value} selected={params.gradient.style === g.value} onClick={() => set({ gradient: { ...params.gradient, style: g.value } })}>
-                    {g.label}
+                    {t(g.label)}
                   </Chip>
                 ))}
               </div>
               {params.gradient.style !== 'none' && (
                 <>
-                  <Swatches label="Couleur du dégradé" value={params.gradient.color} onChange={(color) => set({ gradient: { ...params.gradient, color } })} />
-                  <Slider label="Force du dégradé" value={params.gradient.strength} onChange={(strength) => set({ gradient: { ...params.gradient, strength } })} />
+                  <Swatches label={t('Couleur du dégradé')} value={params.gradient.color} onChange={(color) => set({ gradient: { ...params.gradient, color } })} />
+                  <Slider label={t('Force du dégradé')} value={params.gradient.strength} onChange={(strength) => set({ gradient: { ...params.gradient, strength } })} />
                 </>
               )}
             </>
@@ -236,37 +237,37 @@ export function EditorScreen({ wallpaper, crop }: { wallpaper: Wallpaper; crop?:
                 className="editor__text"
                 rows={2}
                 maxLength={120}
-                placeholder="Ton texte"
-                aria-label="Texte"
+                placeholder={t('Ton texte')}
+                aria-label={t('Texte')}
                 value={params.text.value}
                 onChange={(e) => set({ text: { ...params.text, value: e.target.value } })}
               />
-              <Slider label="Taille du texte" value={params.text.size} onChange={(size) => set({ text: { ...params.text, size } })} />
-              <Slider label="Position verticale" value={params.text.position} onChange={(position) => set({ text: { ...params.text, position } })} />
+              <Slider label={t('Taille du texte')} value={params.text.size} onChange={(size) => set({ text: { ...params.text, size } })} />
+              <Slider label={t('Position verticale')} value={params.text.position} onChange={(position) => set({ text: { ...params.text, position } })} />
               <div className="editor__row">
-                <Swatches label="Couleur du texte" value={params.text.color} onChange={(color) => set({ text: { ...params.text, color } })} />
+                <Swatches label={t('Couleur du texte')} value={params.text.color} onChange={(color) => set({ text: { ...params.text, color } })} />
                 <span className="editor__bold">
-                  Gras
-                  <Switch label="Texte en gras" checked={params.text.bold} onChange={(bold) => set({ text: { ...params.text, bold } })} />
+                  {t('Gras')}
+                  <Switch label={t('Texte en gras')} checked={params.text.bold} onChange={(bold) => set({ text: { ...params.text, bold } })} />
                 </span>
               </div>
             </>
           )}
         </div>
 
-        <div ref={toolsRef} className="chip-row editor__tools" role="tablist" aria-label="Outils">
-          {TOOLS.map((t) => (
-            <Chip key={t.key} icon={t.icon} selected={tool === t.key} role="tab" aria-selected={tool === t.key} onClick={() => setTool(t.key)}>
-              {t.label}
+        <div ref={toolsRef} className="chip-row editor__tools" role="tablist" aria-label={t('Outils')}>
+          {TOOLS.map((entry) => (
+            <Chip key={entry.key} icon={entry.icon} selected={tool === entry.key} role="tab" aria-selected={tool === entry.key} onClick={() => setTool(entry.key)}>
+              {t(entry.label)}
             </Chip>
           ))}
         </div>
         <div className="editor__actions">
           <Button variant="text" disabled={busy} onClick={reset}>
-            Réinitialiser
+            {t('Réinitialiser')}
           </Button>
           <Button icon="wallpaper" disabled={!image || busy} onClick={() => setApplyOpen(true)}>
-            Appliquer
+            {t('Appliquer')}
           </Button>
         </div>
       </div>

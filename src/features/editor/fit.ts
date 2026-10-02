@@ -16,6 +16,7 @@ export interface FitParams {
 
 export const DEFAULT_FIT: FitParams = { mode: 'fill', color: null };
 
+/** Libellés en français : traduits à l'affichage (`t`). */
 export const FIT_MODES: readonly { mode: FitMode; label: string }[] = [
   { mode: 'fill', label: 'Remplir (recadrer)' },
   { mode: 'blur', label: 'Entière, bords flous' },

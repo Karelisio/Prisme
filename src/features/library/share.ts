@@ -1,5 +1,6 @@
 import { isRetrievableId } from '@/features/sources/byId';
 import type { Wallpaper } from '@/features/sources/types';
+import { t, tn } from '@/shared/i18n';
 
 /**
  * Partage d'une collection sans compte : un code compact (nom + liste « source:id », en JSON
@@ -14,8 +15,10 @@ export const MAX_NAME_LENGTH = 40;
 /** Garde-fous à la lecture d'un code venu de n'importe où. */
 const MAX_CODE_LENGTH = 24_000;
 const MAX_JSON_BYTES = 64 * 1024;
+/** Nom d'une collection partagée sans nom ; en français ici, traduit à l'emploi (`t`). */
 export const DEFAULT_NAME = 'Collection reçue';
 
+/** Erreur dont le message (en français) est affichable : l'interface le traduit (`t(error.message)`). */
 export class ShareError extends Error {
   constructor(message: string) {
     super(message);
@@ -44,14 +47,13 @@ export function exclusionMessage(excluded: readonly Pick<Wallpaper, 'source'>[])
   const n = excluded.length;
   if (n === 0) return null;
   const local = excluded.every((w) => w.source === 'device' || w.source === 'creation');
-  const why = local
-    ? n === 1
-      ? 'importé de la galerie ou créé dans Prisme, son image reste sur ce téléphone'
-      : 'importés de la galerie ou créés dans Prisme, leurs images restent sur ce téléphone'
-    : n === 1
-      ? 'il ne peut pas être retrouvé en ligne'
-      : 'ils ne peuvent pas être retrouvés en ligne';
-  return `${n} fond${n > 1 ? 's ne sont pas inclus' : ' n’est pas inclus'} : ${why}.`;
+  return local
+    ? tn(
+        n,
+        '{count} fond n’est pas inclus : importé de la galerie ou créé dans Prisme, son image reste sur ce téléphone.',
+        '{count} fonds ne sont pas inclus : importés de la galerie ou créés dans Prisme, leurs images restent sur ce téléphone.',
+      )
+    : tn(n, '{count} fond n’est pas inclus : il ne peut pas être retrouvé en ligne.', '{count} fonds ne sont pas inclus : ils ne peuvent pas être retrouvés en ligne.');
 }
 
 const bytesOf = (text: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(text) as Uint8Array<ArrayBuffer>;
@@ -105,7 +107,7 @@ const unsupported = () => new ShareError('Ce téléphone ne sait pas compresser 
 export async function encodeCollection(collection: SharedCollection): Promise<string> {
   if (typeof CompressionStream === 'undefined') throw unsupported();
   const ids = [...new Set(collection.ids.filter(isRetrievableId))].slice(0, MAX_SHARED_ITEMS);
-  const json = JSON.stringify({ v: FORMAT_VERSION, n: collection.name.trim().slice(0, MAX_NAME_LENGTH) || DEFAULT_NAME, i: ids });
+  const json = JSON.stringify({ v: FORMAT_VERSION, n: collection.name.trim().slice(0, MAX_NAME_LENGTH) || t(DEFAULT_NAME), i: ids });
   return toBase64Url(await pipe(bytesOf(json), new CompressionStream('deflate'), Number.POSITIVE_INFINITY));
 }
 
@@ -127,7 +129,7 @@ export async function decodeCollection(code: string): Promise<SharedCollection> 
   const ids = [...new Set((Array.isArray(data.i) ? data.i : []).filter((id): id is string => typeof id === 'string' && isRetrievableId(id)))];
   if (ids.length === 0) throw new ShareError('Ce code ne contient aucun fond que Prisme sait retrouver');
   const name = typeof data.n === 'string' ? data.n.trim().slice(0, MAX_NAME_LENGTH) : '';
-  return { name: name || DEFAULT_NAME, ids: ids.slice(0, MAX_SHARED_ITEMS) };
+  return { name: name || t(DEFAULT_NAME), ids: ids.slice(0, MAX_SHARED_ITEMS) };
 }
 
 export const toLink = (code: string): string => `${LINK_PREFIX}${code}`;
@@ -160,12 +162,17 @@ export async function parseSharedInput(text: string): Promise<{ code: string; co
 /** Texte du partage Android : une phrase, le lien cliquable, et le code en clair pour les messageries qui ne le rendent pas. */
 export function shareMessage(name: string, count: number, code: string): string {
   return [
-    `Je partage avec toi ma collection « ${name} » (${count} fond${count > 1 ? 's' : ''} d’écran) sur Prisme.`,
+    tn(
+      count,
+      'Je partage avec toi ma collection « {name} » ({count} fond d’écran) sur Prisme.',
+      'Je partage avec toi ma collection « {name} » ({count} fonds d’écran) sur Prisme.',
+      { name },
+    ),
     '',
-    'Pour l’ajouter à ta bibliothèque, ouvre ce lien sur un téléphone où Prisme est installé :',
+    t('Pour l’ajouter à ta bibliothèque, ouvre ce lien sur un téléphone où Prisme est installé :'),
     toLink(code),
     '',
-    'Si le lien ne s’ouvre pas, copie ce code, puis dans Prisme : Bibliothèque › Collections › Coller un code.',
+    t('Si le lien ne s’ouvre pas, copie ce code, puis dans Prisme : Bibliothèque › Collections › Coller un code.'),
     code,
   ].join('\n');
 }

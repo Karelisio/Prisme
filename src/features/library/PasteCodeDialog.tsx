@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '@/shared/i18n';
 import { Dialog } from '@/shared/ui/overlays';
 import { showReceived } from './receive';
 import { ShareError, parseSharedInput } from './share';
@@ -23,16 +24,16 @@ export function PasteCodeDialog({ open, onClose }: { open: boolean; onClose: () 
       close();
       showReceived(code, collection);
     } catch (e) {
-      setError(e instanceof ShareError ? e.message : 'Impossible de lire ce code');
+      setError(t(e instanceof ShareError ? e.message : 'Impossible de lire ce code'));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Dialog open={open} title="Coller un code" confirmLabel="Ouvrir" confirmDisabled={!text.trim() || busy} onConfirm={() => void submit()} onCancel={close}>
+    <Dialog open={open} title={t('Coller un code')} confirmLabel={t('Ouvrir')} confirmDisabled={!text.trim() || busy} onConfirm={() => void submit()} onCancel={close}>
       <label className="paste">
-        <span className="text-field__label">Code, lien ou message de partage</span>
+        <span className="text-field__label">{t('Code, lien ou message de partage')}</span>
         <textarea
           className="paste__input"
           value={text}
@@ -53,7 +54,7 @@ export function PasteCodeDialog({ open, onClose }: { open: boolean; onClose: () 
           {error}
         </p>
       ) : (
-        <p className="paste__message">Colle ce que tu as reçu : le message entier fonctionne aussi.</p>
+        <p className="paste__message">{t('Colle ce que tu as reçu : le message entier fonctionne aussi.')}</p>
       )}
     </Dialog>
   );
