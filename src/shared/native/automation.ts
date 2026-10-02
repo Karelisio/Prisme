@@ -272,13 +272,35 @@ declare global {
   }
 }
 
+/** Changer à chaque déverrouillage : images (id + URI d'application) et fréquence en déverrouillages. */
+export interface LivePlaylist {
+  enabled: boolean;
+  every: number;
+  items: { id: string; uri: string }[];
+}
+
+export interface LiveStatus {
+  active: boolean;
+  intensity: number;
+  configured: boolean;
+  /** `count` : images prêtes (préparées sur l'appareil), `every` : déverrouillages entre deux changements. */
+  playlist: { enabled: boolean; count: number; every: number };
+}
+
 export interface PrismeLivePlugin {
   setLiveWallpaper(options: { uri: string; intensity: number; crop?: NormalizedRect }): Promise<{ status: 'launched' | 'updated' }>;
-  getStatus(): Promise<{ active: boolean; intensity: number; configured: boolean }>;
+  /**
+   * Le natif enregistre la liste puis prépare les images en arrière-plan (téléchargement, recadrage) ;
+   * `count` : images déjà prêtes. La suite se lit dans `getStatus().playlist`.
+   */
+  setPlaylist(options: LivePlaylist): Promise<{ enabled: boolean; count: number }>;
+  getStatus(): Promise<LiveStatus>;
 }
 
 export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
   calls: { uri: string; intensity: number; crop?: NormalizedRect }[] = [];
+  /** Tests : appels à `setPlaylist`, dans l'ordre. */
+  playlistCalls: LivePlaylist[] = [];
 
   constructor() {
     super();
@@ -290,8 +312,19 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
     return { status: 'launched' as const };
   }
 
-  async getStatus() {
-    return { active: this.calls.length > 0, intensity: this.calls.at(-1)?.intensity ?? 0.5, configured: this.calls.length > 0 };
+  async setPlaylist(options: LivePlaylist) {
+    this.playlistCalls.push(options);
+    return { enabled: options.enabled, count: options.enabled ? options.items.length : 0 };
+  }
+
+  async getStatus(): Promise<LiveStatus> {
+    const playlist = this.playlistCalls.at(-1);
+    return {
+      active: this.calls.length > 0,
+      intensity: this.calls.at(-1)?.intensity ?? 0.5,
+      configured: this.calls.length > 0,
+      playlist: { enabled: playlist?.enabled ?? false, count: playlist?.enabled ? playlist.items.length : 0, every: playlist?.every ?? 1 },
+    };
   }
 }
 

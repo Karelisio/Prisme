@@ -3,15 +3,12 @@ package io.karelisio.prisme.live
 import android.app.WallpaperManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.graphics.Bitmap
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
-import io.karelisio.prisme.wallpaper.BitmapLoader
-import io.karelisio.prisme.wallpaper.CropMath
-import io.karelisio.prisme.wallpaper.ImageStore
+import io.karelisio.prisme.wallpaper.NormalizedRect
 import io.karelisio.prisme.wallpaper.ScreenInfo
 import io.karelisio.prisme.wallpaper.WallpaperException
 import io.karelisio.prisme.wallpaper.WallpaperRef
@@ -22,9 +19,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 
-/** Prépare l'image du fond animé puis ouvre l'écran système de confirmation si besoin. */
+/**
+ * Prépare l'image du fond animé puis ouvre l'écran système de confirmation si besoin ; prépare aussi les
+ * images du changement à chaque déverrouillage.
+ */
 @CapacitorPlugin(name = "PrismeLive")
 class PrismeLivePlugin : Plugin() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -41,7 +40,14 @@ class PrismeLivePlugin : Plugin() {
             JSObject()
                 .put("active", LiveWallpaperStore.isActive(context))
                 .put("intensity", config.intensity.toDouble())
-                .put("configured", config.path != null),
+                .put("configured", config.path != null)
+                .put(
+                    "playlist",
+                    JSObject()
+                        .put("enabled", config.playlist.enabled)
+                        .put("count", config.playlist.paths.size)
+                        .put("every", config.playlist.every),
+                ),
         )
     }
 
@@ -75,22 +81,36 @@ class PrismeLivePlugin : Plugin() {
         }
     }
 
-    /** Recadre l'image à la taille de l'écran plus la marge de parallaxe, dans un nouveau fichier. */
-    private fun prepare(uri: String, intensity: Float, crop: io.karelisio.prisme.wallpaper.NormalizedRect?, screen: ScreenInfo.Size): String {
-        val source = ImageStore(context).resolve(uri)
-        val margin = ParallaxMath.margin(intensity)
-        val (width, height) = ParallaxMath.bitmapSize(screen.width, screen.height, margin)
-        val bounds = BitmapLoader.readBounds(source)
-        val region = CropMath.resolveCrop(bounds.width, bounds.height, crop, width, height)
-        val bitmap = BitmapLoader.decodeRegion(source, region, width, height)
+    /**
+     * Active ou coupe le changement à chaque déverrouillage. La liste est enregistrée tout de suite et les
+     * images sont préparées en arrière-plan (état dans `getStatus`) ; la réponse donne celles déjà prêtes.
+     */
+    @PluginMethod
+    fun setPlaylist(call: PluginCall) {
+        val enabled = call.getBoolean("enabled", false) == true
+        val every = UnlockPlaylist.clampEvery(call.getInt("every") ?: UnlockPlaylist.DEFAULT_EVERY)
+        val array = call.getArray("items")
+        if (enabled && array == null) {
+            call.reject("Liste d'images manquante", "INVALID_ARGUMENT")
+            return
+        }
+        val items = if (array == null) emptyList() else (0 until array.length()).mapNotNull { WallpaperRef.fromJson(array.optJSONObject(it)) }
+        scope.launch {
+            try {
+                val count = withContext(Dispatchers.IO) { LivePlaylist.update(context, enabled, every, items) }
+                call.resolve(JSObject().put("enabled", enabled).put("count", count))
+            } catch (e: Exception) {
+                call.reject(e.message ?: "Erreur inattendue", "UNKNOWN", e)
+            }
+        }
+    }
+
+    /** Prépare l'image à la taille de l'écran plus la marge de parallaxe, dans un nouveau fichier. */
+    private fun prepare(uri: String, intensity: Float, crop: NormalizedRect?, screen: ScreenInfo.Size): String {
         val dir = File(context.filesDir, "live").apply { mkdirs() }
         // Nom unique : le service détecte le changement et recharge l'image.
         val out = File(dir, "live-${System.currentTimeMillis()}.jpg")
-        try {
-            FileOutputStream(out).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
-        } finally {
-            bitmap.recycle()
-        }
+        LiveImages(context).prepareTo(uri, intensity, crop, screen, out)
         dir.listFiles()?.filter { it != out }?.forEach { it.delete() }
         return out.absolutePath
     }
