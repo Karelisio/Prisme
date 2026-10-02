@@ -24,3 +24,9 @@
   color: var(--md-sys-color-on-surface-variant);
   font: 400 12px/16px var(--md-font);
 }
+
+.live-unlock {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}

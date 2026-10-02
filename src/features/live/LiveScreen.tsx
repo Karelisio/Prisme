@@ -9,6 +9,7 @@ import { nativeErrorMessage } from '@/shared/native';
 import { PrismeLive } from '@/shared/native/automation';
 import { Button, Icon, IconButton, Switch } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
+import { UnlockSection } from './UnlockSection';
 import { setLiveWallpaper, useLive } from './live';
 import '@/features/automation/automation.css';
 import './live.css';
@@ -85,6 +86,8 @@ export function LiveScreen() {
           {status.data?.active ? 'Mettre à jour' : 'Activer le fond animé'}
         </Button>
       </div>
+
+      <UnlockSection optionOn={enabled} status={status.data} onChanged={() => setTimeout(() => void status.refetch(), 1500)} />
 
       <WallpaperPicker open={picking} title="Image du fond animé" onClose={() => setPicking(false)} onPick={(w) => useLive.setState({ wallpaper: w })} />
     </div>
