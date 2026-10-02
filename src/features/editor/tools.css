@@ -1,0 +1,182 @@
+/* Outils de l'éditeur : cadrage, ajustement, filtres, effets (complète editor.css, partagé avec le générateur). */
+
+.editor__stage-wrap {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* La colonne des commandes ne dépasse jamais la largeur de l'écran, même avec une rangée défilante. */
+.editor__controls--tools {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Cadrage libre : le glisser et le pincement appartiennent à l'aperçu, pas au défilement de la page. */
+.editor__stage-wrap[data-framing='true'] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.editor__stage-wrap[data-framing='true']:active {
+  cursor: grabbing;
+}
+
+.editor__rendering {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font: 500 12px/16px var(--md-font);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.editor__rendering .spinner {
+  color: var(--md-sys-color-inverse-primary);
+}
+
+.editor__panel[inert] {
+  opacity: 0.6;
+}
+
+.editor__slider-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.editor__slider-value {
+  color: var(--md-sys-color-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.editor__row--tools {
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.editor__spacer {
+  flex: 1;
+}
+
+.editor__toggle[aria-pressed='true'] {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.editor__hint {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 12px/16px var(--md-font);
+}
+
+.editor__color {
+  flex: none;
+  width: 44px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-sm);
+  background: none;
+}
+
+/* Filtres : vignettes dans une rangée qui défile jusqu'au bord de l'écran. */
+.editor__filters {
+  display: flex;
+  gap: 12px;
+  margin: 0 -20px;
+  padding: 6px 20px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.editor__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-thumb {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 64px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 12px/16px var(--md-font);
+  white-space: nowrap;
+}
+
+.filter-thumb img,
+.filter-thumb__empty {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-color-surface-container-high);
+  object-fit: cover;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.filter-thumb[aria-pressed='true'] {
+  color: var(--md-sys-color-primary);
+}
+
+.filter-thumb[aria-pressed='true'] img {
+  outline-color: var(--md-sys-color-primary);
+}
+
+.filter-thumb:active img {
+  transform: scale(0.96);
+}
+
+/* Duotone : préréglages (ombres | lumières) et couleurs libres. */
+.editor__duotone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editor__presets {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.editor__presets::-webkit-scrollbar {
+  display: none;
+}
+
+.editor__preset {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+}
+
+.editor__preset[aria-pressed='true'] {
+  outline: 3px solid var(--md-sys-color-on-surface);
+  outline-offset: 2px;
+}
+
+.editor__color-pair {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
