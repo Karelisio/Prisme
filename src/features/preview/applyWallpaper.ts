@@ -1,3 +1,4 @@
+import { planUndo } from '@/features/library/model';
 import { useLibrary } from '@/features/library/store';
 import { setLiveWallpaper } from '@/features/live/live';
 import { applyUri } from '@/features/library/useImageSrc';
@@ -19,24 +20,42 @@ export interface ApplyRequest {
   uri?: string;
   /** false : essai, ne devient pas le fond à restaurer après un automatisme. */
   remember?: boolean;
+  /** false : pas d'entrée d'historique (restauration lors d'une annulation). */
+  recordHistory?: boolean;
 }
 
 /**
  * Applique un fond : pleine résolution à ce moment-là seulement (copie hors ligne si elle existe),
  * puis historique et suivi de téléchargement Unsplash.
  */
-export async function applyWallpaper({ wallpaper, target, crop, uri, remember = true }: ApplyRequest): Promise<void> {
-  await PrismeWallpaper.setWallpaper({
-    uri: uri ?? applyUri(wallpaper),
-    target,
-    crop: uri ? undefined : crop,
-    id: wallpaper.id,
-    remember,
-  });
-  useLibrary.getState().addHistory(wallpaper, target);
+export async function applyWallpaper({ wallpaper, target, crop, uri, remember = true, recordHistory = true }: ApplyRequest): Promise<void> {
+  const imageCrop = uri ? undefined : crop;
+  await PrismeWallpaper.setWallpaper({ uri: uri ?? applyUri(wallpaper), target, crop: imageCrop, id: wallpaper.id, remember });
+  if (!recordHistory) return;
+  useLibrary.getState().addHistory(wallpaper, target, { crop: imageCrop, uri });
   if (wallpaper.source === 'unsplash' && wallpaper.downloadLocation) {
     void trackUnsplashDownload(wallpaper.downloadLocation);
   }
+}
+
+const SCREEN_NAMES = { home: "l'écran d'accueil", lock: "l'écran de verrouillage" } as const;
+
+/**
+ * Revient au fond d'avant la dernière application (sur le ou les écrans concernés) et retire
+ * cette application de l'historique ; renvoie le message à afficher.
+ */
+export async function undoLastApply(): Promise<string> {
+  const { history, items, removeHistory } = useLibrary.getState();
+  const plan = planUndo(history);
+  const steps = plan?.steps.filter((step) => items[step.entry.wallpaperId]) ?? [];
+  if (!plan || steps.length === 0) return 'Aucun fond précédent à restaurer';
+  for (const step of steps) {
+    const wallpaper = items[step.entry.wallpaperId];
+    if (wallpaper) await applyWallpaper({ wallpaper, target: step.target, crop: step.entry.crop, uri: step.entry.uri, recordHistory: false });
+  }
+  removeHistory(plan.undone.id);
+  const [missing] = plan.missing;
+  return missing && plan.missing.length === 1 ? `Fond précédent restauré, sauf sur ${SCREEN_NAMES[missing]}` : 'Fond précédent restauré';
 }
 
 /** Choix proposés par la feuille « Appliquer sur ». */

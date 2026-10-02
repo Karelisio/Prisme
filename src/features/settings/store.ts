@@ -30,6 +30,12 @@ export interface Settings {
   defaultTarget: WallpaperTarget | 'ask';
   /** Garde une copie pleine résolution des favoris pour les appliquer hors ligne. */
   offlineFavorites: boolean;
+  /** Sur connexion limitée (données mobiles), images à la taille de l'écran plutôt qu'en HD. */
+  hdOnWifiOnly: boolean;
+  /** Retours haptiques sur les actions importantes. */
+  haptics: boolean;
+  /** Recherche automatique des nouvelles versions (releases GitHub). */
+  autoUpdateCheck: boolean;
   features: FeatureFlags;
 }
 
@@ -42,6 +48,9 @@ export const DEFAULT_SETTINGS: Settings = {
   sources: { unsplash: true, pexels: true },
   defaultTarget: 'ask',
   offlineFavorites: true,
+  hdOnWifiOnly: false,
+  haptics: true,
+  autoUpdateCheck: true,
   features: {
     dynamic: false,
     live: false,

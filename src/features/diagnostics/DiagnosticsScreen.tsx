@@ -11,7 +11,10 @@ import {
 } from '@/shared/native';
 import { goBack } from '@/app/navigation';
 import { formatBytes } from '@/shared/lib/format';
+import { type ErrorEntry, PrismeSystem } from '@/shared/native/system';
 import { Button, IconButton } from '@/shared/ui/components';
+import { showSnackbar } from '@/shared/ui/overlays';
+import { clearErrorLog, formatErrorLog, loadErrorLog } from './errorLog';
 import { renderTestWallpaper } from './testWallpaper';
 
 const TARGET_LABELS: Record<WallpaperTarget, string> = {
@@ -19,6 +22,60 @@ const TARGET_LABELS: Record<WallpaperTarget, string> = {
   lock: 'Verrouillage',
   both: 'Les deux',
 };
+
+/** Erreurs gardées par l'app (interface et natif), à partager pour signaler un bug. */
+function ErrorLogSection({ capabilities }: { capabilities?: Capabilities }) {
+  const [entries, setEntries] = useState<ErrorEntry[] | null>(null);
+  const reload = () => void loadErrorLog().then(setEntries);
+  useEffect(reload, []);
+
+  const share = async () => {
+    const device = capabilities ? ` · ${capabilities.manufacturer} ${capabilities.model} (SDK ${capabilities.sdkInt})` : '';
+    try {
+      await PrismeSystem.shareText({ text: formatErrorLog(entries ?? [], `version ${__APP_VERSION__}${device}`), title: 'Journal d’erreurs Prisme' });
+    } catch (error) {
+      showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+    }
+  };
+
+  const clear = async () => {
+    await clearErrorLog();
+    reload();
+    showSnackbar('Journal effacé');
+  };
+
+  return (
+    <section aria-labelledby="errors-title">
+      <h2 id="errors-title">Journal d’erreurs</h2>
+      {entries && entries.length === 0 && <p className="diagnostics__empty">Aucune erreur enregistrée.</p>}
+      {entries && entries.length > 0 && (
+        <ol className="diagnostics__errors">
+          {entries.map((e, i) => (
+            <li key={`${e.at}-${i}`}>
+              <details>
+                <summary>
+                  <span className="diagnostics__error-meta">
+                    {new Date(e.at).toLocaleString('fr-FR')} · {e.source === 'native' ? 'Natif' : 'Interface'} · {e.where}
+                  </span>
+                  <span>{e.message}</span>
+                </summary>
+                {e.stack && <pre>{e.stack}</pre>}
+              </details>
+            </li>
+          ))}
+        </ol>
+      )}
+      <div className="diagnostics__actions">
+        <Button variant="tonal" icon="share" disabled={!entries?.length} onClick={() => void share()}>
+          Partager
+        </Button>
+        <Button variant="outlined" icon="delete" disabled={!entries?.length} onClick={() => void clear()}>
+          Effacer
+        </Button>
+      </div>
+    </section>
+  );
+}
 
 /** Écran technique : vérifie le pont natif (capacités, écran, couleurs système, application d'un fond). */
 export function DiagnosticsScreen() {
@@ -156,8 +213,10 @@ export function DiagnosticsScreen() {
         {lastImage && <img className="diagnostics__preview" src={lastImage} alt="Dernière image appliquée" />}
       </section>
 
+      <ErrorLogSection capabilities={capabilities} />
+
       <section>
-        <h2>Journal</h2>
+        <h2>Journal des tests</h2>
         <ol className="diagnostics__log" aria-live="polite">
           {log.map((line, i) => (
             <li key={`${i}-${line}`}>{line}</li>

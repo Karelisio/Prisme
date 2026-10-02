@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Appui long sur l'icône de Prisme. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:targetApi="n_mr1">
+    <shortcut
+        android:shortcutId="next"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_next"
+        android:shortcutShortLabel="@string/shortcut_next_short"
+        android:shortcutLongLabel="@string/shortcut_next_long">
+        <intent
+            android:action="io.karelisio.prisme.action.NEXT"
+            android:targetPackage="io.karelisio.prisme"
+            android:targetClass="io.karelisio.prisme.quick.QuickActionActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="favorite"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_favorite"
+        android:shortcutShortLabel="@string/shortcut_favorite_short"
+        android:shortcutLongLabel="@string/shortcut_favorite_long">
+        <intent
+            android:action="io.karelisio.prisme.action.FAVORITE"
+            android:targetPackage="io.karelisio.prisme"
+            android:targetClass="io.karelisio.prisme.quick.QuickActionActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="search"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_search"
+        android:shortcutShortLabel="@string/shortcut_search_short"
+        android:shortcutLongLabel="@string/shortcut_search_long">
+        <intent
+            android:action="io.karelisio.prisme.action.SEARCH"
+            android:targetPackage="io.karelisio.prisme"
+            android:targetClass="io.karelisio.prisme.MainActivity" />
+    </shortcut>
+</shortcuts>

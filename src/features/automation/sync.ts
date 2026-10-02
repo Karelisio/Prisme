@@ -3,13 +3,30 @@ import { useLibrary } from '@/features/library/store';
 import { useSettings } from '@/features/settings/store';
 import { isNative } from '@/shared/native';
 import { PrismeAutomation } from '@/shared/native/automation';
-import { buildConfig } from './model';
+import { buildConfig, buildQuickPool } from './model';
 import { useAutomationPrefs } from './store';
 
 let lastSent = '';
+let lastPool = '';
 let timer: number | undefined;
 
+/** Favoris pour la tuile et les raccourcis (envoyés seulement s'ils ont changé). */
+async function pushQuickPool() {
+  const library = useLibrary.getState();
+  if (!library.hydrated) return;
+  const pool = buildQuickPool(library, useSettings.getState().defaultTarget);
+  const json = JSON.stringify(pool);
+  if (json === lastPool) return;
+  lastPool = json;
+  try {
+    await PrismeAutomation.setQuickPool(pool);
+  } catch {
+    lastPool = '';
+  }
+}
+
 async function push() {
+  void pushQuickPool();
   const library = useLibrary.getState();
   if (!library.hydrated) return;
   const config = buildConfig(useAutomationPrefs.getState(), useSettings.getState().features, library);
@@ -30,7 +47,8 @@ export async function importAutomationLog() {
     const library = useLibrary.getState();
     for (const entry of entries) {
       const wallpaper = library.items[entry.id];
-      if (wallpaper) library.addHistory(wallpaper, entry.target, { auto: true, at: entry.at });
+      // « quick » : tuile ou raccourci, un choix de l'utilisateur plutôt qu'un automatisme.
+      if (wallpaper) library.addHistory(wallpaper, entry.target, { auto: entry.reason !== 'quick', at: entry.at });
     }
   } catch {
     // Journal indisponible : sans conséquence.
@@ -46,11 +64,18 @@ export function startAutomationSync(): () => void {
   const unsubscribers = [
     useAutomationPrefs.subscribe(schedule),
     useSettings.subscribe((s, prev) => {
-      if (s.features !== prev.features) schedule();
+      if (s.features !== prev.features || s.defaultTarget !== prev.defaultTarget) schedule();
     }),
     useLibrary.subscribe((s, prev) => {
       if (s.hydrated && !prev.hydrated) void importAutomationLog();
-      if (s.items !== prev.items || s.favorites !== prev.favorites || s.collections !== prev.collections || s.hydrated !== prev.hydrated) schedule();
+      if (
+        s.items !== prev.items ||
+        s.favorites !== prev.favorites ||
+        s.collections !== prev.collections ||
+        s.offline !== prev.offline ||
+        s.hydrated !== prev.hydrated
+      )
+        schedule();
     }),
   ];
   if (useLibrary.getState().hydrated) {

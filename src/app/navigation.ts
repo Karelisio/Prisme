@@ -6,7 +6,8 @@ export type Tab = 'explore' | 'library' | 'settings';
 
 /** Écrans empilés au-dessus des onglets ; le bouton retour les ferme dans l'ordre inverse. */
 export type Overlay =
-  | { type: 'preview'; wallpaper: Wallpaper }
+  /** `list` : fonds voisins (grille d'origine) pour passer de l'un à l'autre en balayant. */
+  | { type: 'preview'; wallpaper: Wallpaper; list?: Wallpaper[] }
   | { type: 'search' }
   | { type: 'pack'; packId: string }
   | { type: 'collection'; collectionId: string }
@@ -41,5 +42,6 @@ export const useNavigation = create<NavigationState>((set) => ({
   replace: (overlay) => set((s) => ({ overlays: [...s.overlays.slice(0, -1), { ...overlay, key: nextKey++ }] })),
 }));
 
-export const openPreview = (wallpaper: Wallpaper) => useNavigation.getState().push({ type: 'preview', wallpaper });
+export const openPreview = (wallpaper: Wallpaper, list?: Wallpaper[]) =>
+  useNavigation.getState().push({ type: 'preview', wallpaper, list });
 export const goBack = () => useNavigation.getState().pop();

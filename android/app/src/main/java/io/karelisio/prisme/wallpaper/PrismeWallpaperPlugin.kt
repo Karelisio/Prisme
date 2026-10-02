@@ -1,5 +1,6 @@
 package io.karelisio.prisme.wallpaper
 
+import android.Manifest
 import android.app.Activity
 import android.app.WallpaperManager
 import android.content.pm.PackageManager
@@ -11,11 +12,14 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.getcapacitor.JSObject
+import com.getcapacitor.PermissionState
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.ActivityCallback
 import com.getcapacitor.annotation.CapacitorPlugin
+import com.getcapacitor.annotation.Permission
+import com.getcapacitor.annotation.PermissionCallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,7 +32,11 @@ import java.io.File
  * Pont Capacitor : chaque méthode valide ses paramètres, délègue le travail lourd hors du thread
  * principal et renvoie des erreurs avec un code stable (voir WallpaperException).
  */
-@CapacitorPlugin(name = "PrismeWallpaper")
+@CapacitorPlugin(
+    name = "PrismeWallpaper",
+    // Android 9 et moins : écrire dans la galerie demande une autorisation.
+    permissions = [Permission(alias = "storage", strings = [Manifest.permission.WRITE_EXTERNAL_STORAGE])],
+)
 class PrismeWallpaperPlugin : Plugin() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val io = Dispatchers.IO.limitedParallelism(4)
@@ -227,6 +235,70 @@ class PrismeWallpaperPlugin : Plugin() {
             try {
                 val image = withContext(io) { importer.importFromGallery(uri) }
                 call.resolve(localImageResult(image).put("cancelled", false))
+            } catch (e: Throwable) {
+                rejectWith(call, e)
+            }
+        }
+    }
+
+    /** Enregistre l'image (pleine résolution) dans la galerie, dossier Images/Prisme. */
+    @PluginMethod
+    fun saveToGallery(call: PluginCall) {
+        if (call.getString("uri").isNullOrBlank()) {
+            call.reject("Image manquante", "INVALID_ARGUMENT")
+            return
+        }
+        if (Build.VERSION.SDK_INT < 29 && getPermissionState("storage") != PermissionState.GRANTED) {
+            requestPermissionForAlias("storage", call, "onStoragePermission")
+            return
+        }
+        saveNow(call)
+    }
+
+    @PermissionCallback
+    private fun onStoragePermission(call: PluginCall) {
+        if (getPermissionState("storage") == PermissionState.GRANTED) saveNow(call)
+        else call.reject("Autorisation refusée : impossible d'enregistrer dans la galerie", "PERMISSION_DENIED")
+    }
+
+    private fun saveNow(call: PluginCall) {
+        val uri = call.getString("uri") ?: return
+        val id = call.getString("id") ?: uri
+        val name = call.getString("name") ?: "Prisme"
+        scope.launch {
+            try {
+                val folder = withContext(io) {
+                    val file = store.resolve(uri) { progress -> emitProgress(id, progress) }
+                    ImageExport(context).saveToGallery(file, name)
+                }
+                call.resolve(JSObject().put("folder", folder))
+            } catch (e: Throwable) {
+                rejectWith(call, e)
+            }
+        }
+    }
+
+    /** Partage l'image avec le crédit du photographe en texte d'accompagnement. */
+    @PluginMethod
+    fun shareImage(call: PluginCall) {
+        val uri = call.getString("uri")
+        val host = activity
+        if (uri.isNullOrBlank() || host == null) {
+            call.reject("Image manquante", "INVALID_ARGUMENT")
+            return
+        }
+        val id = call.getString("id") ?: uri
+        val name = call.getString("name") ?: "Prisme"
+        val text = call.getString("text")
+        val title = call.getString("title") ?: "Partager le fond"
+        scope.launch {
+            try {
+                val intent = withContext(io) {
+                    val file = store.resolve(uri) { progress -> emitProgress(id, progress) }
+                    ImageExport(context).shareIntent(file, name, text, title)
+                }
+                host.startActivity(intent)
+                call.resolve()
             } catch (e: Throwable) {
                 rejectWith(call, e)
             }

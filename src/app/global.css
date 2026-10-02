@@ -130,3 +130,45 @@ img {
   padding-left: 20px;
   font: 400 13px/18px var(--md-font);
 }
+
+.diagnostics__empty {
+  margin: 0 0 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 14px/20px var(--md-font);
+}
+
+.diagnostics__errors {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font: 400 13px/18px var(--md-font);
+}
+
+.diagnostics__errors details {
+  padding: 8px 12px;
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-color-surface-container);
+}
+
+.diagnostics__errors summary {
+  display: grid;
+  gap: 2px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.diagnostics__error-meta {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+}
+
+.diagnostics__errors pre {
+  max-height: 240px;
+  margin: 8px 0 0;
+  overflow: auto;
+  font: 400 11px/16px ui-monospace, 'Roboto Mono', monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

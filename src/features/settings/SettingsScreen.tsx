@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigation } from '@/app/navigation';
 import { queryClient } from '@/app/queryClient';
+import { exportBackup, importBackup } from '@/features/backup/backupActions';
+import { UpdateSettings } from '@/features/updates/UpdateSettings';
 import { env } from '@/shared/config/env';
 import { useCapabilities } from '@/shared/lib/capabilities';
 import { formatBytes } from '@/shared/lib/format';
-import { PrismeWallpaper, type WallpaperTarget } from '@/shared/native';
+import { PrismeWallpaper, type WallpaperTarget, nativeErrorMessage } from '@/shared/native';
+import { PrismeSystem } from '@/shared/native/system';
 import { Button, Chip, Icon, ListItem, SegmentedButtons, Switch } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { AdvancedOptions } from './AdvancedOptions';
@@ -36,6 +39,25 @@ export function SettingsScreen() {
   const refreshStorage = () => void PrismeWallpaper.getCacheInfo().then(setStorage, () => undefined);
   useEffect(refreshStorage, []);
 
+  /** Action qui renvoie un message (ou null si l'utilisateur a annulé). */
+  const report = async (action: () => Promise<string | null>) => {
+    try {
+      const message = await action();
+      if (message) showSnackbar(message);
+    } catch (error) {
+      showSnackbar(error instanceof Error ? error.message : nativeErrorMessage(error));
+    }
+  };
+
+  const addTile = () =>
+    report(async () => {
+      const { result } = await PrismeSystem.requestAddTile();
+      if (result === 'added') return 'Tuile ajoutée aux Réglages rapides';
+      if (result === 'already') return 'La tuile est déjà dans les Réglages rapides';
+      if (result === 'declined') return null;
+      return 'Ouvre les Réglages rapides, touche le crayon puis fais glisser « Fond suivant »';
+    });
+
   const clearCache = async () => {
     await PrismeWallpaper.clearCache({ includeOffline: false });
     queryClient.clear();
@@ -66,6 +88,12 @@ export function SettingsScreen() {
               onChange={(dynamicColor) => settings.update({ dynamicColor })}
             />
           }
+        />
+        <ListItem
+          headline="Retours haptiques"
+          supporting="Légère vibration quand un fond est appliqué, enregistré…"
+          leading={<Icon name="vibration" />}
+          trailing={<Switch label="Retours haptiques" checked={settings.haptics} onChange={(haptics) => settings.update({ haptics })} />}
         />
         {(!settings.dynamicColor || !dynamicSupported) && (
           <div className="settings-block">
@@ -111,6 +139,14 @@ export function SettingsScreen() {
           trailing={<Switch label="Économie de données" checked={settings.dataSaver} onChange={(dataSaver) => settings.update({ dataSaver })} />}
         />
         <ListItem
+          headline="HD seulement en Wi-Fi"
+          supporting="Sur données mobiles, images à la taille de l’écran"
+          leading={<Icon name="wifi" />}
+          trailing={
+            <Switch label="HD seulement en Wi-Fi" checked={settings.hdOnWifiOnly} onChange={(hdOnWifiOnly) => settings.update({ hdOnWifiOnly })} />
+          }
+        />
+        <ListItem
           headline="Unsplash"
           supporting={env.unsplashKey ? 'Source active, thème Wallpapers en priorité' : 'Clé API absente de ce build'}
           leading={<Icon name="image" />}
@@ -144,6 +180,28 @@ export function SettingsScreen() {
             ))}
           </div>
         </div>
+        <ListItem
+          headline="Tuile « Fond suivant »"
+          supporting="Change de fond depuis les Réglages rapides ; appui long sur l’icône de Prisme pour d’autres raccourcis"
+          leading={<Icon name="skipNext" />}
+          onClick={() => void addTile()}
+        />
+      </section>
+
+      <section className="settings-section">
+        <h2 className="list-subheader">Sauvegarde</h2>
+        <ListItem
+          headline="Exporter une sauvegarde"
+          supporting="Favoris, collections, historique et réglages dans un fichier"
+          leading={<Icon name="backup" />}
+          onClick={() => void report(exportBackup)}
+        />
+        <ListItem
+          headline="Restaurer une sauvegarde"
+          supporting="Ajoutée à tes favoris et collections ; images importées et créations non incluses"
+          leading={<Icon name="restore" />}
+          onClick={() => void report(importBackup)}
+        />
       </section>
 
       <section className="settings-section">
@@ -172,13 +230,18 @@ export function SettingsScreen() {
 
       <section className="settings-section">
         <h2 className="list-subheader">À propos</h2>
-        <ListItem headline="Prisme" supporting={`Version ${__APP_VERSION__}`} leading={<Icon name="wallpaper" />} />
+        <UpdateSettings />
         <ListItem
           headline="Photos"
           supporting="Fournies par Unsplash et Pexels, sous leurs licences respectives"
           leading={<Icon name="info" />}
         />
-        <ListItem headline="Diagnostic" supporting="Tester le plugin natif" leading={<Icon name="bugReport" />} onClick={() => push({ type: 'diagnostics' })} />
+        <ListItem
+          headline="Diagnostic"
+          supporting="Journal d’erreurs, tests du plugin natif"
+          leading={<Icon name="bugReport" />}
+          onClick={() => push({ type: 'diagnostics' })}
+        />
       </section>
     </div>
   );

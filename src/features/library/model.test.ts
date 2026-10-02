@@ -60,4 +60,30 @@ describe('bibliothèque', () => {
     s = m.clearHistory(s);
     expect(s.items).toEqual({});
   });
+
+  it('annulation : réapplique le fond précédent de chaque écran concerné', () => {
+    const h = (id: string, wallpaperId: string, target: 'home' | 'lock' | 'both', at: number, extra = {}) => ({ id, wallpaperId, target, at, ...extra });
+    expect(m.planUndo([])).toBeNull();
+    // Un seul fond appliqué : rien d'antérieur à restaurer.
+    expect(m.planUndo([h('1', 'a', 'both', 1)])).toEqual({ undone: h('1', 'a', 'both', 1), steps: [], missing: ['home', 'lock'] });
+
+    // Même image sur les deux écrans auparavant : une seule application « les deux ».
+    const crop = { x: 0.1, y: 0, width: 0.5, height: 1 };
+    const both = m.planUndo([h('3', 'c', 'both', 3), h('2', 'b', 'both', 2, { crop }), h('1', 'a', 'home', 1)]);
+    expect(both?.steps).toEqual([{ entry: h('2', 'b', 'both', 2, { crop }), target: 'both' }]);
+
+    // Écrans différents auparavant : un fond par écran.
+    const split = m.planUndo([h('3', 'c', 'both', 3), h('2', 'b', 'lock', 2), h('1', 'a', 'home', 1)]);
+    expect(split?.steps).toEqual([
+      { entry: h('1', 'a', 'home', 1), target: 'home' },
+      { entry: h('2', 'b', 'lock', 2), target: 'lock' },
+    ]);
+    expect(split?.missing).toEqual([]);
+
+    // Seul l'écran modifié est restauré ; l'autre écran n'avait pas de fond Prisme.
+    const lockOnly = m.planUndo([h('2', 'b', 'lock', 2), h('1', 'a', 'home', 1)]);
+    expect(lockOnly).toMatchObject({ steps: [], missing: ['lock'] });
+    const homeOnly = m.planUndo([h('3', 'c', 'home', 3), h('2', 'b', 'lock', 2), h('1', 'a', 'both', 1)]);
+    expect(homeOnly?.steps).toEqual([{ entry: h('1', 'a', 'both', 1), target: 'home' }]);
+  });
 });

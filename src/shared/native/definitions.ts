@@ -70,6 +70,15 @@ export interface LocalImage {
 
 export type PickImageResult = ({ cancelled: false } & LocalImage) | { cancelled: true };
 
+/** Image à exporter (galerie, partage) : même résolution que pour l'application. */
+export interface ExportImageOptions {
+  uri: string;
+  /** Identifiant repris dans les événements de progression. */
+  id?: string;
+  /** Nom de fichier sans extension. */
+  name: string;
+}
+
 export interface ApplyProgressEvent {
   id: string;
   progress: number;
@@ -88,6 +97,10 @@ export interface PrismeWallpaperPlugin {
   deleteLocalImage(options: { path: string }): Promise<{ deleted: boolean }>;
   /** Ouvre le sélecteur de photos du système et importe l'image choisie. */
   pickImage(): Promise<PickImageResult>;
+  /** Copie l'image dans la galerie (dossier Images/Prisme) ; renvoie le dossier. */
+  saveToGallery(options: ExportImageOptions): Promise<{ folder: string }>;
+  /** Ouvre le partage Android avec l'image et un texte d'accompagnement. */
+  shareImage(options: ExportImageOptions & { text?: string; title?: string }): Promise<void>;
   getCacheInfo(): Promise<{ cacheBytes: number; offlineBytes: number }>;
   clearCache(options?: { includeOffline?: boolean }): Promise<void>;
   addListener(event: 'systemThemeChanged', listener: (theme: SystemTheme) => void): Promise<PluginListenerHandle>;

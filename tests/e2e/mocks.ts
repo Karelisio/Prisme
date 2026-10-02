@@ -127,5 +127,8 @@ export async function mockApis(page: Page): Promise<ApiLog> {
   // Manifeste des packs distant : indisponible, l'app utilise la copie embarquée.
   await page.route('https://raw.githubusercontent.com/**', (route) => route.fulfill({ status: 404, body: '' }));
 
+  // Pas de release publiée par défaut : aucune proposition de mise à jour pendant les tests.
+  await page.route('https://api.github.com/**', (route) => route.fulfill({ status: 404, contentType: 'application/json', body: '{}' }));
+
   return log;
 }

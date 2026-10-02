@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type ReactNode, type RefObject, memo, useEffect, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { openPreview } from '@/app/navigation';
 import { useLibrary } from '@/features/library/store';
 import { useThumbSrc } from '@/features/library/useImageSrc';
@@ -22,8 +22,12 @@ interface GridProps {
 }
 
 /** Grille virtualisée : seules les lignes proches de l'écran existent dans le DOM. */
-export function WallpaperGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen = openPreview, footer }: GridProps) {
+export function WallpaperGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen, footer }: GridProps) {
   const columns = useSettings((s) => s.gridColumns);
+  // Par défaut, l'aperçu reçoit toute la grille pour pouvoir passer d'un fond à l'autre.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const open = useCallback((w: Wallpaper) => (onOpen ? onOpen(w) : openPreview(w, itemsRef.current)), [onOpen]);
   const gridRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -82,7 +86,7 @@ export function WallpaperGrid({ items, scrollRef, hasMore, loadingMore, onEndRea
               }}
             >
               {items.slice(row.index * columns, row.index * columns + columns).map((w) => (
-                <WallpaperCell key={w.id} wallpaper={w} onOpen={onOpen} />
+                <WallpaperCell key={w.id} wallpaper={w} onOpen={open} />
               ))}
             </div>
           ))}

@@ -139,6 +139,7 @@ test('éditeur : retouche, enregistrement dans « Créations » et application',
   await settings.getByRole('switch', { name: 'Éditeur' }).click();
   await page.getByRole('button', { name: 'Explorer' }).click();
   await page.locator('.tab[data-active="true"] .wp-cell').first().click();
+  await page.getByRole('button', { name: 'Plus d’actions' }).click();
   await page.getByRole('button', { name: 'Retoucher' }).click();
 
   const editor = page.getByRole('dialog', { name: 'Éditeur' });
@@ -206,6 +207,7 @@ test('palette Material You : couleurs calculées et simulation de l’accueil', 
   await settings.getByRole('switch', { name: 'Palette Material You' }).click();
   await page.getByRole('button', { name: 'Explorer' }).click();
   await page.locator('.tab[data-active="true"] .wp-cell').first().click();
+  await page.getByRole('button', { name: 'Plus d’actions' }).click();
   await page.getByRole('button', { name: 'Couleurs Material You' }).click();
 
   const sheet = page.getByRole('dialog', { name: 'Couleurs Material You' });

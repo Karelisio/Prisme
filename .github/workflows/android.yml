@@ -138,6 +138,10 @@ jobs:
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then TAG="$GITHUB_REF_NAME"; else TAG="v$VERSION"; fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          # Notes de version affichées dans la release et dans l'app (feuille « Mise à jour »).
+          NOTES="release-notes/$VERSION.md"
+          [ -f "$NOTES" ] || NOTES=""
+          echo "notes=$NOTES" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -152,4 +156,5 @@ jobs:
         with:
           tag_name: ${{ steps.apk.outputs.tag }}
           target_commitish: ${{ github.sha }}
+          body_path: ${{ steps.apk.outputs.notes }}
           files: out/*.apk

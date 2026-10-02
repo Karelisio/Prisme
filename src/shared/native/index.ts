@@ -3,8 +3,11 @@ import type { PrismeWallpaperPlugin } from './definitions';
 
 export * from './definitions';
 
+// Une seule instance web : Capacitor peut appeler ce chargeur pour plusieurs appels simultanés.
+let webInstance: Promise<PrismeWallpaperPlugin> | undefined;
+
 export const PrismeWallpaper = registerPlugin<PrismeWallpaperPlugin>('PrismeWallpaper', {
-  web: () => import('./web').then((m) => new m.PrismeWallpaperWeb()),
+  web: () => (webInstance ??= import('./web').then((m) => new m.PrismeWallpaperWeb())),
 });
 
 export const isNative = Capacitor.isNativePlatform();

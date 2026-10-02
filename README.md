@@ -17,6 +17,13 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
 - Application sur l'accueil, le verrouillage ou les deux.
 - Favoris, collections, historique, cache hors ligne (flux déjà vus, miniatures, favoris en pleine
   résolution).
+- Partage (avec le crédit du photographe), enregistrement dans la galerie, passage au fond voisin
+  d'un glissement, « Annuler » après une application et « Revenir au fond précédent ».
+- Tuile « Fond suivant » (Réglages rapides) et raccourcis de l'icône : suivant, favori au hasard,
+  rechercher.
+- Sauvegarde et restauration (fichier JSON), « HD seulement en Wi-Fi », retours haptiques.
+- Mises à jour intégrées depuis les releases GitHub (APK vérifié : même appli, même signature).
+- Journal d'erreurs (interface et natif) partageable depuis *Réglages → Diagnostic*.
 
 **Options** (désactivées par défaut, *Réglages → Options avancées*)
 - Fonds dynamiques : selon l'heure, la météo (Open-Meteo, sans clé), la saison ou la batterie.
@@ -77,8 +84,18 @@ installable par-dessus l'app existante.
 | `SET_WALLPAPER` | Appliquer les fonds |
 | `INTERNET` | Unsplash, Pexels, Open-Meteo, packs |
 | `ACCESS_COARSE_LOCATION` | Météo des fonds dynamiques, seulement si « Ma position » est utilisé |
+| `ACCESS_NETWORK_STATE` | « HD seulement en Wi-Fi » : savoir si la connexion est limitée |
+| `REQUEST_INSTALL_PACKAGES` | Mises à jour intégrées (Android demande l'accord une fois) |
+| `WRITE_EXTERNAL_STORAGE` | Enregistrer dans la galerie, Android 9 et moins seulement |
 
-L'import passe par le sélecteur de photos du système : aucune permission de stockage.
+L'import passe par le sélecteur de photos du système : aucune permission de lecture du stockage.
+
+## Publier une version
+
+1. Monter `version` dans `package.json` et écrire `release-notes/<version>.md` (affichées aussi dans
+   la feuille de mise à jour de l'app).
+2. *Actions → Android → Run workflow* avec l'option « release » (ou pousser un tag `v<version>`).
+3. Les téléphones équipés de Prisme proposent la mise à jour au lancement suivant.
 
 ## Développement
 
@@ -111,11 +128,15 @@ src/
     generator/            générateur
     palette/              palette Material You
     linked/               fonds liés
-    diagnostics/          test du plugin natif sur l'appareil
+    diagnostics/          journal d'erreurs, test du plugin natif sur l'appareil
+    updates/              mises à jour intégrées (releases GitHub)
+    backup/               sauvegarde et restauration
   shared/                 thème Material 3, composants, ponts natifs, utilitaires
 android/app/src/main/java/io/karelisio/prisme/
   wallpaper/              application des fonds, cache d'images, import, thème système
   automation/             moteur de règles, WorkManager, météo
   live/                   service de fond animé (parallaxe)
+  quick/                  tuile « Fond suivant », raccourcis de l'icône
+  system/                 version, mises à jour, réseau, fichiers, vibrations, journal d'erreurs
 packs/packs.json          manifeste des packs curés
 ```

@@ -1,4 +1,8 @@
+import { useSettings } from '@/features/settings/store';
+import { screenSizedUrl } from '@/features/sources/sizing';
 import type { Wallpaper } from '@/features/sources/types';
+import { useNetwork } from '@/shared/lib/network';
+import { currentScreenInfo } from '@/shared/lib/screen';
 import { toWebUrl } from '@/shared/native';
 import { useLibrary } from './store';
 
@@ -14,7 +18,17 @@ export function usePreviewSrc(w: Wallpaper): string {
   return toWebUrl(local ?? w.preview);
 }
 
-/** Source à envoyer au plugin pour appliquer le fond (copie hors ligne en priorité). */
+/** Données mobiles avec l'option « HD seulement en Wi-Fi » : images à la taille de l'écran. */
+export function savingData(): boolean {
+  return useSettings.getState().hdOnWifiOnly && useNetwork.getState().metered;
+}
+
+/**
+ * Source à envoyer au plugin pour appliquer, enregistrer ou partager le fond : copie hors ligne
+ * en priorité, sinon la HD (ou une version à la taille de l'écran pour économiser les données).
+ */
 export function applyUri(w: Wallpaper): string {
-  return useLibrary.getState().offline[w.id]?.fullPath ?? w.full;
+  const local = useLibrary.getState().offline[w.id]?.fullPath;
+  if (local) return local;
+  return savingData() ? screenSizedUrl(w, currentScreenInfo()) : w.full;
 }

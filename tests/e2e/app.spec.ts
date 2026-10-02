@@ -126,6 +126,7 @@ test.describe('aperçu et application', () => {
     await mockApis(page);
     await page.goto('/');
     await cells(page).first().click();
+    await page.getByRole('button', { name: 'Plus d’actions' }).click();
     await page.getByRole('button', { name: 'Informations' }).click();
     await expect(page.getByRole('dialog', { name: 'Informations' })).toBeVisible();
     await page.keyboard.press('Escape');

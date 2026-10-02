@@ -2,7 +2,7 @@ import type { LibraryData } from '@/features/library/model';
 import type { FeatureFlags } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
 import type { WallpaperTarget } from '@/shared/native';
-import type { AutomationRef, NativeAutomationConfig } from '@/shared/native/automation';
+import type { AutomationRef, NativeAutomationConfig, QuickPool } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
 
 export type DynamicModeKey = 'time' | 'weather' | 'season' | 'battery';
@@ -120,6 +120,23 @@ export const INTERVALS: readonly { minutes: number; label: string }[] = [
  * Référence native d'un fond : les images distantes passent par leur URL (le natif en garde sa
  * propre copie), les images locales par leur chemin.
  */
+export const QUICK_POOL_LIMIT = 300;
+
+/**
+ * Favoris envoyés au natif pour la tuile « Fond suivant » et les raccourcis de l'icône :
+ * les plus récents d'abord, copie hors ligne quand elle existe (changement sans réseau).
+ */
+export function buildQuickPool(library: Pick<LibraryData, 'items' | 'favorites' | 'offline'>, defaultTarget: WallpaperTarget | 'ask'): QuickPool {
+  const items = Object.entries(library.favorites)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, QUICK_POOL_LIMIT)
+    .flatMap(([id]) => {
+      const w = library.items[id];
+      return w ? [{ id: w.id, uri: library.offline[id]?.fullPath ?? w.full }] : [];
+    });
+  return { target: defaultTarget === 'ask' ? 'both' : defaultTarget, items };
+}
+
 export function toRef(w: Wallpaper): AutomationRef {
   return { id: w.id, uri: w.full };
 }

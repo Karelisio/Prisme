@@ -41,8 +41,10 @@ android {
     buildTypes {
         release {
             signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 : code et ressources inutilisés retirés (APK plus léger, démarrage plus rapide).
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     testOptions {

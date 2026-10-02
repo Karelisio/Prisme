@@ -31,7 +31,8 @@ export interface AutomationLogEntry {
   id: string;
   target: WallpaperTarget;
   at: number;
-  reason: 'focus' | 'dynamic' | 'rotation' | 'restore';
+  /** « quick » : tuile ou raccourci de l'icône (choix de l'utilisateur, pas un automatisme). */
+  reason: 'focus' | 'dynamic' | 'rotation' | 'restore' | 'quick';
 }
 
 export interface AutomationStatus {
@@ -50,6 +51,13 @@ export interface PrismeAutomationPlugin {
   /** Passe tout de suite au fond suivant de la rotation. */
   nextRotation(): Promise<void>;
   getApproximateLocation(): Promise<{ latitude: number; longitude: number }>;
+  /** Favoris utilisables par la tuile et les raccourcis « Fond suivant » / « Favori au hasard ». */
+  setQuickPool(pool: QuickPool): Promise<void>;
+}
+
+export interface QuickPool {
+  target: WallpaperTarget;
+  items: AutomationRef[];
 }
 
 /** Navigateur : la configuration est gardée pour les tests, rien ne s'exécute en arrière-plan. */
@@ -86,6 +94,12 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
     this.rotations++;
   }
 
+  quickPool: QuickPool | null = null;
+
+  async setQuickPool(pool: QuickPool) {
+    this.quickPool = pool;
+  }
+
   getApproximateLocation(): Promise<{ latitude: number; longitude: number }> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -101,8 +115,12 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
   }
 }
 
+// Instances web uniques : Capacitor peut appeler ces chargeurs pour plusieurs appels simultanés.
+let automationWeb: PrismeAutomationWeb | undefined;
+let liveWeb: PrismeLiveWeb | undefined;
+
 export const PrismeAutomation = registerPlugin<PrismeAutomationPlugin>('PrismeAutomation', {
-  web: () => new PrismeAutomationWeb(),
+  web: () => (automationWeb ??= new PrismeAutomationWeb()),
 });
 
 declare global {
@@ -136,5 +154,5 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
 }
 
 export const PrismeLive = registerPlugin<PrismeLivePlugin>('PrismeLive', {
-  web: () => new PrismeLiveWeb(),
+  web: () => (liveWeb ??= new PrismeLiveWeb()),
 });

@@ -3,9 +3,11 @@ import { openPreview, useNavigation } from '@/app/navigation';
 import { WallpaperGrid } from '@/features/browse/WallpaperGrid';
 import { importAndPreview } from '@/features/browse/importAction';
 import type { Wallpaper } from '@/features/sources/types';
-import { TARGET_LABELS } from '@/features/preview/applyWallpaper';
+import { TARGET_LABELS, undoLastApply } from '@/features/preview/applyWallpaper';
+import { haptic } from '@/shared/lib/haptics';
+import { nativeErrorMessage } from '@/shared/native';
 import { Button, EmptyState, Fab, Icon, IconButton, ListItem, SegmentedButtons, TextField } from '@/shared/ui/components';
-import { Dialog } from '@/shared/ui/overlays';
+import { Dialog, showSnackbar } from '@/shared/ui/overlays';
 import type { Collection, HistoryEntry } from './model';
 import { useLibrary } from './store';
 import { useThumbSrc } from './useImageSrc';
@@ -141,15 +143,42 @@ function CoverImage({ wallpaper }: { wallpaper: Wallpaper }) {
   return <img src={src} alt="" loading="lazy" decoding="async" style={{ backgroundColor: wallpaper.color }} />;
 }
 
+async function restorePrevious() {
+  try {
+    const message = await undoLastApply();
+    haptic('confirm');
+    showSnackbar(message);
+  } catch (error) {
+    haptic('reject');
+    showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+  }
+}
+
 function History() {
   const history = useLibrary((s) => s.history);
   const items = useLibrary((s) => s.items);
   const groups = useMemo(() => groupByDay(history), [history]);
+  const [restoring, setRestoring] = useState(false);
   if (history.length === 0) {
     return <EmptyState icon="history" title="Historique vide" text="Les fonds que tu appliques apparaîtront ici." />;
   }
   return (
     <div className="history">
+      {history.length > 1 && (
+        <div className="history__actions">
+          <Button
+            variant="tonal"
+            icon="undo"
+            disabled={restoring}
+            onClick={() => {
+              setRestoring(true);
+              void restorePrevious().finally(() => setRestoring(false));
+            }}
+          >
+            Revenir au fond précédent
+          </Button>
+        </div>
+      )}
       {groups.map(([day, entries]) => (
         <section key={day}>
           <h2 className="list-subheader">{day}</h2>

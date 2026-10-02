@@ -19,6 +19,10 @@ const TAP_MAX_MS = 250;
 const TAP_MAX_MOVE = 8;
 const DOUBLE_TAP_MS = 280;
 const DOUBLE_TAP_ZOOM = 2.5;
+/** Dépassement du bord (en px) au-delà duquel un glissé horizontal passe au fond voisin. */
+const SWIPE_MIN = 72;
+/** Effet élastique : la scène ne suit qu'une partie du dépassement. */
+const RUBBER = 0.35;
 
 interface Gesture {
   start: Transform;
@@ -29,12 +33,22 @@ interface Gesture {
   moved: boolean;
 }
 
+interface PanZoomOptions {
+  /** Glissé horizontal au-delà du bord de l'image : 1 = suivant, -1 = précédent ; true si accepté. */
+  onSwipe?: (direction: 1 | -1) => boolean;
+}
+
 /**
  * Déplacement à un doigt, pincement, double appui pour zoomer. La transformation est appliquée
  * directement au style de l'élément (sans rendu React) pour rester fluide sur milieu de gamme.
+ * Avec `onSwipe`, tirer l'image au-delà de son bord passe au fond voisin.
  */
-export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => void) {
+export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => void, options: PanZoomOptions = {}) {
   const targetRef = useRef<HTMLImageElement | null>(null);
+  const swipeRef = useRef(options.onSwipe);
+  swipeRef.current = options.onSwipe;
+  const stageEl = useRef<HTMLElement | null>(null);
+  const overscroll = useRef(0);
   const transform = useRef<Transform | null>(null);
   const pointers = useRef(new Map<number, Point>());
   const gesture = useRef<Gesture | null>(null);
@@ -72,6 +86,13 @@ export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => 
 
   useEffect(() => () => window.clearTimeout(tapTimer.current), []);
 
+  const shiftStage = (dx: number, animate: boolean) => {
+    const el = stageEl.current;
+    if (!el) return;
+    el.style.transition = animate ? 'translate 200ms cubic-bezier(0.2, 0, 0, 1)' : 'none';
+    el.style.translate = dx ? `${dx}px 0` : '';
+  };
+
   const local = (e: PointerEvent): Point => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -92,6 +113,7 @@ export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => 
   };
 
   const onPointerDown = (e: PointerEvent) => {
+    stageEl.current = e.currentTarget as HTMLElement;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     pointers.current.set(e.pointerId, local(e));
     if (pointers.current.size === 1) gesture.current = null;
@@ -105,6 +127,10 @@ export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => 
     const [a, b] = [...pointers.current.values()];
     if (!a) return;
     if (b && g.startDistance > 0) {
+      if (overscroll.current) {
+        overscroll.current = 0;
+        shiftStage(0, true);
+      }
       const mid = midpoint(a, b);
       const zoomed = zoomAt(g.start, distance(a, b) / g.startDistance, g.startMid, stage, image);
       commit({ ...zoomed, x: zoomed.x + mid.x - g.startMid.x, y: zoomed.y + mid.y - g.startMid.y });
@@ -113,7 +139,14 @@ export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => 
       const dx = a.x - g.startPoint.x;
       const dy = a.y - g.startPoint.y;
       if (Math.hypot(dx, dy) > TAP_MAX_MOVE) g.moved = true;
-      if (g.moved) commit({ ...g.start, x: g.start.x + dx, y: g.start.y + dy });
+      if (!g.moved) return;
+      const wanted = { ...g.start, x: g.start.x + dx, y: g.start.y + dy };
+      commit(wanted);
+      if (swipeRef.current && transform.current) {
+        // Geste surtout horizontal : la scène accompagne le dépassement du bord.
+        overscroll.current = Math.abs(dx) > Math.abs(dy) ? wanted.x - transform.current.x : 0;
+        shiftStage(overscroll.current * RUBBER, false);
+      }
     }
   };
 
@@ -127,6 +160,12 @@ export function usePanZoom(stage: Size | null, image: Size | null, onTap: () => 
       return;
     }
     gesture.current = null;
+    if (overscroll.current) {
+      const over = overscroll.current;
+      overscroll.current = 0;
+      const swiped = Math.abs(over) >= SWIPE_MIN && (swipeRef.current?.(over < 0 ? 1 : -1) ?? false);
+      if (!swiped) shiftStage(0, true);
+    }
     if (!g || g.moved || e.timeStamp - g.startTime > TAP_MAX_MS || !point || !stage || !image || !transform.current) return;
 
     if (e.timeStamp - lastTap.current < DOUBLE_TAP_MS) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wallpaper } from '@/features/sources/types';
-import { DEFAULT_AUTOMATION, FAVORITES_SOURCE, buildConfig, rotationItems } from './model';
+import { DEFAULT_AUTOMATION, FAVORITES_SOURCE, QUICK_POOL_LIMIT, buildConfig, buildQuickPool, rotationItems } from './model';
 
 const wp = (id: string, local = false): Wallpaper => ({
   id,
@@ -87,5 +87,25 @@ describe('configuration des automatismes', () => {
       item: { id: 'c', uri: '/data/creations/c.jpg' },
       schedules: [{ days: [1, 5], start: '09:00', end: '12:00' }],
     });
+  });
+
+  it('réserve de la tuile : favoris récents d’abord, copie hors ligne si possible', () => {
+    const library = {
+      items: { a: wp('a'), b: wp('b'), c: wp('c') },
+      favorites: { a: 1, b: 3, c: 2, fantome: 9 },
+      offline: { c: { fullPath: '/data/offline/c' } },
+    };
+    expect(buildQuickPool(library, 'ask')).toEqual({
+      target: 'both',
+      items: [
+        { id: 'b', uri: wp('b').full },
+        { id: 'c', uri: '/data/offline/c' },
+        { id: 'a', uri: wp('a').full },
+      ],
+    });
+    expect(buildQuickPool(library, 'lock').target).toBe('lock');
+    const many = Object.fromEntries(Array.from({ length: QUICK_POOL_LIMIT + 5 }, (_, i) => [`w${i}`, i]));
+    const items = Object.fromEntries(Object.keys(many).map((id) => [id, wp(id)]));
+    expect(buildQuickPool({ items, favorites: many, offline: {} }, 'home').items).toHaveLength(QUICK_POOL_LIMIT);
   });
 });

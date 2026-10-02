@@ -1,6 +1,7 @@
 import { WebPlugin } from '@capacitor/core';
 import type {
   Capabilities,
+  ExportImageOptions,
   LocalImage,
   PickImageResult,
   PrismeWallpaperPlugin,
@@ -16,6 +17,8 @@ import type {
  */
 export class PrismeWallpaperWeb extends WebPlugin implements PrismeWallpaperPlugin {
   readonly applied: SetWallpaperOptions[] = [];
+  readonly saved: ExportImageOptions[] = [];
+  readonly shared: (ExportImageOptions & { text?: string; title?: string })[] = [];
   private readonly darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
   constructor() {
@@ -95,6 +98,15 @@ export class PrismeWallpaperWeb extends WebPlugin implements PrismeWallpaperPlug
       input.addEventListener('cancel', () => resolve({ cancelled: true }));
       input.click();
     });
+  }
+
+  async saveToGallery(options: ExportImageOptions): Promise<{ folder: string }> {
+    this.saved.push(options);
+    return { folder: 'Pictures/Prisme' };
+  }
+
+  async shareImage(options: ExportImageOptions & { text?: string; title?: string }): Promise<void> {
+    this.shared.push(options);
   }
 
   async getCacheInfo(): Promise<{ cacheBytes: number; offlineBytes: number }> {

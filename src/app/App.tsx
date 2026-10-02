@@ -4,10 +4,15 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { ExploreScreen } from '@/features/browse/ExploreScreen';
 import { startAutomationSync } from '@/features/automation/sync';
 import { startOfflineSync } from '@/features/library/offline';
+import { UpdateSheet } from '@/features/updates/UpdateSheet';
+import { startUpdateCheck } from '@/features/updates/useUpdates';
+import { startNetworkWatch } from '@/shared/lib/network';
 import { isNative } from '@/shared/native';
 import { ThemeController } from '@/shared/theme/ThemeController';
 import { SnackbarHost } from '@/shared/ui/overlays';
+import { startAppActions } from './appActions';
 import { handleBack } from './backStack';
+import { ErrorBoundary } from './ErrorBoundary';
 import { NavigationBar } from './NavigationBar';
 import { type OverlayEntry, type Tab, useNavigation } from './navigation';
 import { PERSIST_MAX_AGE, queryClient, queryPersister } from './queryClient';
@@ -19,7 +24,10 @@ export function App() {
       persistOptions={{ persister: queryPersister, maxAge: PERSIST_MAX_AGE, buster: 'v1' }}
     >
       <ThemeController />
-      <AppShell />
+      <ErrorBoundary>
+        <AppShell />
+        <UpdateSheet />
+      </ErrorBoundary>
       <SnackbarHost />
     </PersistQueryClientProvider>
   );
@@ -80,8 +88,11 @@ function AppShell() {
   }, [tab]);
 
   useBackButton();
+  useEffect(() => startNetworkWatch(), []);
   useEffect(() => startOfflineSync(), []);
   useEffect(() => startAutomationSync(), []);
+  useEffect(() => startAppActions(), []);
+  useEffect(() => startUpdateCheck(), []);
   useEffect(prefetchScreens, []);
 
   const covered = overlays.length > 0;
@@ -113,7 +124,7 @@ function AppShell() {
 function OverlayView({ overlay }: { overlay: OverlayEntry }) {
   switch (overlay.type) {
     case 'preview':
-      return <PreviewScreen wallpaper={overlay.wallpaper} />;
+      return <PreviewScreen wallpaper={overlay.wallpaper} list={overlay.list} />;
     case 'search':
       return <SearchScreen />;
     case 'pack':

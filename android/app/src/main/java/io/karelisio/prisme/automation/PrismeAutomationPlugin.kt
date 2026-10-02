@@ -17,6 +17,7 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import com.getcapacitor.annotation.Permission
 import com.getcapacitor.annotation.PermissionCallback
+import io.karelisio.prisme.quick.QuickPool
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -106,6 +107,16 @@ class PrismeAutomationPlugin : Plugin() {
                 store.saveState(store.state().copy(lastRotationAt = 0))
             }
             AutomationScheduler.runNow(context)
+            call.resolve()
+        }
+    }
+
+    /** Favoris disponibles pour la tuile et les raccourcis « Fond suivant » / « Favori au hasard ». */
+    @PluginMethod
+    fun setQuickPool(call: PluginCall) {
+        val pool = call.data
+        scope.launch {
+            withContext(Dispatchers.IO) { QuickPool(context).save(pool.toString()) }
             call.resolve()
         }
     }

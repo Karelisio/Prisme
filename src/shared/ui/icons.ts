@@ -87,6 +87,16 @@ import stars from '@material-symbols/svg-400/rounded/stars.svg?raw';
 import mobileLock from '@material-symbols/svg-400/rounded/mobile_lock_portrait.svg?raw';
 import dragHandle from '@material-symbols/svg-400/rounded/drag_handle.svg?raw';
 import imageSearch from '@material-symbols/svg-400/rounded/image_search.svg?raw';
+import share from '@material-symbols/svg-400/rounded/share.svg?raw';
+import undo from '@material-symbols/svg-400/rounded/undo.svg?raw';
+import update from '@material-symbols/svg-400/rounded/update.svg?raw';
+import backup from '@material-symbols/svg-400/rounded/backup.svg?raw';
+import restore from '@material-symbols/svg-400/rounded/settings_backup_restore.svg?raw';
+import vibration from '@material-symbols/svg-400/rounded/mobile_vibrate.svg?raw';
+import wifi from '@material-symbols/svg-400/rounded/wifi.svg?raw';
+import contentCopy from '@material-symbols/svg-400/rounded/content_copy.svg?raw';
+import skipNext from '@material-symbols/svg-400/rounded/skip_next.svg?raw';
+import uploadFile from '@material-symbols/svg-400/rounded/upload_file.svg?raw';
 
 export const ICONS = {
   search,
@@ -176,6 +186,16 @@ export const ICONS = {
   mobileLock,
   dragHandle,
   imageSearch,
+  share,
+  undo,
+  update,
+  backup,
+  restore,
+  vibration,
+  wifi,
+  contentCopy,
+  skipNext,
+  uploadFile,
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Raccourcis de l'icône : glyphe sombre sur fond clair, lisible sur tous les lanceurs. -->
+    <color name="shortcut_background">#ECE9F7</color>
+    <color name="shortcut_glyph">#1B1530</color>
+</resources>

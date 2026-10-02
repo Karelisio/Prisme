@@ -3,6 +3,7 @@ package io.karelisio.prisme.automation
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import io.karelisio.prisme.system.ErrorLog
 import io.karelisio.prisme.wallpaper.AppliedWallpapers
 import io.karelisio.prisme.wallpaper.ScreenInfo
 import io.karelisio.prisme.wallpaper.WallpaperApplier
@@ -20,9 +21,19 @@ import org.json.JSONObject
 class AutomationWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
+            evaluate()
+        } catch (e: Exception) {
+            // Erreur imprévue : gardée dans le journal visible dans Diagnostic.
+            ErrorLog.record(applicationContext, "Automatisme", e)
+            Result.failure()
+        }
+    }
+
+    private fun evaluate(): Result {
         val store = AutomationStore(applicationContext)
         val config = store.config()
-        if (!config.anyEnabled) return@withContext Result.success()
+        if (!config.anyEnabled) return Result.success()
 
         val files = AutomationFiles(applicationContext)
         if (inputData.getBoolean(KEY_PREFETCH, false)) files.prefetch(config)
@@ -43,7 +54,7 @@ class AutomationWorker(context: Context, params: WorkerParameters) : CoroutineWo
             if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.success()
         }
         AutomationScheduler.scheduleNext(applicationContext, config, store.state(), moment)
-        result
+        return result
     }
 
     private fun weather(store: AutomationStore, config: AutomationConfig, now: Long): WeatherCondition? {

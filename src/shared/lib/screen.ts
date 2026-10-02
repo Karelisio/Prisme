@@ -2,14 +2,25 @@ import { useEffect, useState } from 'react';
 import { PrismeWallpaper, type ScreenInfo } from '@/shared/native';
 
 let cached: Promise<ScreenInfo> | null = null;
+let known: ScreenInfo | null = null;
+
+function fallbackScreen(): ScreenInfo {
+  const density = window.devicePixelRatio || 1;
+  return { width: Math.round(window.innerWidth * density), height: Math.round(window.innerHeight * density), density };
+}
 
 /** Taille physique de l'écran (en portrait), lue une seule fois auprès du plugin. */
 export function getScreenInfo(): Promise<ScreenInfo> {
-  cached ??= PrismeWallpaper.getScreenInfo().catch(() => {
-    const density = window.devicePixelRatio || 1;
-    return { width: Math.round(window.innerWidth * density), height: Math.round(window.innerHeight * density), density };
-  });
+  cached ??= PrismeWallpaper.getScreenInfo()
+    .catch(fallbackScreen)
+    .then((info) => (known = info));
   return cached;
+}
+
+/** Version synchrone : la valeur lue par le plugin si elle est déjà connue, sinon une estimation. */
+export function currentScreenInfo(): ScreenInfo {
+  if (!known) void getScreenInfo();
+  return known ?? fallbackScreen();
 }
 
 export function useScreenInfo(): ScreenInfo | null {

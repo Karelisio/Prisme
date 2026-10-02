@@ -7,24 +7,41 @@ import { usePreviewSrc, useThumbSrc } from '@/features/library/useImageSrc';
 import { useSettings } from '@/features/settings/store';
 import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
+import { haptic } from '@/shared/lib/haptics';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { type NormalizedRect, PrismeWallpaper, type WallpaperTarget, isNative, nativeErrorMessage } from '@/shared/native';
 import { useTheme } from '@/shared/theme/ThemeController';
-import { Button, Icon, IconButton, LinearProgress } from '@/shared/ui/components';
-import { showSnackbar } from '@/shared/ui/overlays';
+import { Button, Icon, IconButton, LinearProgress, ListItem } from '@/shared/ui/components';
+import { BottomSheet, showSnackbar } from '@/shared/ui/overlays';
 import { setLiveWallpaper } from '@/features/live/live';
 import { LinkedSheet } from '@/features/linked/LinkedSheet';
 import { PaletteSheet, simulationVars } from '@/features/palette/PaletteSheet';
 import type { ColorScheme } from '@/shared/theme/scheme';
 import { type ApplyChoice, ApplySheet } from './ApplySheet';
-import { TARGET_LABELS, applyWallpaper } from './applyWallpaper';
+import { TARGET_LABELS, applyWallpaper, undoLastApply } from './applyWallpaper';
 import { type Size, fitStage } from './cropMath';
+import { saveToGallery, shareWallpaper } from './exportWallpaper';
 import { InfoSheet, sourceName } from './InfoSheet';
 import { Simulation, type SimulationMode } from './Simulation';
 import { usePanZoom } from './usePanZoom';
 import './preview.css';
 
-type Sheet = 'apply' | 'info' | 'collections' | 'palette' | 'linked' | null;
+type Sheet = 'apply' | 'info' | 'collections' | 'palette' | 'linked' | 'more' | null;
+
+/** Tâche en cours affichée en bas de l'aperçu (application, enregistrement, partage). */
+interface Task {
+  label: string;
+  progress?: number;
+}
+
+/** Annulation proposée juste après l'application d'un fond. */
+async function undo() {
+  try {
+    showSnackbar(await undoLastApply());
+  } catch (error) {
+    showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+  }
+}
 
 function isLightColor(hex: string): boolean {
   const n = Number.parseInt(hex.replace('#', ''), 16);
@@ -42,7 +59,7 @@ function useViewport(): Size {
   return size;
 }
 
-export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
+export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?: Wallpaper[] }) {
   const screen = useScreenInfo();
   const viewport = useViewport();
   const stage = useMemo(() => (screen ? fitStage(viewport, screenRatio(screen)) : null), [screen, viewport]);
@@ -50,12 +67,22 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [mode, setMode] = useState<SimulationMode>('none');
   const [sheet, setSheet] = useState<Sheet>(null);
-  const [applying, setApplying] = useState<{ progress?: number } | null>(null);
+  const [task, setTask] = useState<Task | null>(null);
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [hint, setHint] = useState(false);
   const [simScheme, setSimScheme] = useState<ColorScheme | null>(null);
   const hideTimer = useRef<number | undefined>(undefined);
-  const panZoom = usePanZoom(stage, image, () => setControlsVisible((v) => !v));
+  const replace = useNavigation((s) => s.replace);
+  const index = list ? list.findIndex((w) => w.id === wallpaper.id) : -1;
+  // Glisser au-delà du bord de l'image : fond voisin de la grille d'origine.
+  const onSwipe = (direction: 1 | -1) => {
+    const next = list && index >= 0 ? list[index + direction] : undefined;
+    if (!next || task) return false;
+    haptic('tick');
+    replace({ type: 'preview', wallpaper: next, list });
+    return true;
+  };
+  const panZoom = usePanZoom(stage, image, () => setControlsVisible((v) => !v), { onSwipe: list ? onSwipe : undefined });
   const thumbSrc = useThumbSrc(wallpaper);
   const previewSrc = usePreviewSrc(wallpaper);
   const favorite = useLibrary((s) => !!s.favorites[wallpaper.id]);
@@ -90,14 +117,37 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
     [],
   );
 
-  const isApplying = applying !== null;
+  const busy = task !== null;
   useEffect(() => {
-    if (!isApplying) return;
+    if (!busy) return;
     const handle = PrismeWallpaper.addListener('applyProgress', (e) => {
-      if (e.id === wallpaper.id) setApplying({ progress: e.progress });
+      if (e.id === wallpaper.id) setTask((t) => (t ? { ...t, progress: e.progress } : t));
     });
     return () => void handle.then((h) => h.remove());
-  }, [isApplying, wallpaper.id]);
+  }, [busy, wallpaper.id]);
+
+  /** Exécute une action longue (téléchargement HD) avec sa progression en bas de l'écran. */
+  const run = async (label: string, action: () => Promise<void>) => {
+    setSheet(null);
+    setTask({ label });
+    try {
+      await action();
+    } catch (error) {
+      haptic('reject');
+      showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+    } finally {
+      setTask(null);
+    }
+  };
+
+  const onSave = () =>
+    run('Enregistrement…', async () => {
+      const message = await saveToGallery(wallpaper);
+      haptic('confirm');
+      showSnackbar(message);
+    });
+
+  const onShare = () => run('Préparation du partage…', () => shareWallpaper(wallpaper));
 
   const [linkedCrop, setLinkedCrop] = useState<NormalizedRect | undefined>();
 
@@ -118,14 +168,16 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
     }
     const target: WallpaperTarget = choice;
     setSheet(null);
-    setApplying({});
+    setTask({ label: 'Application…' });
     try {
       await applyWallpaper({ wallpaper, target, crop: panZoom.getCrop() });
-      showSnackbar(`Fond appliqué : ${TARGET_LABELS[target].toLowerCase()}`);
+      haptic('confirm');
+      showSnackbar(`Fond appliqué : ${TARGET_LABELS[target].toLowerCase()}`, { label: 'Annuler', onAction: () => void undo() });
     } catch (error) {
+      haptic('reject');
       showSnackbar(`Échec : ${nativeErrorMessage(error)}`, { label: 'Réessayer', onAction: () => void apply(target) });
     } finally {
-      setApplying(null);
+      setTask(null);
     }
   };
 
@@ -151,6 +203,7 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
 
   const onFavorite = () => {
     const added = toggleFavorite(wallpaper);
+    haptic('tick');
     showSnackbar(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
   };
 
@@ -189,19 +242,9 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
               selected={favorite}
               onClick={onFavorite}
             />
-            {features.editor && (
-              <IconButton
-                icon="formatPaint"
-                label="Retoucher"
-                variant="on-image"
-                onClick={() => push({ type: 'editor', wallpaper, crop: panZoom.getCrop() })}
-              />
-            )}
-            {features.palette && (
-              <IconButton icon="palette" label="Couleurs Material You" variant="on-image" onClick={() => setSheet('palette')} />
-            )}
             <IconButton icon="libraryAdd" label="Ajouter à une collection" variant="on-image" onClick={() => setSheet('collections')} />
-            <IconButton icon="info" label="Informations" variant="on-image" onClick={() => setSheet('info')} />
+            <IconButton icon="share" label="Partager" variant="on-image" onClick={() => void onShare()} disabled={busy} />
+            <IconButton icon="moreVert" label="Plus d’actions" variant="on-image" onClick={() => setSheet('more')} />
           </div>
 
           <div className="preview__bottom">
@@ -234,7 +277,7 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
                 </button>
               ))}
             </div>
-            <Button large icon="wallpaper" onClick={onApplyPressed} disabled={!!applying} className="preview__apply">
+            <Button large icon="wallpaper" onClick={onApplyPressed} disabled={busy} className="preview__apply">
               Appliquer
             </Button>
           </div>
@@ -247,12 +290,41 @@ export function PreviewScreen({ wallpaper }: { wallpaper: Wallpaper }) {
         </div>
       )}
 
-      {applying && (
+      {task && (
         <div className="preview__progress" role="status">
-          <span>{applying.progress !== undefined && applying.progress < 1 ? `Téléchargement ${Math.round(applying.progress * 100)} %` : 'Application…'}</span>
-          <LinearProgress value={applying.progress} />
+          <span>{task.progress !== undefined && task.progress < 1 ? `Téléchargement ${Math.round(task.progress * 100)} %` : task.label}</span>
+          <LinearProgress value={task.progress} />
         </div>
       )}
+
+      <BottomSheet open={sheet === 'more'} onClose={() => setSheet(null)} label="Plus d’actions">
+        <ul className="list">
+          <li>
+            <ListItem headline="Enregistrer dans la galerie" supporting="Image HD, album Prisme" leading={<Icon name="download" />} onClick={() => void onSave()} disabled={busy} />
+          </li>
+          {features.editor && (
+            <li>
+              <ListItem
+                headline="Retoucher"
+                supporting="Flou, grain, dégradé, texte…"
+                leading={<Icon name="formatPaint" />}
+                onClick={() => {
+                  setSheet(null);
+                  push({ type: 'editor', wallpaper, crop: panZoom.getCrop() });
+                }}
+              />
+            </li>
+          )}
+          {features.palette && (
+            <li>
+              <ListItem headline="Couleurs Material You" supporting="Palette générée par ce fond" leading={<Icon name="palette" />} onClick={() => setSheet('palette')} />
+            </li>
+          )}
+          <li>
+            <ListItem headline="Informations" supporting="Photographe, source, dimensions" leading={<Icon name="info" />} onClick={() => setSheet('info')} />
+          </li>
+        </ul>
+      </BottomSheet>
 
       <ApplySheet open={sheet === 'apply'} onClose={() => setSheet(null)} onApply={(t) => void apply(t)} allowLinked />
       {features.linked && (
