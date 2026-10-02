@@ -54,8 +54,15 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
 - Selon le lieu : un fond par lieu (maison, travail…), rayon réglable ; position lue app fermée.
 - Pochette de la musique : le fond devient la pochette du morceau en cours (fond flouté autour),
   puis le fond précédent revient quand la musique s'arrête.
-- Éditeur : flou, assombrissement, grain, dégradé, texte, noir et blanc.
-- Générateur de fonds minimalistes (uni, dégradés, aurore, vagues, formes).
+- Éditeur : filtres (noir et blanc, sépia, vintage, duotone, contraste, froid, chaud), effets
+  artistiques (pixel art, mosaïque, trame, peinture), recadrage libre, rotation et redressement,
+  photo paysage en portrait (bords flous ou couleur dominante), flou, assombrissement, grain,
+  dégradé, texte.
+- Générateur de fonds : unis, dégradés, aurore, dégradés organiques (mesh, palette Material You),
+  motifs (géométrique, pois, vagues, Bauhaus, rayures, terrazzo, grille isométrique, formes, dunes) ;
+  collage de 2 à 4 photos (9 dispositions, polaroïds, espacement, coins, fond).
+- Citation du jour : un proverbe ou une de tes citations posé sur le fond (verrouillage par défaut),
+  renouvelé chaque matin, même app fermée.
 - Aperçu de la palette Material You que donnera un fond.
 - Fonds accueil/verrouillage liés (variante floue, sombre, gros plan…).
 - Mode focus : fond épuré pendant des plages horaires, puis retour au fond habituel.
@@ -160,8 +167,10 @@ src/
     automation/           fonds dynamiques, rotation, mode focus, fêtes, soir, lieux (configuration)
     live/                 fonds animés (genres, réglages, liste « à chaque déverrouillage »)
     music/                pochette de la musique
-    editor/               éditeur
-    generator/            générateur
+    editor/               éditeur (filtres, effets, cadrage, ajustement)
+    generator/            générateur (dégradés, mesh, motifs)
+    collage/              collage de photos
+    quote/                citation du jour (proverbes, mes citations, aperçu)
     palette/              palette Material You
     linked/               fonds liés
     diagnostics/          journal d'erreurs, test du plugin natif sur l'appareil
@@ -175,6 +184,7 @@ android/app/src/main/java/io/karelisio/prisme/
                           météo), service vidéo à part, double-tap, déverrouillage, pause éco
   widget/                 widget d'accueil
   music/                  écoute des sessions média, composition de la pochette
+  quote/                  citation du jour : choix du jour, rendu sur le fond, renouvellement à 6 h
   quick/                  tuile « Fond suivant », raccourcis de l'icône
   system/                 version, mises à jour, réseau, fichiers, vibrations, journal d'erreurs,
                           notification « Fond du jour »
