@@ -17,9 +17,10 @@
 }
 
 .seed-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  justify-content: space-between;
+  gap: 12px 0;
 }
 
 .option-row {
@@ -45,4 +46,10 @@
 
 .option-row__chevron {
   color: var(--md-sys-color-on-surface-variant);
+}
+
+.settings-hint {
+  margin: 12px 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 13px/18px var(--md-font);
 }

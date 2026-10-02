@@ -3,11 +3,13 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
 import { useSettings } from '@/features/settings/store';
 import { PrismeWallpaper, type SystemTheme, isNative } from '@/shared/native';
-import { type ColorScheme, applySchemeToDocument, resolveScheme } from './scheme';
+import { type ColorScheme, applySchemeToDocument, resolveAppearance, resolveScheme } from './scheme';
 
 interface ThemeState {
   system?: SystemTheme;
   isDark: boolean;
+  /** Thème noir (fonds noirs purs) : toujours accompagné de `isDark`. */
+  black: boolean;
   /** Schéma appliqué à l'interface (sert aussi de palette au générateur). */
   scheme?: ColorScheme;
   /** Style imposé aux barres système par un écran plein cadre (aperçu sur fond d'image). */
@@ -17,6 +19,7 @@ interface ThemeState {
 
 export const useTheme = create<ThemeState>((set) => ({
   isDark: false,
+  black: false,
   barsOverride: null,
   setBarsOverride: (barsOverride) => set({ barsOverride }),
 }));
@@ -43,16 +46,16 @@ export function ThemeController() {
     };
   }, []);
 
-  const isDark = themeMode === 'dark' || (themeMode === 'system' && (system?.isDark ?? mediaDark));
+  const { isDark, black } = resolveAppearance(themeMode, system?.isDark ?? mediaDark);
   const scheme = useMemo(
-    () => resolveScheme({ system, dynamicColor, seed: seedColor, isDark }),
-    [system, dynamicColor, seedColor, isDark],
+    () => resolveScheme({ system, dynamicColor, seed: seedColor, isDark, black }),
+    [system, dynamicColor, seedColor, isDark, black],
   );
 
   useLayoutEffect(() => {
-    applySchemeToDocument(scheme, isDark);
-    useTheme.setState({ system, isDark, scheme });
-  }, [scheme, isDark, system]);
+    applySchemeToDocument(scheme, isDark, document.documentElement, black);
+    useTheme.setState({ system, isDark, black, scheme });
+  }, [scheme, isDark, black, system]);
 
   useEffect(() => {
     if (!isNative) return;

@@ -2,7 +2,7 @@ import { type AutomationPrefs, DEFAULT_AUTOMATION } from '@/features/automation/
 import type { Hidden, HiddenAuthor, HiddenWallpaper } from '@/features/discover/hidden';
 import type { Photographer } from '@/features/discover/store';
 import { type Collection, HISTORY_LIMIT, type HistoryEntry, type LibraryData, prune } from '@/features/library/model';
-import { DEFAULT_SETTINGS, type Settings } from '@/features/settings/store';
+import { DEFAULT_SETTINGS, type Settings, migrateSettings } from '@/features/settings/store';
 import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
 
@@ -163,7 +163,8 @@ export function parseBackup(text: string): Backup {
     exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt : '',
     appVersion: typeof data.appVersion === 'string' ? data.appVersion : '',
     library: { items, favorites, collections, history },
-    settings: pickLike(DEFAULT_SETTINGS as unknown as Plain, data.settings) as Partial<Settings>,
+    // Une sauvegarde d'avant la mosaïque porte `gridColumns` : il devient la disposition de la grille.
+    settings: pickLike(DEFAULT_SETTINGS as unknown as Plain, migrateSettings(data.settings, 1)) as Partial<Settings>,
     automation: pickLike(DEFAULT_AUTOMATION as unknown as Plain, data.automation) as Partial<AutomationPrefs>,
     discover: parseDiscover(data.discover),
   };

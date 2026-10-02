@@ -72,6 +72,101 @@ img {
   }
 }
 
+/*
+ * Transitions entre écrans (View Transitions API, voir app/transitions.ts). Pendant une transition,
+ * <html data-vt="…"> porte son type ; les animations d'apparition propres aux écrans sont alors coupées,
+ * la transition s'en charge.
+ */
+html[data-vt] .overlay-screen,
+html[data-vt] .preview,
+html[data-vt] .intro {
+  animation: none;
+}
+
+::view-transition-group(root) {
+  animation-duration: 250ms;
+  animation-timing-function: var(--md-easing-standard);
+}
+
+/* Écran qui s'ouvre : il glisse et apparaît par-dessus l'ancien, qui reste en place. */
+html[data-vt='forward']::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html[data-vt='forward']::view-transition-new(root) {
+  animation: vt-enter 300ms var(--md-easing-emphasized-decelerate) both;
+  mix-blend-mode: normal;
+}
+
+/* Écran qui se ferme : il glisse et s'efface en laissant apparaître celui du dessous. */
+html[data-vt='back']::view-transition-old(root) {
+  z-index: 1;
+  animation: vt-leave 220ms var(--md-easing-emphasized-accelerate) both;
+  mix-blend-mode: normal;
+}
+
+html[data-vt='back']::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html[data-vt='fade']::view-transition-group(root) {
+  animation-duration: 180ms;
+}
+
+/* Miniature <-> aperçu : le fond des écrans se fond pendant que l'image grandit (ou rétrécit). */
+html[data-vt^='hero']::view-transition-group(root) {
+  animation-duration: 300ms;
+}
+
+::view-transition-group(hero) {
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Les formats de la miniature et de la scène diffèrent : l'image est recadrée (et le débordement coupé), jamais déformée. */
+::view-transition-old(hero),
+::view-transition-new(hero) {
+  height: 100%;
+  object-fit: cover;
+  overflow: clip;
+}
+
+@keyframes vt-enter {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes vt-leave {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-image-pair(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 1ms !important;
+  }
+}
+
+/* Thème noir (AMOLED) : les barres se fondent dans le fond noir, un filet les sépare du contenu. */
+:root[data-amoled='true'] .nav-bar {
+  background: var(--md-sys-color-surface);
+  box-shadow: inset 0 1px 0 var(--md-sys-color-outline-variant);
+}
+
+:root[data-amoled='true'] .top-bar--scrolled {
+  background: var(--md-sys-color-surface);
+  box-shadow: 0 1px 0 var(--md-sys-color-outline-variant);
+}
+
 /* Diagnostic */
 .diagnostics {
   padding: 0 16px 16px;

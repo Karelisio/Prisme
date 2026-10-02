@@ -24,7 +24,8 @@ export function currentScreenInfo(): ScreenInfo {
 }
 
 export function useScreenInfo(): ScreenInfo | null {
-  const [info, setInfo] = useState<ScreenInfo | null>(null);
+  // Valeur déjà connue : disponible dès le premier rendu (l'aperçu ne démarre pas sans scène dimensionnée).
+  const [info, setInfo] = useState<ScreenInfo | null>(known);
   useEffect(() => {
     let alive = true;
     void getScreenInfo().then((value) => alive && setInfo(value));

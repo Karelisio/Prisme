@@ -8,6 +8,7 @@ import { startOfflineSync } from '@/features/library/offline';
 import { startLiveSync } from '@/features/live/liveSync';
 import { startPlaylistSync } from '@/features/live/playlistSync';
 import { startMusicSync } from '@/features/music/musicSync';
+import { useOnboarding } from '@/features/onboarding/store';
 import { UpdateSheet } from '@/features/updates/UpdateSheet';
 import { startUpdateCheck } from '@/features/updates/useUpdates';
 import { startNetworkWatch } from '@/shared/lib/network';
@@ -20,6 +21,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { NavigationBar } from './NavigationBar';
 import { type OverlayEntry, type Tab, useNavigation } from './navigation';
 import { PERSIST_MAX_AGE, queryClient, queryPersister } from './queryClient';
+import { flushPendingNavigation } from './transitions';
 
 export function App() {
   return (
@@ -29,11 +31,33 @@ export function App() {
     >
       <ThemeController />
       <ErrorBoundary>
-        <AppShell />
+        <Root />
         <UpdateSheet />
       </ErrorBoundary>
       <SnackbarHost />
     </PersistQueryClientProvider>
+  );
+}
+
+// L'introduction ne sert qu'une fois : son code n'est chargé que lorsqu'elle s'affiche.
+const Onboarding = lazy(() => import('@/features/onboarding/Onboarding').then((m) => ({ default: m.Onboarding })));
+
+/** L'app, et l'introduction par-dessus au tout premier lancement (ou via Réglages › Revoir l'introduction). */
+function Root() {
+  const seen = useOnboarding((s) => s.seen);
+  // Au premier lancement, l'app (et ses chargements) ne démarre qu'une fois l'introduction fermée.
+  const [started, setStarted] = useState(seen);
+  if (seen && !started) setStarted(true);
+  useBackButton();
+  return (
+    <>
+      {started && <AppShell />}
+      {!seen && (
+        <Suspense fallback={null}>
+          <Onboarding />
+        </Suspense>
+      )}
+    </>
   );
 }
 
@@ -105,7 +129,6 @@ function AppShell() {
     setVisited((v) => (v.has(tab) ? v : new Set([...v, tab])));
   }, [tab]);
 
-  useBackButton();
   useEffect(() => startNetworkWatch(), []);
   useEffect(() => startOfflineSync(), []);
   useEffect(() => startAutomationSync(), []);
@@ -118,6 +141,8 @@ function AppShell() {
   useEffect(prefetchScreens, []);
 
   const covered = overlays.length > 0;
+  // Introduction rouverte depuis les Réglages : l'app reste en place dessous, mais hors d'atteinte.
+  const introOpen = useOnboarding((s) => !s.seen);
   useEffect(() => {
     document.body.classList.toggle('has-nav-bar', !covered);
   }, [covered]);
@@ -126,14 +151,14 @@ function AppShell() {
     <>
       {(Object.keys(TAB_SCREENS) as Tab[]).map((key) =>
         visited.has(key) ? (
-          <section key={key} className="tab" data-active={key === tab} inert={key !== tab || covered}>
+          <section key={key} className="tab" data-active={key === tab} inert={key !== tab || covered || introOpen}>
             <Suspense fallback={null}>{TAB_SCREENS[key]()}</Suspense>
           </section>
         ) : null,
       )}
-      {!covered && <NavigationBar />}
+      {!covered && !introOpen && <NavigationBar />}
       {overlays.map((overlay, i) => (
-        <div key={overlay.key} className="overlay-layer" inert={i < overlays.length - 1}>
+        <div key={overlay.key} className="overlay-layer" inert={i < overlays.length - 1 || introOpen}>
           <Suspense fallback={null}>
             <OverlayView overlay={overlay} />
           </Suspense>
@@ -188,6 +213,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
 function useBackButton() {
   useEffect(() => {
     const onBack = () => {
+      // Un changement d'écran déjà demandé (retour pressé deux fois de suite) doit être visible avant de décider.
+      flushPendingNavigation();
       if (handleBack()) return;
       const nav = useNavigation.getState();
       if (nav.overlays.length > 0) nav.pop();
