@@ -13,6 +13,7 @@ import { startQuoteSync } from '@/features/quote/quoteSync';
 import { UpdateSheet } from '@/features/updates/UpdateSheet';
 import { startUpdateCheck } from '@/features/updates/useUpdates';
 import { startNetworkWatch } from '@/shared/lib/network';
+import { useLanguage } from '@/shared/i18n';
 import { isNative } from '@/shared/native';
 import { ThemeController } from '@/shared/theme/ThemeController';
 import { SnackbarHost } from '@/shared/ui/overlays';
@@ -26,13 +27,15 @@ import { PERSIST_MAX_AGE, queryClient, queryPersister } from './queryClient';
 import { flushPendingNavigation } from './transitions';
 
 export function App() {
+  // Changer de langue redessine toute l'interface : les textes sont traduits au rendu (`t`).
+  const language = useLanguage((s) => s.language);
   return (
     <PersistQueryClientProvider
       client={queryClient}
       persistOptions={{ persister: queryPersister, maxAge: PERSIST_MAX_AGE, buster: 'v1' }}
     >
       <ThemeController />
-      <ErrorBoundary>
+      <ErrorBoundary key={language}>
         <Root />
         <UpdateSheet />
       </ErrorBoundary>

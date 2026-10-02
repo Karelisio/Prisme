@@ -13,6 +13,7 @@ import { useCapabilities } from '@/shared/lib/capabilities';
 import { formatBytes } from '@/shared/lib/format';
 import { PrismeWallpaper, type WallpaperTarget, nativeErrorMessage } from '@/shared/native';
 import { PrismeSystem } from '@/shared/native/system';
+import { type LanguagePref, t } from '@/shared/i18n';
 import { Button, Chip, Icon, ListItem, Switch } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { useOnboarding } from '@/features/onboarding/store';
@@ -21,6 +22,13 @@ import { GridPicker, ThemePicker } from './pickers';
 import { SourceToggles } from './SourceToggles';
 import { useSettings } from './store';
 import './settings.css';
+
+/** Langues de l'interface : celle du téléphone, ou imposée (nom de la langue dans la langue elle-même). */
+const LANGUAGES: readonly { value: LanguagePref; label: string }[] = [
+  { value: 'system', label: 'Langue du téléphone' },
+  { value: 'fr', label: 'Français' },
+  { value: 'en', label: 'English' },
+];
 
 /** Couleurs d'accent proposées (quand les couleurs dynamiques du système ne s'appliquent pas). */
 const SEEDS = [
@@ -107,6 +115,15 @@ export function SettingsScreen() {
         <div className="settings-block">
           <ThemePicker value={settings.themeMode} onChange={(themeMode) => settings.update({ themeMode })} />
           {settings.themeMode === 'black' && <p className="settings-hint">Fonds noirs purs : plus de contraste, et moins de batterie sur un écran OLED.</p>}
+        </div>
+        <div className="settings-block">
+          <div className="chip-wrap" role="group" aria-label="Langue">
+            {LANGUAGES.map((l) => (
+              <Chip key={l.value} icon={l.value === 'system' ? 'mobile' : undefined} selected={settings.language === l.value} onClick={() => settings.update({ language: l.value })}>
+                {l.value === 'system' ? t(l.label) : l.label}
+              </Chip>
+            ))}
+          </div>
         </div>
         <ListItem
           headline="Couleurs dynamiques"

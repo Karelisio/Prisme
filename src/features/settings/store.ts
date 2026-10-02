@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_SOURCES, type SourceToggles } from '@/features/sources/registry';
+import type { LanguagePref } from '@/shared/i18n';
 import type { WallpaperTarget } from '@/shared/native';
 import { DEFAULT_SEED } from '@/shared/theme/scheme';
 
@@ -40,6 +41,8 @@ export interface FeatureFlags {
 export type FeatureKey = keyof FeatureFlags;
 
 export interface Settings {
+  /** Langue de l'interface : celle du téléphone, ou imposée. */
+  language: LanguagePref;
   themeMode: ThemeMode;
   dynamicColor: boolean;
   seedColor: string;
@@ -63,6 +66,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  language: 'system',
   themeMode: 'system',
   dynamicColor: true,
   seedColor: DEFAULT_SEED,
@@ -100,6 +104,7 @@ type Plain = Record<string, unknown>;
 const isPlain = (value: unknown): value is Plain => !!value && typeof value === 'object' && !Array.isArray(value);
 const isGridLayout = (value: unknown): value is GridLayout => (GRID_LAYOUTS as readonly unknown[]).includes(value);
 const isThemeMode = (value: unknown): value is ThemeMode => (THEME_MODES as readonly unknown[]).includes(value);
+const isLanguagePref = (value: unknown): value is LanguagePref => value === 'system' || value === 'fr' || value === 'en';
 
 /**
  * Reprend des réglages enregistrés par une version précédente (ou lus dans une sauvegarde) :
@@ -116,6 +121,7 @@ export function migrateSettings(persisted: unknown, version: number): Partial<Se
   delete saved.gridColumns;
   if (!isGridLayout(saved.gridLayout)) delete saved.gridLayout;
   if (!isThemeMode(saved.themeMode)) delete saved.themeMode;
+  if (!isLanguagePref(saved.language)) delete saved.language;
   return saved as Partial<Settings>;
 }
 
