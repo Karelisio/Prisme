@@ -1,4 +1,5 @@
 import { env } from '@/shared/config/env';
+import { getLanguage, t } from '@/shared/i18n';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
 import { UNKNOWN_COLOR, pexelsColor } from './filters';
 import { ApiError, type ColorChoice, type SourcePage, type Wallpaper } from './types';
@@ -35,7 +36,7 @@ export function mapPexels(photo: PexelsPhoto, thumbWidth: number): Wallpaper {
     width: photo.width,
     height: photo.height,
     color: photo.avg_color ?? UNKNOWN_COLOR,
-    alt: photo.alt || 'Photo Pexels',
+    alt: photo.alt || t('Photo Pexels'),
     thumb: withParams(base, { auto: 'compress', cs: 'tinysrgb', fit: 'crop', w: thumbWidth, h: thumbHeight }),
     preview: withParams(base, { auto: 'compress', cs: 'tinysrgb', w: 1080 }),
     full: withParams(base, { auto: 'compress', cs: 'tinysrgb', w: Math.min(photo.width, 3200) }),
@@ -50,19 +51,19 @@ type Params = Record<string, string | number | undefined>;
 async function request<T = PhotosResponse>(path: string, params: Params, optional: true): Promise<T | null>;
 async function request<T = PhotosResponse>(path: string, params: Params): Promise<T>;
 async function request<T = PhotosResponse>(path: string, params: Params, optional = false): Promise<T | null> {
-  if (!env.pexelsKey) throw new ApiError('pexels', 'missing_key', 'Clé Pexels manquante');
+  if (!env.pexelsKey) throw new ApiError('pexels', 'missing_key', t('Clé Pexels manquante'));
   let res;
   try {
     res = await getJson<T>(withParams(`${API}${path}`, params), { Authorization: env.pexelsKey });
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('pexels', 'network', 'Pexels injoignable');
+    if (error instanceof NetworkError) throw new ApiError('pexels', 'network', t('Pexels injoignable'));
     throw error;
   }
   if (res.status >= 200 && res.status < 300) return res.data;
   if (optional && res.status === 404) return null;
-  if (res.status === 429) throw new ApiError('pexels', 'rate_limit', 'Limite de requêtes Pexels atteinte, réessaie plus tard');
-  if (res.status === 401 || res.status === 403) throw new ApiError('pexels', 'auth', 'Clé Pexels refusée');
-  throw new ApiError('pexels', 'server', `Erreur Pexels (${res.status})`);
+  if (res.status === 429) throw new ApiError('pexels', 'rate_limit', t('Limite de requêtes Pexels atteinte, réessaie plus tard'));
+  if (res.status === 401 || res.status === 403) throw new ApiError('pexels', 'auth', t('Clé Pexels refusée'));
+  throw new ApiError('pexels', 'server', t('Erreur Pexels ({status})', { status: res.status }));
 }
 
 function toPage(data: PhotosResponse, page: number, thumbWidth: number): SourcePage {
@@ -86,7 +87,7 @@ export async function pexelsSearch(
     per_page: PER_PAGE,
     orientation: 'portrait',
     color: color ? (pexelsColor(color) ?? undefined) : undefined,
-    locale: 'fr-FR',
+    locale: getLanguage() === 'fr' ? 'fr-FR' : 'en-US',
   });
   return toPage(data, page, thumbWidth);
 }

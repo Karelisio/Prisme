@@ -4,12 +4,20 @@ import { setLiveWallpaper } from '@/features/live/live';
 import { applyUri } from '@/features/library/useImageSrc';
 import type { Wallpaper } from '@/features/sources/types';
 import { trackUnsplashDownload } from '@/features/sources/unsplash';
+import { t } from '@/shared/i18n';
 import { type NormalizedRect, PrismeWallpaper, type WallpaperTarget } from '@/shared/native';
 
+/** Noms des écrans, dans la langue de l'interface (lus au moment de l'affichage). */
 export const TARGET_LABELS: Record<WallpaperTarget, string> = {
-  home: "Écran d'accueil",
-  lock: 'Écran de verrouillage',
-  both: 'Accueil et verrouillage',
+  get home() {
+    return t("Écran d'accueil");
+  },
+  get lock() {
+    return t('Écran de verrouillage');
+  },
+  get both() {
+    return t('Accueil et verrouillage');
+  },
 };
 
 export interface ApplyRequest {
@@ -48,14 +56,16 @@ export async function undoLastApply(): Promise<string> {
   const { history, items, removeHistory } = useLibrary.getState();
   const plan = planUndo(history);
   const steps = plan?.steps.filter((step) => items[step.entry.wallpaperId]) ?? [];
-  if (!plan || steps.length === 0) return 'Aucun fond précédent à restaurer';
+  if (!plan || steps.length === 0) return t('Aucun fond précédent à restaurer');
   for (const step of steps) {
     const wallpaper = items[step.entry.wallpaperId];
     if (wallpaper) await applyWallpaper({ wallpaper, target: step.target, crop: step.entry.crop, uri: step.entry.uri, recordHistory: false });
   }
   removeHistory(plan.undone.id);
   const [missing] = plan.missing;
-  return missing && plan.missing.length === 1 ? `Fond précédent restauré, sauf sur ${SCREEN_NAMES[missing]}` : 'Fond précédent restauré';
+  return missing && plan.missing.length === 1
+    ? t('Fond précédent restauré, sauf sur {screen}', { screen: t(SCREEN_NAMES[missing]) })
+    : t('Fond précédent restauré');
 }
 
 /** Choix proposés par la feuille « Appliquer sur ». */
@@ -65,5 +75,5 @@ export type ApplyChoice = WallpaperTarget | 'live' | 'linked';
 export async function applyCreation(creation: Wallpaper, choice: Exclude<ApplyChoice, 'linked'>): Promise<string> {
   if (choice === 'live') return setLiveWallpaper(creation);
   await applyWallpaper({ wallpaper: creation, target: choice });
-  return `Fond appliqué : ${TARGET_LABELS[choice].toLowerCase()}`;
+  return t('Fond appliqué : {screen}', { screen: TARGET_LABELS[choice].toLowerCase() });
 }

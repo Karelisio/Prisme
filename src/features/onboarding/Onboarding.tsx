@@ -4,6 +4,7 @@ import { runTransition } from '@/app/transitions';
 import { ThemePicker } from '@/features/settings/pickers';
 import { SourceToggles } from '@/features/settings/SourceToggles';
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { Button, Chip, Icon, IconButton } from '@/shared/ui/components';
 import type { IconName } from '@/shared/ui/icons';
 import { showSnackbar } from '@/shared/ui/overlays';
@@ -40,7 +41,7 @@ export function Onboarding() {
   const close = (keepTastes: boolean) => {
     const chosen = keepTastes ? tastes : undefined;
     runTransition(() => finish(chosen), { kind: 'fade' });
-    if (chosen && hasTastes(chosen)) showSnackbar('Tes goûts orientent désormais « Pour toi »');
+    if (chosen && hasTastes(chosen)) showSnackbar(t('Tes goûts orientent désormais « Pour toi »'));
   };
 
   const last = step === STEP_COUNT - 1;
@@ -52,11 +53,11 @@ export function Onboarding() {
   useEffect(() => titleRef.current?.focus({ preventScroll: true }), [step]);
 
   return (
-    <div className="intro" role="dialog" aria-modal="true" aria-label="Introduction">
+    <div className="intro" role="dialog" aria-modal="true" aria-label={t('Introduction')}>
       <div className="intro__top">
-        {step > 0 ? <IconButton icon="arrowBack" label="Retour" onClick={previous} /> : <span />}
+        {step > 0 ? <IconButton icon="arrowBack" label={t('Retour')} onClick={previous} /> : <span />}
         <Button variant="text" onClick={() => close(false)}>
-          Passer
+          {t('Passer')}
         </Button>
       </div>
 
@@ -68,7 +69,7 @@ export function Onboarding() {
 
       <div className="intro__bottom">
         <p className="visually-hidden" role="status">
-          Étape {step + 1} sur {STEP_COUNT}
+          {t('Étape {step} sur {total}', { step: step + 1, total: STEP_COUNT })}
         </p>
         <div className="intro__dots" aria-hidden="true">
           {Array.from({ length: STEP_COUNT }, (_, i) => (
@@ -76,7 +77,7 @@ export function Onboarding() {
           ))}
         </div>
         <Button large onClick={next}>
-          {last ? 'Commencer' : 'Suivant'}
+          {last ? t('Commencer') : t('Suivant')}
         </Button>
       </div>
     </div>
@@ -110,8 +111,8 @@ function Welcome({ titleRef }: StepProps) {
           <Icon name="wallpaper" size={40} />
         </span>
       </div>
-      <Heading titleRef={titleRef} lead="Des fonds d’écran soignés, à appliquer en un geste.">
-        Bienvenue dans Prisme
+      <Heading titleRef={titleRef} lead={t('Des fonds d’écran soignés, à appliquer en un geste.')}>
+        {t('Bienvenue dans Prisme')}
       </Heading>
       <ul className="intro-features">
         {FEATURES.map((feature) => (
@@ -120,13 +121,13 @@ function Welcome({ titleRef }: StepProps) {
               <Icon name={feature.icon} />
             </span>
             <span>
-              <strong>{feature.title}</strong>
-              <span>{feature.text}</span>
+              <strong>{t(feature.title)}</strong>
+              <span>{t(feature.text)}</span>
             </span>
           </li>
         ))}
       </ul>
-      <p className="intro__label">Choisis ton ambiance</p>
+      <p className="intro__label">{t('Choisis ton ambiance')}</p>
       <ThemePicker value={themeMode} onChange={(mode) => update({ themeMode: mode })} />
     </>
   );
@@ -135,8 +136,11 @@ function Welcome({ titleRef }: StepProps) {
 function Sources({ titleRef }: StepProps) {
   return (
     <>
-      <Heading titleRef={titleRef} lead="Prisme réunit plusieurs banques d’images libres de droits. Garde celles que tu veux : tu pourras en changer dans Réglages › Sources.">
-        Tes sources
+      <Heading
+        titleRef={titleRef}
+        lead={t('Prisme réunit plusieurs banques d’images libres de droits. Garde celles que tu veux : tu pourras en changer dans Réglages › Sources.')}
+      >
+        {t('Tes sources')}
       </Heading>
       <div className="intro__list">
         <SourceToggles />
@@ -148,26 +152,26 @@ function Sources({ titleRef }: StepProps) {
 function Taste({ titleRef, tastes, onChange }: StepProps & { tastes: Tastes; onChange: (tastes: Tastes) => void }) {
   return (
     <>
-      <Heading titleRef={titleRef} lead="Choisis des thèmes et des couleurs : « Pour toi » en tiendra compte. Cette étape est facultative.">
-        Qu’est-ce qui te plaît ?
+      <Heading titleRef={titleRef} lead={t('Choisis des thèmes et des couleurs : « Pour toi » en tiendra compte. Cette étape est facultative.')}>
+        {t('Qu’est-ce qui te plaît ?')}
       </Heading>
       <p className="intro__label">
-        Thèmes <span className="intro__count">{tastes.categories.length}/{MAX_TASTE_CATEGORIES}</span>
+        {t('Thèmes')} <span className="intro__count">{tastes.categories.length}/{MAX_TASTE_CATEGORIES}</span>
       </p>
-      <div className="chip-wrap" role="group" aria-label="Thèmes">
+      <div className="chip-wrap" role="group" aria-label={t('Thèmes')}>
         {TASTE_CATEGORIES.map((category) => (
           <Chip key={category.key} selected={tastes.categories.includes(category.key)} onClick={() => onChange(toggleCategory(tastes, category.key))}>
-            {category.label}
+            {t(category.label)}
           </Chip>
         ))}
       </div>
       <p className="intro__label">
-        Couleurs <span className="intro__count">{tastes.colors.length}/{MAX_TASTE_COLORS}</span>
+        {t('Couleurs')} <span className="intro__count">{tastes.colors.length}/{MAX_TASTE_COLORS}</span>
       </p>
-      <div className="chip-wrap" role="group" aria-label="Couleurs">
+      <div className="chip-wrap" role="group" aria-label={t('Couleurs')}>
         {TASTE_COLORS.map((color) => (
           <Chip key={color.value} swatch={color.swatch} selected={tastes.colors.includes(color.value)} onClick={() => onChange(toggleColor(tastes, color.value))}>
-            {color.label}
+            {t(color.label)}
           </Chip>
         ))}
       </div>

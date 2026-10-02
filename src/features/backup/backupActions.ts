@@ -3,15 +3,20 @@ import { useDiscover } from '@/features/discover/store';
 import { useLibrary } from '@/features/library/store';
 import { useQuotePrefs } from '@/features/quote/store';
 import { useSettings } from '@/features/settings/store';
+import { t, tn } from '@/shared/i18n';
 import { PrismeSystem } from '@/shared/native/system';
 import { BackupError, backupFileName, createBackup, mergeDiscover, mergeLibrary, parseBackup } from './backup';
 
-const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
+/** « 3 favoris, 1 collection » */
+const counts = (favorites: number, collections: number) => ({
+  favorites: tn(favorites, '{count} favori', '{count} favoris'),
+  collections: tn(collections, '{count} collection', '{count} collections'),
+});
 
 /** Enregistre la sauvegarde là où l'utilisateur le choisit ; null s'il annule. */
 export async function exportBackup(): Promise<string | null> {
   const library = useLibrary.getState();
-  if (!library.hydrated) throw new BackupError('Bibliothèque en cours de chargement, réessaie dans un instant');
+  if (!library.hydrated) throw new BackupError(t('Bibliothèque en cours de chargement, réessaie dans un instant'));
   const backup = createBackup(
     library,
     useSettings.getState(),
@@ -28,13 +33,13 @@ export async function exportBackup(): Promise<string | null> {
   });
   if (!saved) return null;
   const { favorites, collections } = backup.library;
-  return `Sauvegarde enregistrée : ${plural(Object.keys(favorites).length, 'favori')}, ${plural(collections.length, 'collection')}`;
+  return t('Sauvegarde enregistrée : {favorites}, {collections}', counts(Object.keys(favorites).length, collections.length));
 }
 
 /** Restaure un fichier choisi par l'utilisateur (fusion avec la bibliothèque) ; null s'il annule. */
 export async function importBackup(): Promise<string | null> {
   const library = useLibrary.getState();
-  if (!library.hydrated) throw new BackupError('Bibliothèque en cours de chargement, réessaie dans un instant');
+  if (!library.hydrated) throw new BackupError(t('Bibliothèque en cours de chargement, réessaie dans un instant'));
   const result = await PrismeSystem.importFile();
   if (result.cancelled) return null;
   const backup = parseBackup(result.data);
@@ -62,5 +67,5 @@ export async function importBackup(): Promise<string | null> {
     useQuotePrefs.getState().mergeCustom(custom);
   }
   const { favorites, collections } = backup.library;
-  return `Sauvegarde restaurée : ${plural(Object.keys(favorites).length, 'favori')}, ${plural(collections.length, 'collection')}`;
+  return t('Sauvegarde restaurée : {favorites}, {collections}', counts(Object.keys(favorites).length, collections.length));
 }

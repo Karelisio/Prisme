@@ -2,6 +2,7 @@ import { type RefObject, useMemo } from 'react';
 import { useNavigation } from '@/app/navigation';
 import { FeedView } from '@/features/browse/FeedView';
 import type { FeedSpec } from '@/features/sources/feed';
+import { t } from '@/shared/i18n';
 import { Chip, EmptyState } from '@/shared/ui/components';
 import { useDiscover } from './store';
 import './discover.css';
@@ -23,14 +24,14 @@ export function FollowingView({ scrollRef }: { scrollRef: RefObject<HTMLElement 
     return (
       <EmptyState
         icon="group"
-        title="Aucun abonnement"
-        text="Dans l’aperçu d’une photo Unsplash, touche le nom du photographe puis « Suivre »."
+        title={t('Aucun abonnement')}
+        text={t('Dans l’aperçu d’une photo Unsplash, touche le nom du photographe puis « Suivre ».')}
       />
     );
   }
   return (
     <>
-      <div className="chip-row" aria-label="Photographes suivis">
+      <div className="chip-row" aria-label={t('Photographes suivis')}>
         {following.map((f) => (
           <Chip key={f.username} icon="person" onClick={() => push({ type: 'photographer', photographer: f })}>
             {f.name}

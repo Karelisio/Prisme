@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { create } from 'zustand';
 import { useBackHandler } from '@/app/backStack';
+import { t } from '@/shared/i18n';
 import { Button } from './components';
 
 interface SheetProps {
@@ -55,7 +56,7 @@ export function BottomSheet({ open, onClose, title, label, children }: SheetProp
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <button type="button" className="sheet__handle" aria-label="Fermer" onClick={onClose} />
+        <button type="button" className="sheet__handle" aria-label={t('Fermer')} onClick={onClose} />
         {title && <h2 className="sheet__title">{title}</h2>}
         {children}
       </div>
@@ -75,7 +76,7 @@ interface DialogProps {
   confirmDisabled?: boolean;
 }
 
-export function Dialog({ open, title, children, confirmLabel, cancelLabel = 'Annuler', onConfirm, onCancel, confirmDisabled }: DialogProps) {
+export function Dialog({ open, title, children, confirmLabel, cancelLabel = t('Annuler'), onConfirm, onCancel, confirmDisabled }: DialogProps) {
   useBackHandler(open, onCancel);
   if (!open) return null;
   return createPortal(
@@ -122,6 +123,12 @@ export const useSnackbar = create<SnackbarState>((set) => ({
 
 export const showSnackbar = (text: string, action?: { label: string; onAction: () => void }) =>
   useSnackbar.getState().show(text, action);
+
+/**
+ * Action « Annuler » d'un message (annuler ce qui vient d'être fait : « Undo » en anglais). La variable vide distingue
+ * cette clé de l'« Annuler » des boîtes de dialogue (« Cancel »), qui se traduit autrement.
+ */
+export const undoLabel = (): string => t('Annuler{context}', { context: '' });
 
 export function SnackbarHost() {
   const current = useSnackbar((s) => s.current);

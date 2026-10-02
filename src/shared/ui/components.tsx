@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useId,
 } from 'react';
+import { t } from '@/shared/i18n';
 import { ICONS, type IconName } from './icons';
 
 export function Icon({ name, size, className }: { name: IconName; size?: number; className?: string }) {
@@ -180,7 +181,7 @@ export function ListItem({ headline, supporting, leading, trailing, onClick, dis
   );
 }
 
-export function Spinner({ size = 40, label = 'Chargement' }: { size?: number; label?: string }) {
+export function Spinner({ size = 40, label = t('Chargement') }: { size?: number; label?: string }) {
   return (
     <svg className="spinner" viewBox="0 0 48 48" role="progressbar" aria-label={label} style={{ '--spinner-size': `${size}px` } as CSSProperties}>
       <circle cx="24" cy="24" r="20" />
@@ -188,7 +189,7 @@ export function Spinner({ size = 40, label = 'Chargement' }: { size?: number; la
   );
 }
 
-export function LinearProgress({ value, label = 'Progression' }: { value?: number; label?: string }) {
+export function LinearProgress({ value, label = t('Progression') }: { value?: number; label?: string }) {
   const indeterminate = value === undefined;
   return (
     <div

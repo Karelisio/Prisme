@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { type CSSProperties, useMemo, useState } from 'react';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import type { ColorScheme } from '@/shared/theme/scheme';
 import { Button, SegmentedButtons, Spinner } from '@/shared/ui/components';
 import { BottomSheet } from '@/shared/ui/overlays';
@@ -43,23 +44,23 @@ export function PaletteSheet({
   const scheme = schemes?.[mode];
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Couleurs Material You">
+    <BottomSheet open={open} onClose={onClose} title={t('Couleurs Material You')}>
       {palette.isPending ? (
         <div className="palette-loading">
           <Spinner />
         </div>
       ) : palette.isError || !scheme || !palette.data ? (
-        <p className="palette-note">Analyse de l'image impossible.</p>
+        <p className="palette-note">{t("Analyse de l'image impossible.")}</p>
       ) : (
         <div className="palette">
-          <div className="palette__seeds" role="radiogroup" aria-label="Couleur source">
+          <div className="palette__seeds" role="radiogroup" aria-label={t('Couleur source')}>
             {palette.data.seeds.map((s, i) => (
               <button
                 key={s}
                 type="button"
                 role="radio"
                 aria-checked={i === seedIndex}
-                aria-label={`Couleur source ${i + 1}`}
+                aria-label={t('Couleur source {n}', { n: i + 1 })}
                 className="seed"
                 style={{ background: s }}
                 onClick={() => setSeedIndex(i)}
@@ -69,16 +70,16 @@ export function PaletteSheet({
           <SegmentedButtons
             label="Mode"
             options={[
-              { value: 'light', label: 'Clair', icon: 'lightMode' },
-              { value: 'dark', label: 'Sombre', icon: 'darkMode' },
+              { value: 'light', label: t('Clair'), icon: 'lightMode' },
+              { value: 'dark', label: t('Sombre'), icon: 'darkMode' },
             ]}
             value={mode}
             onChange={setMode}
           />
 
-          <div className="palette__mock" style={{ background: scheme.surface, color: scheme.onSurface }} aria-label="Aperçu de l'interface">
+          <div className="palette__mock" style={{ background: scheme.surface, color: scheme.onSurface }} aria-label={t("Aperçu de l'interface")}>
             <div className="palette__mock-bar" style={{ background: scheme.surfaceContainer }}>
-              <span style={{ color: scheme.onSurface }}>Paramètres</span>
+              <span style={{ color: scheme.onSurface }}>{t('Paramètres')}</span>
             </div>
             <div className="palette__mock-row">
               <span className="palette__mock-switch" style={{ background: scheme.primary }}>
@@ -93,7 +94,7 @@ export function PaletteSheet({
             </div>
             <div className="palette__mock-row">
               <span className="palette__mock-button" style={{ background: scheme.primary, color: scheme.onPrimary }}>
-                Bouton
+                {t('Bouton')}
               </span>
               <span className="palette__mock-fab" style={{ background: scheme.primaryContainer, color: scheme.onPrimaryContainer }}>
                 +
@@ -104,12 +105,12 @@ export function PaletteSheet({
           <div className="palette__roles">
             {ROLES.map((role) => (
               <div key={role.label} className="palette__role" style={{ background: scheme[role.bg], color: scheme[role.fg] }}>
-                <span>{role.label}</span>
+                <span>{t(role.label)}</span>
                 <span className="palette__hex">{scheme[role.bg]}</span>
               </div>
             ))}
           </div>
-          <p className="palette-note">Calculé comme Android 12+ (style par défaut). Selon le téléphone, d'autres variantes sont proposées.</p>
+          <p className="palette-note">{t("Calculé comme Android 12+ (style par défaut). Selon le téléphone, d'autres variantes sont proposées.")}</p>
           <div className="sheet__actions">
             <Button
               variant="tonal"
@@ -119,7 +120,7 @@ export function PaletteSheet({
                 onClose();
               }}
             >
-              Voir sur l'écran d'accueil
+              {t("Voir sur l'écran d'accueil")}
             </Button>
           </div>
         </div>

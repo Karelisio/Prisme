@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { type ErrorEntry, PrismeSystem } from '@/shared/native/system';
 
 const STORAGE_KEY = 'prisme-errors';
@@ -71,9 +72,9 @@ export async function clearErrorLog(): Promise<void> {
 
 /** Texte à partager (pour signaler un bug), avec version et appareil. */
 export function formatErrorLog(entries: ErrorEntry[], context: string): string {
-  const lines = [`Journal d'erreurs Prisme — ${context}`, ''];
+  const lines = [t("Journal d'erreurs Prisme — {context}", { context }), ''];
   for (const e of entries) {
-    lines.push(`[${new Date(e.at).toISOString()}] ${e.source === 'native' ? 'Natif' : 'Interface'} · ${e.where}`, e.message);
+    lines.push(`[${new Date(e.at).toISOString()}] ${e.source === 'native' ? t('Natif') : t('Interface')} · ${t(e.where)}`, e.message);
     if (e.stack) lines.push(e.stack);
     lines.push('');
   }

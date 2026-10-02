@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '@/shared/i18n';
 import { formatBytes } from '@/shared/lib/format';
 import { nativeErrorMessage } from '@/shared/native';
 import { PrismeSystem, nativeErrorCode } from '@/shared/native/system';
@@ -59,7 +60,7 @@ export function UpdateSheet() {
   const notes = parseNotes(release.notes);
 
   return (
-    <BottomSheet open={open} onClose={closeUpdateSheet} title="Mise à jour disponible">
+    <BottomSheet open={open} onClose={closeUpdateSheet} title={t('Mise à jour disponible')}>
       <div className="update">
         <p className="update__version">
           Prisme {release.version}
@@ -82,19 +83,19 @@ export function UpdateSheet() {
         )}
         {phase === 'downloading' && (
           <div className="update__progress">
-            <span>Téléchargement…</span>
-            <LinearProgress value={progress} label="Téléchargement de la mise à jour" />
+            <span>{t('Téléchargement…')}</span>
+            <LinearProgress value={progress} label={t('Téléchargement de la mise à jour')} />
           </div>
         )}
         {phase === 'permission' && (
           <div className="update__permission" role="status">
-            <p>Android demande d'autoriser Prisme à installer des applications. Active l'option, reviens ici puis appuie sur « Installer ».</p>
+            <p>{t("Android demande d'autoriser Prisme à installer des applications. Active l'option, reviens ici puis appuie sur « Installer ».")}</p>
             <Button variant="tonal" onClick={() => void PrismeSystem.openInstallSettings()}>
-              Ouvrir le réglage
+              {t('Ouvrir le réglage')}
             </Button>
           </div>
         )}
-        {phase === 'ready' && <p className="update__hint">Si l'installation a été interrompue, appuie à nouveau sur « Installer ».</p>}
+        {phase === 'ready' && <p className="update__hint">{t("Si l'installation a été interrompue, appuie à nouveau sur « Installer ».")}</p>}
         {error && (
           <p className="update__error" role="alert">
             {error}
@@ -103,10 +104,10 @@ export function UpdateSheet() {
       </div>
       <div className="sheet__actions">
         <Button variant="text" onClick={dismissUpdate} disabled={phase === 'downloading'}>
-          Plus tard
+          {t('Plus tard')}
         </Button>
         <Button icon="update" onClick={() => void install()} disabled={phase === 'downloading'}>
-          Installer
+          {t('Installer')}
         </Button>
       </div>
     </BottomSheet>

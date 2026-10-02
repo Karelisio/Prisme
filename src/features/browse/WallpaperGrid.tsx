@@ -5,6 +5,7 @@ import { useLibrary } from '@/features/library/store';
 import { useThumbSrc } from '@/features/library/useImageSrc';
 import { useSettings } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { useLongPress } from '@/shared/lib/useLongPress';
 import { Icon } from '@/shared/ui/components';
 import { CELL_RATIO, GRID_GAP, GRID_MARGIN, type MosaicTile, columnCount, layoutMosaic, mosaicColumns, tileRatio, visibleTiles } from './mosaic';
@@ -209,7 +210,7 @@ const WallpaperCell = memo(function WallpaperCell({
       }}
       onClick={(e) => onOpen(wallpaper, e.currentTarget)}
       {...press}
-      aria-label={wallpaper.author ? `${wallpaper.alt}, par ${wallpaper.author.name}` : wallpaper.alt}
+      aria-label={wallpaper.author ? t('{alt}, par {author}', { alt: wallpaper.alt, author: wallpaper.author.name }) : wallpaper.alt}
     >
       <img
         src={src}

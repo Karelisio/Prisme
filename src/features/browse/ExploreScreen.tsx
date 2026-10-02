@@ -7,6 +7,7 @@ import { useDiscover } from '@/features/discover/store';
 import { PacksList } from '@/features/packs/PacksList';
 import { RATIO_OPTIONS, colorLabel, colorSwatch } from '@/features/sources/filters';
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { useOnline } from '@/shared/lib/useOnline';
 import { Chip, Icon, IconButton } from '@/shared/ui/components';
 import { CATEGORIES } from './categories';
@@ -39,43 +40,43 @@ export function ExploreScreen() {
         <div className="search-bar">
           <button type="button" className="search-bar__launch" onClick={() => push({ type: 'search' })}>
             <Icon name="search" />
-            <span>Rechercher des fonds</span>
+            <span>{t('Rechercher des fonds')}</span>
           </button>
-          <IconButton icon="addPhoto" label="Importer depuis la galerie" onClick={() => void importAndPreview()} />
-          <IconButton icon="tune" label="Filtres" selected={filtersActive(filters)} onClick={() => setFiltersOpen(true)} />
+          <IconButton icon="addPhoto" label={t('Importer depuis la galerie')} onClick={() => void importAndPreview()} />
+          <IconButton icon="tune" label={t('Filtres')} selected={filtersActive(filters)} onClick={() => setFiltersOpen(true)} />
         </div>
       </div>
 
-      <nav className="chip-row" aria-label="Catégories">
+      <nav className="chip-row" aria-label={t('Catégories')}>
         {generator && (
           <Chip icon="wandStars" onClick={() => push({ type: 'generator' })}>
-            Créer
+            {t('Créer')}
           </Chip>
         )}
         {generator && (
           <Chip icon="collage" onClick={() => push({ type: 'collage' })}>
-            Collage
+            {t('Collage')}
           </Chip>
         )}
         <Chip icon="layers" selected={category === 'packs'} onClick={() => select('packs')}>
-          Packs
+          {t('Packs')}
         </Chip>
         {featured && (
           <Chip selected={category === featured.key} onClick={() => select(featured.key)}>
-            {featured.label}
+            {t(featured.label)}
           </Chip>
         )}
         <Chip icon="favorite" selected={category === 'foryou'} onClick={() => select('foryou')}>
-          Pour toi
+          {t('Pour toi')}
         </Chip>
         {(following || category === 'following') && (
           <Chip icon="group" selected={category === 'following'} onClick={() => select('following')}>
-            Abonnements
+            {t('Abonnements')}
           </Chip>
         )}
         {themes.map((c) => (
           <Chip key={c.key} selected={category === c.key} onClick={() => select(c.key)}>
-            {c.label}
+            {t(c.label)}
           </Chip>
         ))}
       </nav>
@@ -108,29 +109,29 @@ export function ActiveFilters({ onEdit }: { onEdit: () => void }) {
   const color = filters.color;
   const ratio = RATIO_OPTIONS.find((o) => o.value === filters.ratio);
   return (
-    <div className="active-filters" aria-label="Filtres actifs">
+    <div className="active-filters" aria-label={t('Filtres actifs')}>
       {color && (
         <Chip
           swatch={colorSwatch(color)}
           selected
           onClick={() => setFilters({ ...filters, color: null })}
-          aria-label={`Retirer le filtre ${colorLabel(color)}`}
+          aria-label={t('Retirer le filtre {filter}', { filter: colorLabel(color) })}
         >
           {colorLabel(color)} ✕
         </Chip>
       )}
       {filters.amoled && (
-        <Chip selected onClick={() => setFilters({ ...filters, amoled: false })} aria-label="Retirer le filtre AMOLED">
+        <Chip selected onClick={() => setFilters({ ...filters, amoled: false })} aria-label={t('Retirer le filtre {filter}', { filter: 'AMOLED' })}>
           AMOLED ✕
         </Chip>
       )}
       {filters.ratio !== 'all' && ratio && (
-        <Chip selected onClick={() => setFilters({ ...filters, ratio: 'all' })} aria-label={`Retirer le filtre ${ratio.label}`}>
-          {ratio.label} ✕
+        <Chip selected onClick={() => setFilters({ ...filters, ratio: 'all' })} aria-label={t('Retirer le filtre {filter}', { filter: t(ratio.label) })}>
+          {t(ratio.label)} ✕
         </Chip>
       )}
       <button type="button" className="active-filters__edit" onClick={onEdit}>
-        Modifier
+        {t('Modifier')}
       </button>
     </div>
   );
@@ -142,7 +143,7 @@ export function OfflineBanner() {
   return (
     <div className="offline-banner" role="status">
       <Icon name="cloudOff" size={20} />
-      Hors ligne : contenu en cache, favoris et historique disponibles.
+      {t('Hors ligne : contenu en cache, favoris et historique disponibles.')}
     </div>
   );
 }

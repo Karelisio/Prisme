@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import type { ColorChoice, ColorFilter, RatioFilter, Wallpaper } from './types';
 
 /** Couleur moyenne inconnue (la source ne la fournit pas) : ignorée par les filtres de couleur. */
@@ -96,8 +97,9 @@ export const SHADES: readonly `#${string}`[] = [
 
 /** Libellé d'un filtre de couleur (pastille nommée ou teinte du nuancier). */
 export function colorLabel(choice: ColorChoice): string {
-  if (isHexColor(choice)) return `Teinte ${choice.toUpperCase()}`;
-  return COLOR_OPTIONS.find((o) => o.value === choice)?.label ?? choice;
+  if (isHexColor(choice)) return t('Teinte {hex}', { hex: choice.toUpperCase() });
+  const label = COLOR_OPTIONS.find((o) => o.value === choice)?.label;
+  return label ? t(label) : choice;
 }
 
 export function colorSwatch(choice: ColorChoice): string {

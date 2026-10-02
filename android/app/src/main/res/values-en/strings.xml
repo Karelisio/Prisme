@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Prisme</string>
+    <string name="title_activity_main">Prisme</string>
+    <string name="package_name">io.karelisio.prisme</string>
+    <string name="custom_url_scheme">io.karelisio.prisme</string>
+    <string name="live_wallpaper_name">Prisme · parallax</string>
+    <string name="live_wallpaper_description">Your Prisme wallpaper follows your phone\'s movements.</string>
+    <string name="video_wallpaper_name">Prisme · video</string>
+    <string name="video_wallpaper_description">A video from your gallery as your wallpaper, looping and muted.</string>
+    <string name="tile_next">Next wallpaper</string>
+    <string name="shortcut_next_short">Next</string>
+    <string name="shortcut_next_long">Next wallpaper</string>
+    <string name="shortcut_favorite_short">Favorite</string>
+    <string name="shortcut_favorite_long">Random favorite</string>
+    <string name="shortcut_search_short">Search</string>
+    <string name="shortcut_search_long">Search for a wallpaper</string>
+    <string name="quick_applied">Wallpaper changed</string>
+    <string name="quick_no_favorites">Add favorites in Prisme (or apply a wallpaper) to use “Next wallpaper”</string>
+    <string name="tile_working">Changing…</string>
+    <string name="tile_done">Wallpaper changed</string>
+    <string name="tile_empty">No favorites</string>
+    <string name="tile_music">Cover art shown</string>
+    <string name="quick_music">Music cover art shown: the wallpaper will change when the music stops</string>
+    <string name="tile_failed">Failed, see Prisme</string>
+    <string name="quick_failed">Prisme couldn\'t change the wallpaper: %1$s</string>
+    <string name="daily_channel">Wallpaper of the day</string>
+    <string name="daily_channel_description">A wallpaper pick every day, at the time you choose in Prisme</string>
+    <string name="daily_title">Your wallpaper of the day is ready</string>
+    <string name="daily_text">Tap to discover it and apply it</string>
+    <string name="widget_name">Wallpaper</string>
+    <string name="widget_description">Preview of the current wallpaper and a button to switch to the next one.</string>
+    <string name="widget_preview_description">Current wallpaper. Tap to open Prisme</string>
+    <string name="widget_next">Next wallpaper</string>
+    <string name="widget_changing">Changing…</string>
+</resources>

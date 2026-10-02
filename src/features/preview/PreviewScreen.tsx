@@ -8,12 +8,13 @@ import { usePreviewSrc, useThumbSrc } from '@/features/library/useImageSrc';
 import { useSettings } from '@/features/settings/store';
 import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { haptic } from '@/shared/lib/haptics';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { type NormalizedRect, PrismeWallpaper, type WallpaperTarget, isNative, nativeErrorMessage, toWebUrl } from '@/shared/native';
 import { useTheme } from '@/shared/theme/ThemeController';
 import { Button, Icon, IconButton, LinearProgress, ListItem } from '@/shared/ui/components';
-import { BottomSheet, showSnackbar } from '@/shared/ui/overlays';
+import { BottomSheet, showSnackbar, undoLabel } from '@/shared/ui/overlays';
 import { setLiveWallpaper } from '@/features/live/live';
 import { HideSheet } from '@/features/discover/HideSheet';
 import { photographerOf } from '@/features/discover/store';
@@ -42,7 +43,7 @@ async function undo() {
   try {
     showSnackbar(await undoLastApply());
   } catch (error) {
-    showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+    showSnackbar(t('Échec : {error}', { error: nativeErrorMessage(error) }));
   }
 }
 
@@ -137,7 +138,7 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
   useEffect(() => {
     if (!busy) return;
     const handle = PrismeWallpaper.addListener('applyProgress', (e) => {
-      if (e.id === wallpaper.id) setTask((t) => (t ? { ...t, progress: e.progress } : t));
+      if (e.id === wallpaper.id) setTask((current) => (current ? { ...current, progress: e.progress } : current));
     });
     return () => void handle.then((h) => h.remove());
   }, [busy, wallpaper.id]);
@@ -150,20 +151,20 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
       await action();
     } catch (error) {
       haptic('reject');
-      showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+      showSnackbar(t('Échec : {error}', { error: nativeErrorMessage(error) }));
     } finally {
       setTask(null);
     }
   };
 
   const onSave = () =>
-    run('Enregistrement…', async () => {
+    run(t('Enregistrement…'), async () => {
       const message = await saveToGallery(wallpaper);
       haptic('confirm');
       showSnackbar(message);
     });
 
-  const onShare = () => run('Préparation du partage…', () => shareWallpaper(wallpaper));
+  const onShare = () => run(t('Préparation du partage…'), () => shareWallpaper(wallpaper));
 
   const [linkedCrop, setLinkedCrop] = useState<NormalizedRect | undefined>();
 
@@ -178,20 +179,20 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
       try {
         showSnackbar(await setLiveWallpaper(wallpaper, panZoom.getCrop()));
       } catch (error) {
-        showSnackbar(`Échec : ${nativeErrorMessage(error)}`);
+        showSnackbar(t('Échec : {error}', { error: nativeErrorMessage(error) }));
       }
       return;
     }
     const target: WallpaperTarget = choice;
     setSheet(null);
-    setTask({ label: 'Application…' });
+    setTask({ label: t('Application…') });
     try {
       await applyWallpaper({ wallpaper, target, crop: panZoom.getCrop() });
       haptic('confirm');
-      showSnackbar(`Fond appliqué : ${TARGET_LABELS[target].toLowerCase()}`, { label: 'Annuler', onAction: () => void undo() });
+      showSnackbar(t('Fond appliqué : {screen}', { screen: TARGET_LABELS[target].toLowerCase() }), { label: undoLabel(), onAction: () => void undo() });
     } catch (error) {
       haptic('reject');
-      showSnackbar(`Échec : ${nativeErrorMessage(error)}`, { label: 'Réessayer', onAction: () => void apply(target) });
+      showSnackbar(t('Échec : {error}', { error: nativeErrorMessage(error) }), { label: t('Réessayer'), onAction: () => void apply(target) });
     } finally {
       setTask(null);
     }
@@ -223,17 +224,17 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
     setSheet(null);
     haptic('tick');
     goBack();
-    showSnackbar(message, { label: 'Annuler', onAction: undoHide });
+    showSnackbar(message, { label: undoLabel(), onAction: undoHide });
   };
 
   const onFavorite = () => {
     const added = toggleFavorite(wallpaper);
     haptic('tick');
-    showSnackbar(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
+    showSnackbar(added ? t('Ajouté aux favoris') : t('Retiré des favoris'));
   };
 
   return (
-    <div className="preview" role="dialog" aria-label="Aperçu du fond d’écran" style={simScheme ? simulationVars(simScheme) : undefined}>
+    <div className="preview" role="dialog" aria-label={t('Aperçu du fond d’écran')} style={simScheme ? simulationVars(simScheme) : undefined}>
       <div
         className="preview__stage"
         style={stage ? { width: stage.width, height: stage.height } : undefined}
@@ -265,25 +266,25 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
       {controlsVisible && (
         <>
           <div className="preview__top">
-            <IconButton icon="arrowBack" label="Retour" variant="on-image" onClick={goBack} />
+            <IconButton icon="arrowBack" label={t('Retour')} variant="on-image" onClick={goBack} />
             <span className="preview__spacer" />
-            {panZoom.modified && <IconButton icon="restart" label="Recentrer" variant="on-image" onClick={panZoom.reset} />}
+            {panZoom.modified && <IconButton icon="restart" label={t('Recentrer')} variant="on-image" onClick={panZoom.reset} />}
             <IconButton
               icon={favorite ? 'favoriteFill' : 'favorite'}
-              label={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+              label={favorite ? t('Retirer des favoris') : t('Ajouter aux favoris')}
               variant="on-image"
               selected={favorite}
               onClick={onFavorite}
             />
-            <IconButton icon="libraryAdd" label="Ajouter à une collection" variant="on-image" onClick={() => setSheet('collections')} />
-            <IconButton icon="share" label="Partager" variant="on-image" onClick={() => void onShare()} disabled={busy} />
-            <IconButton icon="moreVert" label="Plus d’actions" variant="on-image" onClick={() => setSheet('more')} />
+            <IconButton icon="libraryAdd" label={t('Ajouter à une collection')} variant="on-image" onClick={() => setSheet('collections')} />
+            <IconButton icon="share" label={t('Partager')} variant="on-image" onClick={() => void onShare()} disabled={busy} />
+            <IconButton icon="moreVert" label={t('Plus d’actions')} variant="on-image" onClick={() => setSheet('more')} />
           </div>
 
           <div className="preview__bottom">
             {photographer ? (
               <button type="button" className="preview__credit" onClick={() => push({ type: 'photographer', photographer })}>
-                Photo : {photographer.name} · {sourceName(wallpaper)}
+                {t('Photo :')} {photographer.name} · {sourceName(wallpaper)}
               </button>
             ) : wallpaper.author ? (
               <a className="preview__credit" href={wallpaper.author.url} target="_blank" rel="noopener noreferrer">
@@ -292,7 +293,7 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
             ) : (
               !isLocalWallpaper(wallpaper) && <span className="preview__credit">{sourceName(wallpaper)}</span>
             )}
-            <div className="preview__modes" role="radiogroup" aria-label="Simulation">
+            <div className="preview__modes" role="radiogroup" aria-label={t('Simulation')}>
               {(
                 [
                   ['none', 'visibility', 'Image seule'],
@@ -305,8 +306,8 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
                   type="button"
                   role="radio"
                   aria-checked={mode === value}
-                  aria-label={label}
-                  title={label}
+                  aria-label={t(label)}
+                  title={t(label)}
                   className="preview__mode state"
                   onClick={() => selectMode(value)}
                 >
@@ -315,7 +316,7 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
               ))}
             </div>
             <Button large icon="wallpaper" onClick={onApplyPressed} disabled={busy} className="preview__apply">
-              Appliquer
+              {t('Appliquer')}
             </Button>
           </div>
         </>
@@ -323,24 +324,24 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
 
       {hint && !controlsVisible && (
         <div className="preview__hint" role="status">
-          Touche l'écran pour afficher les commandes
+          {t("Touche l'écran pour afficher les commandes")}
         </div>
       )}
 
       {task && (
         <div className="preview__progress" role="status">
-          <span>{task.progress !== undefined && task.progress < 1 ? `Téléchargement ${Math.round(task.progress * 100)} %` : task.label}</span>
+          <span>{task.progress !== undefined && task.progress < 1 ? t('Téléchargement {percent} %', { percent: Math.round(task.progress * 100) }) : task.label}</span>
           <LinearProgress value={task.progress} />
         </div>
       )}
 
-      <BottomSheet open={sheet === 'more'} onClose={() => setSheet(null)} label="Plus d’actions">
+      <BottomSheet open={sheet === 'more'} onClose={() => setSheet(null)} label={t('Plus d’actions')}>
         <ul className="list">
           {!isLocalWallpaper(wallpaper) && (
             <li>
               <ListItem
-                headline="Plus comme ça"
-                supporting="Fonds du même sujet ou de la même couleur"
+                headline={t('Plus comme ça')}
+                supporting={t('Fonds du même sujet ou de la même couleur')}
                 leading={<Icon name="imageSearch" />}
                 onClick={() => {
                   setSheet(null);
@@ -352,8 +353,8 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
           {photographer && (
             <li>
               <ListItem
-                headline={`Photos de ${photographer.name}`}
-                supporting="Tous ses fonds, et le suivre"
+                headline={t('Photos de {name}', { name: photographer.name })}
+                supporting={t('Tous ses fonds, et le suivre')}
                 leading={<Icon name="person" />}
                 onClick={() => {
                   setSheet(null);
@@ -363,13 +364,13 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
             </li>
           )}
           <li>
-            <ListItem headline="Enregistrer dans la galerie" supporting="Image HD, album Prisme" leading={<Icon name="download" />} onClick={() => void onSave()} disabled={busy} />
+            <ListItem headline={t('Enregistrer dans la galerie')} supporting={t('Image HD, album Prisme')} leading={<Icon name="download" />} onClick={() => void onSave()} disabled={busy} />
           </li>
           {features.editor && (
             <li>
               <ListItem
-                headline="Retoucher"
-                supporting="Filtres, effets, recadrage, texte…"
+                headline={t('Retoucher')}
+                supporting={t('Filtres, effets, recadrage, texte…')}
                 leading={<Icon name="formatPaint" />}
                 onClick={() => {
                   setSheet(null);
@@ -380,18 +381,18 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
           )}
           {features.palette && (
             <li>
-              <ListItem headline="Couleurs Material You" supporting="Palette générée par ce fond" leading={<Icon name="palette" />} onClick={() => setSheet('palette')} />
+              <ListItem headline={t('Couleurs Material You')} supporting={t('Palette générée par ce fond')} leading={<Icon name="palette" />} onClick={() => setSheet('palette')} />
             </li>
           )}
           <li>
-            <ListItem headline="Étiquettes" supporting="Pour retrouver ce fond dans tes favoris" leading={<Icon name="label" />} onClick={() => setSheet('tags')} />
+            <ListItem headline={t('Étiquettes')} supporting={t('Pour retrouver ce fond dans tes favoris')} leading={<Icon name="label" />} onClick={() => setSheet('tags')} />
           </li>
           <li>
-            <ListItem headline="Informations" supporting="Auteur, source, dimensions" leading={<Icon name="info" />} onClick={() => setSheet('info')} />
+            <ListItem headline={t('Informations')} supporting={t('Auteur, source, dimensions')} leading={<Icon name="info" />} onClick={() => setSheet('info')} />
           </li>
           {!isLocalWallpaper(wallpaper) && (
             <li>
-              <ListItem headline="Ne plus voir…" supporting="Ce fond, son auteur ou un sujet" leading={<Icon name="visibilityOff" />} onClick={() => setSheet('hide')} />
+              <ListItem headline={t('Ne plus voir…')} supporting={t('Ce fond, son auteur ou un sujet')} leading={<Icon name="visibilityOff" />} onClick={() => setSheet('hide')} />
             </li>
           )}
         </ul>
@@ -399,7 +400,7 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
 
       <HideSheet wallpaper={wallpaper} open={sheet === 'hide'} onClose={() => setSheet(null)} onHidden={onHidden} />
 
-      <ApplySheet open={sheet === 'apply'} onClose={() => setSheet(null)} onApply={(t) => void apply(t)} allowLinked />
+      <ApplySheet open={sheet === 'apply'} onClose={() => setSheet(null)} onApply={(choice) => void apply(choice)} allowLinked />
       {features.linked && (
         <LinkedSheet wallpaper={wallpaper} crop={linkedCrop} open={sheet === 'linked'} onClose={() => setSheet(null)} />
       )}

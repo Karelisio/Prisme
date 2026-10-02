@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { locale } from '@/shared/i18n';
 import type { IconName } from '@/shared/ui/icons';
 import { Icon } from '@/shared/ui/components';
 
@@ -31,7 +32,7 @@ export function Simulation({ mode }: { mode: SimulationMode }) {
           <span>{hours}</span>
           <span>{minutes}</span>
         </div>
-        <div className="sim-lock__date">{now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        <div className="sim-lock__date">{now.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <div className="sim-lock__notification">
           <span className="sim-lock__notification-icon" />
           <span className="sim-lock__notification-lines">
@@ -54,7 +55,7 @@ export function Simulation({ mode }: { mode: SimulationMode }) {
   return (
     <div className="sim sim--home" aria-hidden="true">
       <div className="sim-home__glance">
-        <span className="sim-home__glance-date">{now.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+        <span className="sim-home__glance-date">{now.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short' })}</span>
         <span className="sim-home__glance-weather">
           <Icon name="sunny" size={18} /> 21 °C
         </span>

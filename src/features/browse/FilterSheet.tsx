@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { COLOR_OPTIONS, RATIO_OPTIONS, SHADES, brightness, colorLabel, isHexColor } from '@/features/sources/filters';
 import { type ColorChoice, DEFAULT_FILTERS, type Filters } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { Button, Chip, Icon, ListItem, Switch } from '@/shared/ui/components';
 import { BottomSheet } from '@/shared/ui/overlays';
 import { useBrowse } from './store';
@@ -27,22 +28,22 @@ export function FilterSheet({ open, onClose }: { open: boolean; onClose: () => v
   const hex = draft.color !== null && isHexColor(draft.color) ? draft.color : null;
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Filtres">
+    <BottomSheet open={open} onClose={onClose} title={t('Filtres')}>
       <section className="filter-section">
-        <h3 className="filter-section__title">Couleur</h3>
+        <h3 className="filter-section__title">{t('Couleur')}</h3>
         <div className="chip-wrap">
           {COLOR_OPTIONS.map((option) => (
             <Chip key={option.value} swatch={option.swatch} selected={draft.color === option.value} onClick={() => pickColor(option.value)}>
-              {option.label}
+              {t(option.label)}
             </Chip>
           ))}
           <Chip icon="palette" selected={shadesOpen} aria-expanded={shadesOpen} onClick={() => setShadesOpen((o) => !o)}>
-            Nuancier
+            {t('Nuancier')}
           </Chip>
         </div>
         {shadesOpen && (
           <>
-            <div className="shades" role="radiogroup" aria-label="Nuancier">
+            <div className="shades" role="radiogroup" aria-label={t('Nuancier')}>
               {SHADES.map((shade) => (
                 <button
                   key={shade}
@@ -58,18 +59,18 @@ export function FilterSheet({ open, onClose }: { open: boolean; onClose: () => v
                 </button>
               ))}
             </div>
-            <p className="shades__value">{hex ? colorLabel(hex) : 'Touche une teinte pour la choisir'}</p>
+            <p className="shades__value">{hex ? colorLabel(hex) : t('Touche une teinte pour la choisir')}</p>
           </>
         )}
       </section>
       <section className="filter-section filter-section--flush">
         <ListItem
-          headline="AMOLED"
-          supporting="Fonds très sombres aux noirs profonds, économes sur écran OLED"
+          headline={t('AMOLED')}
+          supporting={t('Fonds très sombres aux noirs profonds, économes sur écran OLED')}
           leading={<Icon name="darkMode" />}
           trailing={
             <Switch
-              label="AMOLED"
+              label={t('AMOLED')}
               checked={draft.amoled}
               onChange={(amoled) => setDraft((d) => ({ ...d, amoled, color: amoled ? null : d.color }))}
             />
@@ -77,20 +78,20 @@ export function FilterSheet({ open, onClose }: { open: boolean; onClose: () => v
         />
       </section>
       <section className="filter-section">
-        <h3 className="filter-section__title">Format</h3>
+        <h3 className="filter-section__title">{t('Format')}</h3>
         <div className="chip-wrap">
           {RATIO_OPTIONS.map((option) => (
             <Chip key={option.value} selected={draft.ratio === option.value} onClick={() => setDraft((d) => ({ ...d, ratio: option.value }))}>
-              {option.label}
+              {t(option.label)}
             </Chip>
           ))}
         </div>
       </section>
       <div className="sheet__actions">
         <Button variant="text" onClick={() => setDraft(DEFAULT_FILTERS)}>
-          Réinitialiser
+          {t('Réinitialiser')}
         </Button>
-        <Button onClick={apply}>Appliquer</Button>
+        <Button onClick={apply}>{t('Appliquer')}</Button>
       </div>
     </BottomSheet>
   );

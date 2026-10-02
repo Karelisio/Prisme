@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
 import { UNKNOWN_COLOR } from './filters';
 import { ApiError, type SourcePage, type Wallpaper } from './types';
@@ -71,12 +72,12 @@ export async function nasaSearch(options: { query: string; page: number }): Prom
   try {
     res = await getJson<SearchResponse>(url);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('nasa', 'network', 'NASA injoignable');
+    if (error instanceof NetworkError) throw new ApiError('nasa', 'network', t('NASA injoignable'));
     throw error;
   }
-  if (res.status === 429) throw new ApiError('nasa', 'rate_limit', 'Trop de requêtes à la NASA, réessaie plus tard');
+  if (res.status === 429) throw new ApiError('nasa', 'rate_limit', t('Trop de requêtes à la NASA, réessaie plus tard'));
   if (res.status < 200 || res.status >= 300 || !Array.isArray(res.data?.collection?.items)) {
-    throw new ApiError('nasa', 'server', `Erreur NASA (${res.status})`);
+    throw new ApiError('nasa', 'server', t('Erreur NASA ({status})', { status: res.status }));
   }
   const { items, links } = res.data.collection;
   const hasNext = links?.some((l) => l.rel === 'next') ?? false;
@@ -90,13 +91,13 @@ export async function nasaAsset(id: string): Promise<Wallpaper | null> {
   try {
     res = await getJson<SearchResponse>(url);
   } catch (error) {
-    if (error instanceof NetworkError) throw new ApiError('nasa', 'network', 'NASA injoignable');
+    if (error instanceof NetworkError) throw new ApiError('nasa', 'network', t('NASA injoignable'));
     throw error;
   }
   if (res.status === 404) return null;
-  if (res.status === 429) throw new ApiError('nasa', 'rate_limit', 'Trop de requêtes à la NASA, réessaie plus tard');
+  if (res.status === 429) throw new ApiError('nasa', 'rate_limit', t('Trop de requêtes à la NASA, réessaie plus tard'));
   if (res.status < 200 || res.status >= 300 || !Array.isArray(res.data?.collection?.items)) {
-    throw new ApiError('nasa', 'server', `Erreur NASA (${res.status})`);
+    throw new ApiError('nasa', 'server', t('Erreur NASA ({status})', { status: res.status }));
   }
   const item = res.data.collection.items.find((i) => i.data?.[0]?.nasa_id === id);
   return item ? mapNasa(item) : null;

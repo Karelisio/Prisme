@@ -5,6 +5,7 @@ import { useLibrary } from '@/features/library/store';
 import { useOnboarding } from '@/features/onboarding/store';
 import { tasteLabels, tasteSpec } from '@/features/onboarding/tastes';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { EmptyState } from '@/shared/ui/components';
 import { MIN_FAVORITES, buildProfile, forYouSpec } from './profile';
 import './discover.css';
@@ -29,7 +30,7 @@ export function ForYouView({ scrollRef }: { scrollRef: RefObject<HTMLElement | n
   if (!spec && tasteFeed) {
     return (
       <>
-        <p className="discover-intro">D’après tes goûts : {tasteLabels(tastes).join(', ')}. Ajoute des favoris pour affiner.</p>
+        <p className="discover-intro">{t('D’après tes goûts : {tastes}. Ajoute des favoris pour affiner.', { tastes: tasteLabels(tastes).join(', ') })}</p>
         <FeedView key={tasteFeed.key} spec={tasteFeed} scrollRef={scrollRef} options={options} />
       </>
     );
@@ -38,8 +39,8 @@ export function ForYouView({ scrollRef }: { scrollRef: RefObject<HTMLElement | n
     return (
       <EmptyState
         icon="favorite"
-        title="Pour toi"
-        text={`Ajoute au moins ${MIN_FAVORITES} favoris : Prisme te proposera des fonds proches de tes goûts, calculés sur ton téléphone.`}
+        title={t('Pour toi')}
+        text={t('Ajoute au moins {count} favoris : Prisme te proposera des fonds proches de tes goûts, calculés sur ton téléphone.', { count: MIN_FAVORITES })}
       />
     );
   }
@@ -49,7 +50,9 @@ export function ForYouView({ scrollRef }: { scrollRef: RefObject<HTMLElement | n
   ].filter(Boolean);
   return (
     <>
-      <p className="discover-intro">D’après tes favoris{reasons.length > 0 ? ` : ${reasons.join(' · ')}` : ''}</p>
+      <p className="discover-intro">
+        {reasons.length > 0 ? t('D’après tes favoris : {reasons}', { reasons: reasons.join(' · ') }) : t('D’après tes favoris')}
+      </p>
       <FeedView key={spec.key} spec={spec} scrollRef={scrollRef} options={options} />
     </>
   );

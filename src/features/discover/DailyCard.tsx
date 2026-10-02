@@ -2,6 +2,7 @@ import { openPreview } from '@/app/navigation';
 import { usePreviewSrc } from '@/features/library/useImageSrc';
 import { sourceLabel } from '@/features/sources/registry';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { Icon } from '@/shared/ui/components';
 import { useDaily } from './dailyActions';
 import './discover.css';
@@ -22,12 +23,12 @@ function DailyCardContent({ wallpaper }: { wallpaper: Wallpaper }) {
       className="daily-card"
       style={{ backgroundColor: wallpaper.color }}
       onClick={() => openPreview(wallpaper)}
-      aria-label={`Fond du jour : ${wallpaper.alt}`}
+      aria-label={t('Fond du jour : {alt}', { alt: wallpaper.alt })}
     >
       <img src={src} alt="" decoding="async" draggable={false} onLoad={(e) => e.currentTarget.classList.add('is-loaded')} />
       <span className="daily-card__label">
         <Icon name="today" size={18} />
-        Fond du jour
+        {t('Fond du jour')}
       </span>
       <span className="daily-card__text">
         <span className="daily-card__title">{wallpaper.alt}</span>
