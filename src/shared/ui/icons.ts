@@ -112,6 +112,8 @@ import hideImage from '@material-symbols/svg-400/rounded/hide_image.svg?raw';
 import trendingUp from '@material-symbols/svg-400/rounded/trending_up.svg?raw';
 import touchApp from '@material-symbols/svg-400/rounded/touch_app.svg?raw';
 import widgets from '@material-symbols/svg-400/rounded/widgets.svg?raw';
+import movie from '@material-symbols/svg-400/rounded/movie.svg?raw';
+import gif from '@material-symbols/svg-400/rounded/gif.svg?raw';
 
 export const ICONS = {
   search,
@@ -226,6 +228,8 @@ export const ICONS = {
   trendingUp,
   touchApp,
   widgets,
+  movie,
+  gif,
 } as const;
 
 export type IconName = keyof typeof ICONS;

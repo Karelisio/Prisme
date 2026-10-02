@@ -6,6 +6,8 @@
     <string name="custom_url_scheme">io.karelisio.prisme</string>
     <string name="live_wallpaper_name">Prisme · parallaxe</string>
     <string name="live_wallpaper_description">Ton fond Prisme suit les mouvements du téléphone.</string>
+    <string name="video_wallpaper_name">Prisme · vidéo</string>
+    <string name="video_wallpaper_description">Une vidéo de ta galerie en fond d\'écran, en boucle et sans le son.</string>
     <string name="tile_next">Fond suivant</string>
     <string name="shortcut_next_short">Suivant</string>
     <string name="shortcut_next_long">Fond suivant</string>

@@ -113,6 +113,21 @@
                 android:resource="@xml/parallax_wallpaper" />
         </service>
 
+        <!-- Fond vidéo (option désactivée par défaut dans l'app) : service à part, car une surface qui a servi au
+             canevas (fond animé ci-dessus) ne peut plus recevoir de vidéo, et inversement. -->
+        <service
+            android:name=".live.VideoWallpaperService"
+            android:exported="true"
+            android:label="@string/video_wallpaper_name"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/video_wallpaper" />
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

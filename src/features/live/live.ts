@@ -88,12 +88,24 @@ export async function setLiveWallpaper(wallpaper: Wallpaper, crop?: NormalizedRe
 }
 
 /**
- * Genres dont le natif a déjà ce qu'il faut (dégradés, particules, ou média déjà préparé) : envoie le
- * genre et ses réglages, puis ouvre l'écran d'Android si le fond Prisme n'est pas encore actif.
+ * Genres dont le natif a déjà ce qu'il faut (dégradés, particules, GIF déjà choisi…) : envoie le genre et ses
+ * réglages, puis ouvre l'écran d'Android si le fond animé des scènes n'est pas encore actif (même si le fond
+ * vidéo l'est : c'est un autre service).
  */
 export async function activateLiveMode(mode: LiveMode): Promise<string> {
   useLive.setState({ mode });
   await PrismeLive.configure(liveConfiguration(mode));
   const { status } = await PrismeLive.activate();
+  return activatedMessage(status);
+}
+
+/**
+ * Vidéo : envoie le genre, puis ouvre l'écran d'Android si le fond vidéo Prisme n'est pas encore actif (c'est un
+ * service à part de celui des scènes). Déjà actif, il suit tout seul la vidéo choisie.
+ */
+export async function activateVideo(): Promise<string> {
+  useLive.setState({ mode: 'video' });
+  await PrismeLive.configure(liveConfiguration('video'));
+  const { status } = await PrismeLive.activateVideo();
   return activatedMessage(status);
 }

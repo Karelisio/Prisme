@@ -26,7 +26,8 @@ export function UnlockSection({ optionOn, status, onChanged }: { optionOn: boole
     () => rotationItems(unlock.source, { favorites, items, collections }).length,
     [unlock.source, favorites, items, collections],
   );
-  const live = optionOn && !!status?.active;
+  // La liste n'agit que dans le fond animé des scènes (photo) : le fond vidéo n'est pas concerné.
+  const live = optionOn && status?.component === 'scenes';
   const total = Math.min(count, PLAYLIST_LIMIT);
   const prepared = status?.playlist.enabled ? status.playlist.count : 0;
 

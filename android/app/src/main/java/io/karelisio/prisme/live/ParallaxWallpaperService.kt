@@ -124,6 +124,9 @@ class ParallaxWallpaperService : WallpaperService() {
         private fun switchMode() {
             val newMode = LiveWallpaperStore.read(context).mode
             if (newMode == mode) return
+            // La vidéo est lue par un autre service (VideoWallpaperService) : la choisir dans l'app ne doit pas
+            // remplacer ici la scène en cours (GIF, photo…) tant que ce fond n'est pas activé.
+            if (LiveComponent.forMode(newMode) != LiveComponent.SCENES) return
             scene.onRunning(false)
             scene.release()
             mode = newMode
