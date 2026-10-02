@@ -36,7 +36,7 @@ mode focus, puis fonds dynamiques, puis rotation.
 Chaque push lance le workflow **Android** (onglet *Actions*). L'APK release est dans les
 artefacts du run (`Prisme-x.y.z.N`). Un tag `v*`, ou *Run workflow* avec l'option « release »,
 publie aussi une release GitHub (tag `v` + version de `package.json`), toujours signée
-avec la vraie clé : sans les secrets `KEYSTORE_*` valides, le run échoue dès le début (ajouter les
+avec la vraie clé : sans les secrets `ANDROID_KEYSTORE_*` valides, le run échoue dès le début (ajouter les
 secrets puis *Re-run all jobs*).
 
 ## Secrets GitHub
@@ -47,15 +47,15 @@ secrets puis *Re-run all jobs*).
 |---|---|
 | `UNSPLASH_ACCESS_KEY` | Access Key d'une application sur https://unsplash.com/oauth/applications |
 | `PEXELS_API_KEY` | Clé obtenue sur https://www.pexels.com/api/new/ |
-| `KEYSTORE_BASE64` | Clé de signature release (fichier PKCS12, alias `prisme`) encodée en base64 |
-| `KEYSTORE_PASSWORD` | Mot de passe de cette clé |
+| `ANDROID_KEYSTORE_BASE64` | Clé de signature release (fichier PKCS12 contenant une seule clé, alias lu automatiquement) encodée en base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | Mot de passe de cette clé |
 
 Les clés API sont injectées au build et ne figurent jamais dans le code. Sans backend, elles
 restent extractibles de l'APK : le risque se limite à l'usage du quota. Une application Unsplash
 débute en mode « demo » (50 requêtes/heure) ; la demande de passage en production se fait depuis
 la page de l'application sur unsplash.com.
 
-Sans `KEYSTORE_BASE64`/`KEYSTORE_PASSWORD`, l'APK release est signé avec une clé de debug,
+Sans `ANDROID_KEYSTORE_BASE64`/`ANDROID_KEYSTORE_PASSWORD`, l'APK release est signé avec une clé de debug,
 conservée d'un build à l'autre : chaque APK s'installe par-dessus le précédent. Passer ensuite à la
 vraie clé impose de désinstaller l'app une fois.
 

@@ -46,14 +46,14 @@ jobs:
       # En tête du job : une clé absente ou mal copiée échoue en quelques secondes.
       - name: Clé de signature
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           # Diagnostic d'une clé introuvable : un booléen, aucune valeur affichée.
-          KEYSTORE_IN_VARS: ${{ vars.KEYSTORE_BASE64 != '' || vars.KEYSTORE_PASSWORD != '' }}
+          KEYSTORE_IN_VARS: ${{ vars.ANDROID_KEYSTORE_BASE64 != '' || vars.ANDROID_KEYSTORE_PASSWORD != '' }}
         run: |
           missing=""
-          [ -n "$KEYSTORE_BASE64" ] || missing="$missing KEYSTORE_BASE64"
-          [ -n "$KEYSTORE_PASSWORD" ] || missing="$missing KEYSTORE_PASSWORD"
+          [ -n "$KEYSTORE_BASE64" ] || missing="$missing ANDROID_KEYSTORE_BASE64"
+          [ -n "$KEYSTORE_PASSWORD" ] || missing="$missing ANDROID_KEYSTORE_PASSWORD"
           if [ -n "$missing" ]; then
             # Une release signée avec la clé de debug bloquerait les mises à jour signées ensuite.
             if [ "$PRISME_RELEASE" = true ]; then
@@ -65,17 +65,26 @@ jobs:
               echo "::error title=Release non signée::Secret(s) introuvable(s) :$missing ($hint), puis relance ce workflow."
               exit 1
             fi
-            echo "::warning title=APK signé avec une clé de debug::Ajoute les secrets KEYSTORE_BASE64 et KEYSTORE_PASSWORD pour signer l'APK release (voir README)."
+            echo "::warning title=APK signé avec une clé de debug::Ajoute les secrets ANDROID_KEYSTORE_BASE64 et ANDROID_KEYSTORE_PASSWORD pour signer l'APK release (voir README)."
             exit 0
           fi
           # La clé n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
           echo "$KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$RUNNER_TEMP/release.p12"
-          if ! keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/release.p12" \
-              -storepass:env KEYSTORE_PASSWORD -alias "${PRISME_KEY_ALIAS:-prisme}" > /dev/null; then
-            echo "::error title=Clé de signature invalide::KEYSTORE_BASE64 ou KEYSTORE_PASSWORD incorrect (copie incomplète ? espace en trop ?), ou alias différent de prisme."
+          if ! entries="$(keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/release.p12" -storepass:env KEYSTORE_PASSWORD)"; then
+            printf '%s\n' "$entries" | tail -n 1
+            echo "::error title=Clé de signature invalide::ANDROID_KEYSTORE_BASE64 ou ANDROID_KEYSTORE_PASSWORD incorrect (copie incomplète ? espace en trop ?)."
             exit 1
           fi
-          echo "PRISME_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+          # Alias lu dans le fichier : aucun secret à renseigner pour lui, aucune faute de frappe possible.
+          alias="$(printf '%s\n' "$entries" | awk -F', ' '/PrivateKeyEntry/ { print $1 }')"
+          if [ -z "$alias" ] || [ "$(printf '%s\n' "$alias" | wc -l)" -ne 1 ]; then
+            echo "::error title=Clé de signature invalide::Le fichier de ANDROID_KEYSTORE_BASE64 doit contenir exactement une clé privée."
+            exit 1
+          fi
+          {
+            echo "PRISME_KEYSTORE_FILE=$RUNNER_TEMP/release.p12"
+            echo "PRISME_KEY_ALIAS=$alias"
+          } >> "$GITHUB_ENV"
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -116,7 +125,7 @@ jobs:
       - name: Tests natifs et APK release
         working-directory: android
         env:
-          PRISME_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          PRISME_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: ./gradlew --no-daemon testDebugUnitTest :app:lintRelease assembleRelease
 
       - name: Nommer l'APK
