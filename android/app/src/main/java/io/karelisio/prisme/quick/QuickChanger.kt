@@ -37,7 +37,7 @@ internal class QuickChanger(private val context: Context) {
 
     private fun advanceRotation(): Boolean {
         val store = AutomationStore(context)
-        if (!QuickPool.rotationDrivesNext(store.config(), AutomationStore.now())) return false
+        if (!QuickPool.rotationDrivesNext(store.config(), AutomationStore.now(), store.state().overrideTarget)) return false
         store.saveState(store.state().copy(lastRotationAt = 0))
         if (AutomationRunner.run(context, prefetch = false, force = false) == AutomationRunner.Outcome.RETRY) {
             throw WallpaperException("DOWNLOAD_FAILED", "image de la rotation indisponible (connexion ?)")

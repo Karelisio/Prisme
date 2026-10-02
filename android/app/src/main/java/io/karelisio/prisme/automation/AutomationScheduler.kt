@@ -28,8 +28,8 @@ object AutomationScheduler {
             work.cancelUniqueWork(NOW)
             return
         }
-        // Rotation seule : la période suit l'intervalle choisi ; sinon contrôle toutes les 15 min.
-        val onlyRotation = !config.dynamic.enabled && !config.focus.enabled && !config.events.enabled && !config.dim.enabled
+        // Rotation seule : la période suit l'intervalle choisi ; sinon (dynamique, focus, fêtes, soir, lieux) contrôle toutes les 15 min.
+        val onlyRotation = !config.dynamic.enabled && !config.focus.enabled && !config.events.enabled && !config.dim.enabled && !config.places.active
         val period = if (onlyRotation) maxOf(MIN_PERIOD_MINUTES, config.rotation.intervalMinutes.toLong()) else MIN_PERIOD_MINUTES
         val periodic = PeriodicWorkRequestBuilder<AutomationWorker>(period, TimeUnit.MINUTES)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)

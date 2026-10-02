@@ -17,6 +17,7 @@ export type Overlay =
   | { type: 'live' }
   | { type: 'rotation' }
   | { type: 'music' }
+  | { type: 'places' }
   | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect }
   | { type: 'generator' }
   | { type: 'focus' }

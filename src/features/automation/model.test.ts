@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wallpaper } from '@/features/sources/types';
-import { DEFAULT_AUTOMATION, FAVORITES_SOURCE, QUICK_POOL_LIMIT, buildConfig, buildQuickPool, rotationItems } from './model';
+import { DEFAULT_AUTOMATION, FAVORITES_SOURCE, type PlaceZone, QUICK_POOL_LIMIT, buildConfig, buildQuickPool, rotationItems } from './model';
 import { DEFAULT_ONLINE, ONLINE_THEMES, type OnlineContext, onlineQueries, onlineSpec, onlineThemeLabel } from './online';
 
 const wp = (id: string, local = false): Wallpaper => ({
@@ -21,7 +21,7 @@ const library = {
   collections: [{ id: 'col', name: 'Nuit', createdAt: 0, itemIds: ['c', 'a', 'disparu'] }],
 };
 
-const off = { rotation: false, dynamic: false, focus: false };
+const off = { rotation: false, dynamic: false, focus: false, places: false };
 
 describe('configuration des automatismes', () => {
   it('tout est coupé tant que les options sont désactivées', () => {
@@ -29,6 +29,7 @@ describe('configuration des automatismes', () => {
     expect(config.rotation.enabled).toBe(false);
     expect(config.dynamic.enabled).toBe(false);
     expect(config.focus.enabled).toBe(false);
+    expect(config.places).toEqual({ enabled: false, target: 'both', items: [] });
   });
 
   it('rotation depuis les favoris (récents d’abord) ou une collection', () => {
@@ -89,6 +90,44 @@ describe('configuration des automatismes', () => {
       item: { id: 'c', uri: '/data/creations/c.jpg' },
       schedules: [{ days: [1, 5], start: '09:00', end: '12:00' }],
     });
+  });
+
+  it('lieux : seuls ceux qui ont un fond de la bibliothèque sont envoyés', () => {
+    const zone = (name: string, wallpaperId: string | null, patch: Partial<PlaceZone> = {}): PlaceZone => ({
+      id: name,
+      name,
+      latitude: 48.85,
+      longitude: 2.35,
+      radius: 300,
+      wallpaperId,
+      ...patch,
+    });
+    const prefs = {
+      ...DEFAULT_AUTOMATION,
+      places: {
+        target: 'lock' as const,
+        items: [
+          zone('Maison', 'a'),
+          zone('Sans fond', null),
+          zone('Fond disparu', 'inconnu'),
+          zone('Travail', 'c', { latitude: 45.76, longitude: 4.84, radius: 600 }),
+          zone('Position cassée', 'b', { latitude: Number.NaN }),
+          zone('Rayon nul', 'b', { radius: 0 }),
+        ],
+      },
+    };
+    expect(buildConfig(prefs, { ...off, places: true }, library).places).toEqual({
+      enabled: true,
+      target: 'lock',
+      items: [
+        { name: 'Maison', latitude: 48.85, longitude: 2.35, radius: 300, item: { id: 'a', uri: 'https://images.unsplash.com/a?fm=jpg' } },
+        { name: 'Travail', latitude: 45.76, longitude: 4.84, radius: 600, item: { id: 'c', uri: '/data/creations/c.jpg' } },
+      ],
+    });
+    // Option désactivée : les lieux sont envoyés mais coupés (le natif ne cherche plus la position).
+    const disabled = buildConfig(prefs, off, library).places;
+    expect(disabled.enabled).toBe(false);
+    expect(disabled.items).toHaveLength(2);
   });
 
   it('réserve de la tuile : favoris récents d’abord, copie hors ligne si possible', () => {

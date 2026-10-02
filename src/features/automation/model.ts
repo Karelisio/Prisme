@@ -20,6 +20,14 @@ export interface Place {
   longitude: number;
 }
 
+/** « Selon le lieu » : zone circulaire autour d'un point, avec le fond posé quand l'appareil s'y trouve. */
+export interface PlaceZone extends Place {
+  id: string;
+  /** Rayon en mètres. */
+  radius: number;
+  wallpaperId: string | null;
+}
+
 export interface FocusScheduleDraft {
   id: string;
   /** 1 = lundi … 7 = dimanche. */
@@ -57,6 +65,8 @@ export interface AutomationPrefs {
     /** Mode sombre du système : un fond clair, un fond sombre. */
     theme: { light?: string; dark?: string };
   };
+  /** Le premier lieu de la liste qui contient la position de l'appareil l'emporte. */
+  places: { target: WallpaperTarget; items: PlaceZone[] };
   focus: { target: WallpaperTarget; wallpaperId: string | null; schedules: FocusScheduleDraft[] };
   /** « Assombrir le soir » : intensité maximale, lieu dont le soleil cale l'assombrissement. */
   dim: { strength: DimStrength; place: Place | null };
@@ -88,6 +98,7 @@ export const DEFAULT_AUTOMATION: AutomationPrefs = {
   },
   events: { target: 'both', holidays: {}, custom: [] },
   dim: { strength: 'medium', place: null },
+  places: { target: 'both', items: [] },
   focus: {
     target: 'both',
     wallpaperId: null,
@@ -163,6 +174,19 @@ export const INTERVALS: readonly { minutes: number; label: string }[] = [
   { minutes: 1440, label: '24 h' },
 ];
 
+/** Rayons proposés pour un lieu, en mètres. */
+export const PLACE_RADII: readonly { meters: number; label: string }[] = [
+  { meters: 150, label: '150 m' },
+  { meters: 300, label: '300 m' },
+  { meters: 600, label: '600 m' },
+  { meters: 1000, label: '1 km' },
+];
+
+export const DEFAULT_PLACE_RADIUS = 300;
+
+/** Noms proposés à l'ajout d'un lieu. */
+export const PLACE_SUGGESTIONS: readonly string[] = ['Maison', 'Travail', 'École', 'Famille'];
+
 /**
  * Référence native d'un fond : les images distantes passent par leur URL (le natif en garde sa
  * propre copie), les images locales par leur chemin.
@@ -219,7 +243,7 @@ function refMap<K extends string>(ids: Partial<Record<K, string>>, items: Record
  */
 export function buildConfig(
   prefs: AutomationPrefs,
-  flags: Pick<FeatureFlags, 'rotation' | 'dynamic' | 'focus'> & Partial<Pick<FeatureFlags, 'events' | 'dim'>>,
+  flags: Pick<FeatureFlags, 'rotation' | 'dynamic' | 'focus'> & Partial<Pick<FeatureFlags, 'events' | 'dim' | 'places'>>,
   library: Pick<LibraryData, 'items' | 'favorites' | 'collections'>,
   online?: OnlineContext,
   now = new Date(),
@@ -285,6 +309,16 @@ export function buildConfig(
       smart: prefs.rotation.smart !== false,
     },
     dynamic,
+    places: {
+      enabled: flags.places === true,
+      target: prefs.places.target,
+      // Un lieu sans fond (ou dont le fond a disparu de la bibliothèque) est ignoré.
+      items: prefs.places.items.flatMap(({ name, latitude, longitude, radius, wallpaperId }) => {
+        const w = wallpaperId ? items[wallpaperId] : undefined;
+        const valid = Number.isFinite(latitude) && Number.isFinite(longitude) && radius > 0;
+        return w && valid ? [{ name, latitude, longitude, radius, item: toRef(w) }] : [];
+      }),
+    },
     focus: {
       enabled: flags.focus,
       target: prefs.focus.target,

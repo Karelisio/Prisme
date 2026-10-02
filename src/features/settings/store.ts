@@ -12,6 +12,7 @@ export interface FeatureFlags {
   live: boolean;
   rotation: boolean;
   music: boolean;
+  places: boolean;
   editor: boolean;
   generator: boolean;
   palette: boolean;
@@ -67,6 +68,7 @@ export const DEFAULT_SETTINGS: Settings = {
     live: false,
     rotation: false,
     music: false,
+    places: false,
     editor: false,
     generator: false,
     palette: false,

@@ -45,10 +45,13 @@ internal class QuickPool(context: Context) {
 
         /**
          * « Fond suivant » fait avancer la rotation quand elle est active et qu'aucun automatisme
-         * prioritaire (mode focus en cours, fonds dynamiques) ne décide du fond ; sinon, favori au hasard.
+         * prioritaire (mode focus en cours, fonds dynamiques, fête ou lieu posé sur le même écran
+         * [overrideTarget]) ne décide du fond ; sinon, favori au hasard.
          */
-        fun rotationDrivesNext(config: AutomationConfig, moment: Moment): Boolean {
+        fun rotationDrivesNext(config: AutomationConfig, moment: Moment, overrideTarget: WallpaperTarget? = null): Boolean {
             if (!config.rotation.active) return false
+            val rotationTarget = config.rotation.target
+            if (overrideTarget != null && (overrideTarget == rotationTarget || WallpaperTarget.BOTH in setOf(overrideTarget, rotationTarget))) return false
             val focus = config.focus
             if (focus.enabled && focus.ref != null && RulesEngine.focusActive(focus, moment)) return false
             return !(config.dynamic.enabled && config.dynamic.mode != null)

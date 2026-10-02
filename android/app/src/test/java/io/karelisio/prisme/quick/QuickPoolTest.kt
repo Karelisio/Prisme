@@ -54,5 +54,12 @@ class QuickPoolTest {
         assertFalse(QuickPool.rotationDrivesNext(AutomationConfig(rotation = rotation, focus = focus), monday10h))
         // Mode focus programmé mais pas en cours : la rotation garde la main.
         assertTrue(QuickPool.rotationDrivesNext(AutomationConfig(rotation = rotation, focus = focus), monday10h.copy(minuteOfDay = 800)))
+
+        // Fête ou lieu en cours sur l'écran de la rotation : favori au hasard ; sur l'autre écran : rotation.
+        val homeRotation = AutomationConfig(rotation = rotation.copy(target = WallpaperTarget.HOME))
+        assertFalse(QuickPool.rotationDrivesNext(homeRotation, monday10h, WallpaperTarget.BOTH))
+        assertFalse(QuickPool.rotationDrivesNext(homeRotation, monday10h, WallpaperTarget.HOME))
+        assertTrue(QuickPool.rotationDrivesNext(homeRotation, monday10h, WallpaperTarget.LOCK))
+        assertFalse(QuickPool.rotationDrivesNext(AutomationConfig(rotation = rotation), monday10h, WallpaperTarget.LOCK))
     }
 }

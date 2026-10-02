@@ -7,7 +7,8 @@ import android.content.Context
  * règle renvoie son fond (ou null) ; le moteur applique le premier.
  */
 internal object Overrides {
-    fun compute(context: Context, config: AutomationConfig, moment: Moment): List<Override> = listOfNotNull(
-        EventsRule.pick(context, config.events, moment),
-    )
+    // Le moteur n'applique que le premier : une règle n'est évaluée que si les précédentes ne donnent rien
+    // (pas de recherche de position un jour de fête).
+    fun compute(context: Context, config: AutomationConfig, moment: Moment): List<Override> =
+        listOfNotNull(EventsRule.pick(context, config.events, moment) ?: PlacesRule.compute(context, config, moment))
 }

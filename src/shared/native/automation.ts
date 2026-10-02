@@ -59,6 +59,12 @@ export interface NativeAutomationConfig {
     season?: { hemisphere: 'north' | 'south'; items: Partial<Record<string, AutomationRef>> };
     battery?: { levels: { min: number; max: number; item: AutomationRef }[]; charging?: AutomationRef };
   };
+  /** « Selon le lieu » : zones circulaires (rayon en mètres) avec leur fond ; les lieux sans fond ne sont pas envoyés. */
+  places: {
+    enabled: boolean;
+    target: WallpaperTarget;
+    items: { name: string; latitude: number; longitude: number; radius: number; item: AutomationRef }[];
+  };
   focus: {
     enabled: boolean;
     target: WallpaperTarget;
@@ -97,6 +103,27 @@ export interface AutomationStatus {
   quickPoolSize?: number;
 }
 
+/** Position de l'appareil ; `accuracy` : précision estimée, en mètres. */
+export interface DevicePosition {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
+export interface LocationPermissions {
+  /** Position précise accordée. */
+  precise: boolean;
+  /** « Toujours autoriser » (Android 10+) : la position est lue app fermée ; vrai d'office avant Android 10. */
+  background: boolean;
+}
+
+export interface LocationPermissionResult extends LocationPermissions {
+  /** Les réglages de l'app ont été ouverts : à partir d'Android 11, l'accès « Toujours » s'y accorde. */
+  settingsOpened: boolean;
+  /** Consigne à montrer quand l'utilisateur doit terminer dans les réglages. */
+  message?: string;
+}
+
 export interface PrismeAutomationPlugin {
   configure(options: { config: NativeAutomationConfig }): Promise<{ enabled: boolean }>;
   getStatus(): Promise<AutomationStatus>;
@@ -105,6 +132,11 @@ export interface PrismeAutomationPlugin {
   /** Passe tout de suite au fond suivant de la rotation. */
   nextRotation(): Promise<void>;
   getApproximateLocation(): Promise<{ latitude: number; longitude: number }>;
+  /** Position précise (ajout d'un lieu) : demande l'autorisation au besoin, échoue au bout d'environ 20 s. */
+  getCurrentPosition(): Promise<DevicePosition>;
+  getLocationPermissions(): Promise<LocationPermissions>;
+  /** Position précise d'abord, puis (Android 10+) accès « Toujours » ; à partir d'Android 11, ouvre les réglages de l'app. */
+  requestLocationPermissions(): Promise<LocationPermissionResult>;
   /** Favoris utilisables par la tuile et les raccourcis « Fond suivant » / « Favori au hasard ». */
   setQuickPool(pool: QuickPool): Promise<void>;
   /** Sélecteur de dossier du système (accès en lecture conservé). */
@@ -132,7 +164,8 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
     const c = options.config;
     const rotation = c.rotation.enabled && (c.rotation.items.length > 0 || !!c.rotation.online || !!c.rotation.folder);
     const events = !!c.events?.enabled && c.events.items.length > 0;
-    return { enabled: rotation || events || !!c.dim?.enabled || c.dynamic.enabled || (c.focus.enabled && !!c.focus.item) };
+    const places = !!c.places?.enabled && c.places.items.length > 0;
+    return { enabled: rotation || events || places || !!c.dim?.enabled || c.dynamic.enabled || (c.focus.enabled && !!c.focus.item) };
   }
 
   async getStatus(): Promise<AutomationStatus> {
@@ -189,6 +222,36 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
         { maximumAge: 6 * 3600_000, timeout: 15_000 },
       );
     });
+  }
+
+  /** Tests : position renvoyée par `getCurrentPosition` (null : introuvable). */
+  position: DevicePosition | null = { latitude: 48.8566, longitude: 2.3522, accuracy: 25 };
+  /** Tests : autorisations de position ; rien n'est accordé au départ, comme sur un appareil neuf. */
+  locationPermissions: LocationPermissions = { precise: false, background: false };
+  /** Tests : false simule un refus à la prochaine demande d'autorisation. */
+  grantLocation = true;
+  locationRequests = 0;
+
+  async getCurrentPosition(): Promise<DevicePosition> {
+    if (!this.locationPermissions.precise) {
+      this.locationRequests++;
+      if (this.grantLocation) this.locationPermissions = { ...this.locationPermissions, precise: true };
+    }
+    if (!this.locationPermissions.precise) {
+      throw Object.assign(new Error('Autorisation de position précise refusée'), { code: 'PERMISSION_DENIED' });
+    }
+    if (!this.position) throw this.unavailable('Position introuvable');
+    return { ...this.position };
+  }
+
+  async getLocationPermissions(): Promise<LocationPermissions> {
+    return { ...this.locationPermissions };
+  }
+
+  async requestLocationPermissions(): Promise<LocationPermissionResult> {
+    this.locationRequests++;
+    if (this.grantLocation) this.locationPermissions = { precise: true, background: true };
+    return { ...this.locationPermissions, settingsOpened: false };
   }
 }
 

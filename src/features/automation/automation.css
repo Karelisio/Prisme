@@ -212,6 +212,31 @@
   list-style: none;
 }
 
+.place-card {
+  margin: 0 16px 12px;
+  padding: 4px 12px 8px;
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-color-surface-container);
+}
+
+.place-card .ref-row {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.place-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.place-add .option-actions {
+  padding-right: 0;
+  padding-left: 0;
+}
+
 .slider {
   width: 100%;
   accent-color: var(--md-sys-color-primary);

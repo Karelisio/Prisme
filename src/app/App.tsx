@@ -48,6 +48,7 @@ const screens = {
   live: () => import('@/features/live/LiveScreen'),
   rotation: () => import('@/features/automation/RotationScreen'),
   music: () => import('@/features/music/MusicScreen'),
+  places: () => import('@/features/automation/PlacesScreen'),
   editor: () => import('@/features/editor/EditorScreen'),
   generator: () => import('@/features/generator/GeneratorScreen'),
   focus: () => import('@/features/automation/FocusScreen'),
@@ -69,6 +70,7 @@ const DynamicScreen = lazy(() => screens.dynamic().then((m) => ({ default: m.Dyn
 const LiveScreen = lazy(() => screens.live().then((m) => ({ default: m.LiveScreen })));
 const RotationScreen = lazy(() => screens.rotation().then((m) => ({ default: m.RotationScreen })));
 const MusicScreen = lazy(() => screens.music().then((m) => ({ default: m.MusicScreen })));
+const PlacesScreen = lazy(() => screens.places().then((m) => ({ default: m.PlacesScreen })));
 const EditorScreen = lazy(() => screens.editor().then((m) => ({ default: m.EditorScreen })));
 const GeneratorScreen = lazy(() => screens.generator().then((m) => ({ default: m.GeneratorScreen })));
 const FocusScreen = lazy(() => screens.focus().then((m) => ({ default: m.FocusScreen })));
@@ -157,6 +159,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <RotationScreen />;
     case 'music':
       return <MusicScreen />;
+    case 'places':
+      return <PlacesScreen />;
     case 'editor':
       return <EditorScreen wallpaper={overlay.wallpaper} crop={overlay.crop} />;
     case 'generator':
