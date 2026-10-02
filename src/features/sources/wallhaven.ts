@@ -78,3 +78,25 @@ export async function wallhavenSearch(options: {
   const { data, meta } = res.data;
   return { items: data.map(mapWallhaven), next: meta && meta.current_page < meta.last_page ? options.page + 1 : null };
 }
+
+/**
+ * Un fond par son identifiant (collection reçue) ; null s'il n'existe plus ou n'est pas tout
+ * public (sans clé, l'API répond 401 pour ces contenus).
+ */
+export async function wallhavenWallpaper(id: string): Promise<Wallpaper | null> {
+  let res;
+  try {
+    res = await getJson<{ data?: WallhavenWallpaper & { purity?: string } }>(`${API}/w/${encodeURIComponent(id)}`);
+  } catch (error) {
+    if (error instanceof NetworkError) throw new ApiError('wallhaven', 'network', 'Wallhaven injoignable');
+    throw error;
+  }
+  if (res.status === 404 || res.status === 401) return null;
+  if (res.status === 429) throw new ApiError('wallhaven', 'rate_limit', 'Trop de requêtes Wallhaven, réessaie dans une minute');
+  if (res.status < 200 || res.status >= 300) throw new ApiError('wallhaven', 'server', `Erreur Wallhaven (${res.status})`);
+  const wallpaper = res.data?.data;
+  if (!wallpaper?.path || !wallpaper.thumbs || !Array.isArray(wallpaper.colors)) return null;
+  // L'app ne montre que du contenu tout public : un code de collection n'y change rien.
+  if (wallpaper.purity && wallpaper.purity !== 'sfw') return null;
+  return mapWallhaven(wallpaper);
+}

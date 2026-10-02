@@ -13,6 +13,10 @@ export type Overlay =
   | { type: 'search' }
   | { type: 'pack'; packId: string }
   | { type: 'collection'; collectionId: string }
+  /** Collection reçue (lien, QR code ou code collé) : aperçu des fonds avant de l'ajouter à la bibliothèque. */
+  | { type: 'received'; code: string; name: string; ids: string[] }
+  /** Bibliothèque › Statistiques. */
+  | { type: 'stats' }
   | { type: 'diagnostics' }
   | { type: 'dynamic' }
   | { type: 'live' }

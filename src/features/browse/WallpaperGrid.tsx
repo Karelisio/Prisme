@@ -5,6 +5,7 @@ import { useLibrary } from '@/features/library/store';
 import { useThumbSrc } from '@/features/library/useImageSrc';
 import { useSettings } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
+import { useLongPress } from '@/shared/lib/useLongPress';
 import { Icon } from '@/shared/ui/components';
 import { CELL_RATIO, GRID_GAP, GRID_MARGIN, type MosaicTile, columnCount, layoutMosaic, mosaicColumns, tileRatio, visibleTiles } from './mosaic';
 
@@ -16,6 +17,8 @@ interface GridProps {
   loadingMore?: boolean;
   onEndReached?: () => void;
   onOpen?: (w: Wallpaper) => void;
+  /** Appui long sur une vignette (étiquettes des favoris). */
+  onLongPress?: (w: Wallpaper) => void;
   footer?: ReactNode;
 }
 
@@ -66,7 +69,7 @@ function useOpen(items: Wallpaper[], onOpen: GridProps['onOpen']) {
 type OpenHandler = ReturnType<typeof useOpen>;
 
 /** Grille à colonnes égales : une rangée = une ligne de la liste virtualisée. */
-function ColumnsGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen, footer, columns }: GridProps & { columns: number }) {
+function ColumnsGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen, onLongPress, footer, columns }: GridProps & { columns: number }) {
   const open = useOpen(items, onOpen);
   const { gridRef, width, offset } = useGridFrame(scrollRef);
   const cellWidth = width > 0 ? (width - GRID_GAP * (columns - 1)) / columns : 0;
@@ -107,7 +110,7 @@ function ColumnsGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onO
               }}
             >
               {items.slice(row.index * columns, row.index * columns + columns).map((w) => (
-                <WallpaperCell key={w.id} wallpaper={w} onOpen={open} />
+                <WallpaperCell key={w.id} wallpaper={w} onOpen={open} onLongPress={onLongPress} />
               ))}
             </div>
           ))}
@@ -154,7 +157,7 @@ function useScrollWindow(scrollRef: RefObject<HTMLElement | null>, offset: numbe
 }
 
 /** Mosaïque : vignettes à la hauteur de leur image, réparties en colonnes équilibrées. */
-function MosaicGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen, footer }: GridProps) {
+function MosaicGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen, onLongPress, footer }: GridProps) {
   const open = useOpen(items, onOpen);
   const { gridRef, width, offset } = useGridFrame(scrollRef);
   const view = useScrollWindow(scrollRef, offset);
@@ -172,7 +175,7 @@ function MosaicGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOp
       <div ref={gridRef} className="wp-grid wp-grid--mosaic" style={{ height: layout?.height }} data-columns={columns}>
         {tiles.map((tile) => {
           const wallpaper = items[tile.index] as Wallpaper;
-          return <WallpaperCell key={wallpaper.id} wallpaper={wallpaper} onOpen={open} tile={tile} />;
+          return <WallpaperCell key={wallpaper.id} wallpaper={wallpaper} onOpen={open} onLongPress={onLongPress} tile={tile} />;
         })}
       </div>
       {footer}
@@ -183,15 +186,18 @@ function MosaicGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOp
 const WallpaperCell = memo(function WallpaperCell({
   wallpaper,
   onOpen,
+  onLongPress,
   tile,
 }: {
   wallpaper: Wallpaper;
   onOpen: OpenHandler;
+  onLongPress?: (w: Wallpaper) => void;
   /** Mosaïque : position et taille calculées ; sinon la cellule remplit sa case de grille. */
   tile?: MosaicTile;
 }) {
   const src = useThumbSrc(wallpaper);
   const favorite = useLibrary((s) => !!s.favorites[wallpaper.id]);
+  const press = useLongPress(onLongPress && (() => onLongPress(wallpaper)));
   return (
     <button
       type="button"
@@ -202,6 +208,7 @@ const WallpaperCell = memo(function WallpaperCell({
         ...(tile && { width: tile.width, height: tile.height, translate: `${tile.x}px ${tile.y}px` }),
       }}
       onClick={(e) => onOpen(wallpaper, e.currentTarget)}
+      {...press}
       aria-label={wallpaper.author ? `${wallpaper.alt}, par ${wallpaper.author.name}` : wallpaper.alt}
     >
       <img

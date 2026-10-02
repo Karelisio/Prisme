@@ -87,3 +87,96 @@ describe('bibliothèque', () => {
     expect(homeOnly?.steps).toEqual([{ entry: h('1', 'a', 'both', 1), target: 'home' }]);
   });
 });
+
+describe('étiquettes', () => {
+  const withFavorites = (...ids: string[]) => ids.reduce((s, id, i) => m.toggleFavorite(s, wp(id), i + 1), m.EMPTY_LIBRARY);
+
+  it('nettoie le texte saisi', () => {
+    expect(m.cleanTag('  #  plage   de sable ')).toBe('plage de sable');
+    expect(m.cleanTag('###')).toBe('');
+    expect(m.cleanTag('x'.repeat(40))).toHaveLength(m.MAX_TAG_LENGTH);
+    expect(m.sameTag('Été', 'ete')).toBe(true);
+    expect(m.sameTag('plage', 'Plage')).toBe(true);
+    expect(m.sameTag('plage', 'plages')).toBe(false);
+  });
+
+  it('ajoute et retire des étiquettes sur un favori, sans doublon', () => {
+    let s = withFavorites('a', 'b');
+    s = m.addTag(s, 'a', 'Plage');
+    s = m.addTag(s, 'a', ' plage ');
+    s = m.addTag(s, 'a', 'été');
+    expect(s.tags).toEqual({ a: ['Plage', 'été'] });
+    // L'écriture déjà utilisée dans la bibliothèque est reprise.
+    s = m.addTag(s, 'b', 'PLAGE');
+    expect(s.tags.b).toEqual(['Plage']);
+    expect(m.hasTag(s, 'b', 'plage')).toBe(true);
+
+    s = m.removeTag(s, 'a', 'PLAGE');
+    expect(s.tags).toEqual({ a: ['été'], b: ['Plage'] });
+    s = m.removeTag(s, 'a', 'été');
+    expect(s.tags).toEqual({ b: ['Plage'] });
+    // Retirer une étiquette absente ne change rien.
+    expect(m.removeTag(s, 'a', 'été')).toBe(s);
+  });
+
+  it('refuse les étiquettes vides, les fonds non favoris et l’excès d’étiquettes', () => {
+    const s = withFavorites('a');
+    expect(m.addTag(s, 'a', '  # ')).toBe(s);
+    expect(m.addTag(s, 'inconnu', 'plage')).toBe(s);
+    let full = s;
+    for (let i = 0; i < m.MAX_TAGS_PER_WALLPAPER + 3; i++) full = m.addTag(full, 'a', `étiquette ${i}`);
+    expect(full.tags.a).toHaveLength(m.MAX_TAGS_PER_WALLPAPER);
+  });
+
+  it('retirer le favori retire ses étiquettes', () => {
+    let s = withFavorites('a', 'b');
+    s = m.addTag(m.addTag(s, 'a', 'plage'), 'b', 'nuit');
+    s = m.toggleFavorite(s, wp('a'), 9);
+    expect(s.tags).toEqual({ b: ['nuit'] });
+    // Même si le fond reste dans une collection.
+    s = m.createCollection(s, 'c', 'C', 1, wp('b'));
+    s = m.toggleFavorite(s, wp('b'), 10);
+    expect(s.tags).toEqual({});
+    expect(s.items.b).toBeDefined();
+  });
+
+  it('compte les étiquettes, les plus utilisées d’abord', () => {
+    let s = withFavorites('a', 'b', 'c');
+    for (const [id, tag] of [
+      ['a', 'nuit'],
+      ['b', 'Nuit'],
+      ['c', 'nuit'],
+      ['a', 'plage'],
+      ['b', 'été'],
+    ] as const) {
+      s = m.addTag(s, id, tag);
+    }
+    expect(m.tagCounts(s)).toEqual([
+      { tag: 'nuit', count: 3 },
+      { tag: 'été', count: 1 },
+      { tag: 'plage', count: 1 },
+    ]);
+    expect(m.tagCounts(m.EMPTY_LIBRARY)).toEqual([]);
+  });
+});
+
+describe('collection reçue et tri', () => {
+  it('crée une collection avec les fonds reçus, sans écraser les fiches déjà connues', () => {
+    const known = { ...wp('a'), alt: 'ma fiche' };
+    let s = m.toggleFavorite(m.EMPTY_LIBRARY, known, 1);
+    s = m.importCollection(s, 'c1', '  Reçue  ', [wp('a'), wp('b'), wp('b'), wp('c')], 5);
+    expect(s.collections[0]).toEqual({ id: 'c1', name: 'Reçue', createdAt: 5, itemIds: ['a', 'b', 'c'] });
+    expect(s.items.a?.alt).toBe('ma fiche');
+    expect(Object.keys(s.items).sort()).toEqual(['a', 'b', 'c']);
+    // Les fonds ajoutés sont référencés par la collection : le nettoyage les garde.
+    expect(m.prune(s).items.c).toBeDefined();
+    expect(m.importCollection(m.EMPTY_LIBRARY, 'c2', '', [wp('z')], 1).collections[0]?.name).toBe('Sans titre');
+  });
+
+  it('mémorise le tri choisi et refuse un tri inconnu', () => {
+    const s = m.setSort(m.EMPTY_LIBRARY, 'color');
+    expect(s.sort).toBe('color');
+    expect(m.setSort(s, 'au-hasard' as never)).toBe(s);
+    expect(m.EMPTY_LIBRARY.sort).toBe('added');
+  });
+});

@@ -17,6 +17,7 @@ import { isNative } from '@/shared/native';
 import { ThemeController } from '@/shared/theme/ThemeController';
 import { SnackbarHost } from '@/shared/ui/overlays';
 import { startAppActions } from './appActions';
+import { startCollectionLinks } from './appLinks';
 import { handleBack } from './backStack';
 import { ErrorBoundary } from './ErrorBoundary';
 import { NavigationBar } from './NavigationBar';
@@ -70,6 +71,8 @@ const screens = {
   search: () => import('@/features/browse/SearchScreen'),
   pack: () => import('@/features/packs/PackScreen'),
   collection: () => import('@/features/library/CollectionScreen'),
+  received: () => import('@/features/library/ReceivedScreen'),
+  stats: () => import('@/features/library/StatsScreen'),
   diagnostics: () => import('@/features/diagnostics/DiagnosticsScreen'),
   dynamic: () => import('@/features/automation/DynamicScreen'),
   live: () => import('@/features/live/LiveScreen'),
@@ -94,6 +97,8 @@ const PreviewScreen = lazy(() => screens.preview().then((m) => ({ default: m.Pre
 const SearchScreen = lazy(() => screens.search().then((m) => ({ default: m.SearchScreen })));
 const PackScreen = lazy(() => screens.pack().then((m) => ({ default: m.PackScreen })));
 const CollectionScreen = lazy(() => screens.collection().then((m) => ({ default: m.CollectionScreen })));
+const ReceivedScreen = lazy(() => screens.received().then((m) => ({ default: m.ReceivedScreen })));
+const StatsScreen = lazy(() => screens.stats().then((m) => ({ default: m.StatsScreen })));
 const DiagnosticsScreen = lazy(() => screens.diagnostics().then((m) => ({ default: m.DiagnosticsScreen })));
 const DynamicScreen = lazy(() => screens.dynamic().then((m) => ({ default: m.DynamicScreen })));
 const LiveScreen = lazy(() => screens.live().then((m) => ({ default: m.LiveScreen })));
@@ -143,6 +148,7 @@ function AppShell() {
   useEffect(() => startPlaylistSync(), []);
   useEffect(() => startDailySync(), []);
   useEffect(() => startAppActions(), []);
+  useEffect(() => startCollectionLinks(), []);
   useEffect(() => startUpdateCheck(), []);
   useEffect(prefetchScreens, []);
 
@@ -184,6 +190,10 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <PackScreen packId={overlay.packId} />;
     case 'collection':
       return <CollectionScreen collectionId={overlay.collectionId} />;
+    case 'received':
+      return <ReceivedScreen name={overlay.name} ids={overlay.ids} />;
+    case 'stats':
+      return <StatsScreen />;
     case 'diagnostics':
       return <DiagnosticsScreen />;
     case 'dynamic':

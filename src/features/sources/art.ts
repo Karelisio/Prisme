@@ -84,3 +84,24 @@ export async function artSearch(options: { query?: string; page: number }): Prom
   const more = data.length === PER_PAGE && (info?.total === undefined || skip + data.length < info.total);
   return { items, next: more ? options.page + 1 : null };
 }
+
+/** Une œuvre par son identifiant (collection reçue) ; null si elle n'existe plus ou n'a pas d'image. */
+export async function artArtwork(id: string): Promise<Wallpaper | null> {
+  const url = withParams(`${API}${encodeURIComponent(id)}`, { fields: 'id,title,creation_date,url,creators,images' });
+  let res;
+  try {
+    res = await getJson<{ data?: ClevelandArtwork | ClevelandArtwork[] } & Partial<ClevelandArtwork>>(url);
+  } catch (error) {
+    if (error instanceof NetworkError) throw new ApiError('art', 'network', 'Musée injoignable');
+    throw error;
+  }
+  if (res.status === 404) return null;
+  if (res.status === 429) throw new ApiError('art', 'rate_limit', 'Trop de requêtes au musée, réessaie plus tard');
+  if (res.status < 200 || res.status >= 300 || !res.data || typeof res.data !== 'object') {
+    throw new ApiError('art', 'server', `Erreur du musée (${res.status})`);
+  }
+  // Selon le point d'accès, l'œuvre est enveloppée dans « data » ou renvoyée telle quelle.
+  const { data } = res.data;
+  const artwork = Array.isArray(data) ? data[0] : (data ?? (res.data.id === undefined ? undefined : (res.data as ClevelandArtwork)));
+  return artwork && String(artwork.id) === id ? mapArtwork(artwork) : null;
+}

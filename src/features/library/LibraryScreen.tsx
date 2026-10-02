@@ -1,4 +1,4 @@
-import { type RefObject, useMemo, useRef, useState } from 'react';
+import { type RefObject, useCallback, useMemo, useRef, useState } from 'react';
 import { openPreview, useNavigation } from '@/app/navigation';
 import { WallpaperGrid } from '@/features/browse/WallpaperGrid';
 import { importAndPreview } from '@/features/browse/importAction';
@@ -7,10 +7,16 @@ import type { Wallpaper } from '@/features/sources/types';
 import { TARGET_LABELS, undoLastApply } from '@/features/preview/applyWallpaper';
 import { haptic } from '@/shared/lib/haptics';
 import { nativeErrorMessage } from '@/shared/native';
-import { Button, EmptyState, Fab, Icon, IconButton, ListItem, SegmentedButtons, TextField } from '@/shared/ui/components';
+import { Button, Chip, EmptyState, Fab, Icon, IconButton, ListItem, SegmentedButtons, TextField } from '@/shared/ui/components';
 import { Dialog, showSnackbar } from '@/shared/ui/overlays';
-import type { Collection, HistoryEntry } from './model';
+import { PasteCodeDialog } from './PasteCodeDialog';
+import { SortSheet } from './SortSheet';
+import { TagsSheet } from './TagsSheet';
+import { type HistoryEntry, hasTag, sameTag, tagCounts } from './model';
+import { scanAndOpen } from './receive';
+import { sortFavorites, sortLabel } from './sort';
 import { useLibrary } from './store';
+import { useAutoCollections } from './useAutoCollections';
 import { useThumbSrc } from './useImageSrc';
 import './library.css';
 
@@ -28,11 +34,13 @@ export function LibraryScreen() {
   const [confirmClear, setConfirmClear] = useState(false);
   const historyCount = useLibrary((s) => s.history.length);
   const clearHistory = useLibrary((s) => s.clearHistory);
+  const push = useNavigation((s) => s.push);
 
   return (
     <div ref={scrollRef} className="screen screen--tab">
       <header className="top-bar">
         <h1 className="top-bar__title">Bibliothèque</h1>
+        <IconButton icon="barChart" label="Statistiques" onClick={() => push({ type: 'stats' })} />
         {section === 'history' && historyCount > 0 && (
           <IconButton icon="delete" label="Effacer l'historique" onClick={() => setConfirmClear(true)} />
         )}
@@ -68,19 +76,52 @@ function Favorites({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> 
   // Le collage s'active avec le générateur (même option avancée que la puce « Créer »).
   const collageEnabled = useSettings((s) => s.features.generator);
   const push = useNavigation((s) => s.push);
+  const tags = useLibrary((s) => s.tags);
+  const sort = useLibrary((s) => s.sort);
+  const setSort = useLibrary((s) => s.setSort);
+  const [filter, setFilter] = useState<string | null>(null);
+  const [sorting, setSorting] = useState(false);
+  const [tagging, setTagging] = useState<Wallpaper | null>(null);
+  const counts = useMemo(() => tagCounts({ tags, favorites }), [tags, favorites]);
+  // Une étiquette dont plus aucun fond ne dépend ne filtre plus rien.
+  const active = filter !== null && counts.some((c) => sameTag(c.tag, filter)) ? filter : null;
   const list = useMemo(
     () =>
-      Object.entries(favorites)
-        .sort((a, b) => b[1] - a[1])
-        .map(([id]) => items[id])
-        .filter((w): w is Wallpaper => !!w),
-    [favorites, items],
+      sortFavorites(
+        Object.entries(favorites).flatMap(([id, addedAt]) => {
+          const wallpaper = items[id];
+          return wallpaper && (active === null || hasTag({ tags }, id, active)) ? [{ wallpaper, addedAt }] : [];
+        }),
+        sort,
+      ),
+    [favorites, items, tags, active, sort],
   );
-  if (list.length === 0) {
+  const onLongPress = useCallback((w: Wallpaper) => setTagging(w), []);
+  if (Object.keys(favorites).length === 0) {
     return <EmptyState icon="favorite" title="Aucun favori" text="Touche le cœur dans l'aperçu d'un fond pour le retrouver ici, même hors ligne." />;
   }
   return (
     <>
+      <div className="library-toolbar">
+        <Button variant="text" icon="sort" onClick={() => setSorting(true)}>
+          Tri : {sortLabel(sort).toLowerCase()}
+        </Button>
+      </div>
+      {counts.length > 0 && (
+        <div className="library-chips" role="group" aria-label="Filtrer par étiquette">
+          {counts.map(({ tag, count }) => (
+            <Chip
+              key={tag}
+              selected={active !== null && sameTag(active, tag)}
+              aria-label={`${tag}, ${count} fond${count > 1 ? 's' : ''}`}
+              onClick={() => setFilter(active !== null && sameTag(active, tag) ? null : tag)}
+            >
+              {tag}
+              <span className="chip__count">{count}</span>
+            </Chip>
+          ))}
+        </div>
+      )}
       {collageEnabled && list.length >= 2 && (
         <div className="library-actions">
           <Button variant="tonal" icon="collage" onClick={() => push({ type: 'collage', wallpapers: list.slice(0, 4) })}>
@@ -88,7 +129,9 @@ function Favorites({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> 
           </Button>
         </div>
       )}
-      <WallpaperGrid items={list} scrollRef={scrollRef} />
+      <WallpaperGrid items={list} scrollRef={scrollRef} onLongPress={onLongPress} />
+      <SortSheet value={sort} open={sorting} onClose={() => setSorting(false)} onChange={setSort} />
+      <TagsSheet wallpaper={tagging} open={tagging !== null} onClose={() => setTagging(null)} />
     </>
   );
 }
@@ -96,8 +139,10 @@ function Favorites({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> 
 function Collections() {
   const collections = useLibrary((s) => s.collections);
   const createCollection = useLibrary((s) => s.createCollection);
+  const auto = useAutoCollections();
   const push = useNavigation((s) => s.push);
   const [creating, setCreating] = useState(false);
+  const [pasting, setPasting] = useState(false);
   const [name, setName] = useState('');
 
   return (
@@ -106,16 +151,35 @@ function Collections() {
         <Button variant="tonal" icon="add" onClick={() => setCreating(true)}>
           Nouvelle collection
         </Button>
+        <Button variant="tonal" icon="contentPaste" onClick={() => setPasting(true)}>
+          Coller un code
+        </Button>
+        <Button variant="tonal" icon="qrScanner" onClick={() => void scanAndOpen()}>
+          Scanner un QR
+        </Button>
       </div>
       {collections.length === 0 ? (
-        <EmptyState icon="collections" title="Aucune collection" text="Regroupe tes fonds par thème : plages, nuit, minimal…" />
+        <EmptyState icon="collections" title="Aucune collection" text="Regroupe tes fonds par thème : plages, nuit, minimal… ou ajoute celle d'un ami avec un code." />
       ) : (
         <div className="collection-grid">
           {collections.map((c) => (
-            <CollectionCard key={c.id} collection={c} onOpen={() => push({ type: 'collection', collectionId: c.id })} />
+            <CollectionCard key={c.id} name={c.name} ids={c.itemIds} onOpen={() => push({ type: 'collection', collectionId: c.id })} />
           ))}
         </div>
       )}
+      {auto.length > 0 && (
+        <section aria-labelledby="auto-collections">
+          <h2 id="auto-collections" className="list-subheader">
+            Collections automatiques
+          </h2>
+          <div className="collection-grid">
+            {auto.map((c) => (
+              <CollectionCard key={c.id} name={c.name} ids={c.ids} onOpen={() => push({ type: 'collection', collectionId: c.id })} />
+            ))}
+          </div>
+        </section>
+      )}
+      <PasteCodeDialog open={pasting} onClose={() => setPasting(false)} />
       <Dialog
         open={creating}
         title="Nouvelle collection"
@@ -134,9 +198,10 @@ function Collections() {
   );
 }
 
-function CollectionCard({ collection, onOpen }: { collection: Collection; onOpen: () => void }) {
+/** Collection de l'utilisateur ou collection automatique : même carte. */
+function CollectionCard({ name, ids, onOpen }: { name: string; ids: string[]; onOpen: () => void }) {
   const items = useLibrary((s) => s.items);
-  const covers = collection.itemIds
+  const covers = ids
     .slice(0, 3)
     .map((id) => items[id])
     .filter((w): w is Wallpaper => !!w);
@@ -145,9 +210,9 @@ function CollectionCard({ collection, onOpen }: { collection: Collection; onOpen
       <span className="collection-card__covers">
         {covers.length === 0 ? <Icon name="collections" size={32} /> : covers.map((w) => <CoverImage key={w.id} wallpaper={w} />)}
       </span>
-      <span className="collection-card__name">{collection.name}</span>
+      <span className="collection-card__name">{name}</span>
       <span className="collection-card__count">
-        {collection.itemIds.length} fond{collection.itemIds.length > 1 ? 's' : ''}
+        {ids.length} fond{ids.length > 1 ? 's' : ''}
       </span>
     </button>
   );

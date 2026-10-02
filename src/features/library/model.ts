@@ -29,6 +29,9 @@ export interface OfflineCopy {
   fullPath?: string;
 }
 
+/** Ordre de la liste des favoris. */
+export type LibrarySort = 'added' | 'color' | 'source' | 'name';
+
 export interface LibraryData {
   /** Catalogue des fonds référencés par les favoris, collections ou l'historique. */
   items: Record<string, Wallpaper>;
@@ -36,10 +39,15 @@ export interface LibraryData {
   collections: Collection[];
   history: HistoryEntry[];
   offline: Record<string, OfflineCopy>;
+  /** Étiquettes libres des favoris : identifiant du fond → étiquettes (un fond non favori n'en a pas). */
+  tags: Record<string, string[]>;
+  /** Tri choisi pour les favoris. */
+  sort: LibrarySort;
 }
 
-export const EMPTY_LIBRARY: LibraryData = { items: {}, favorites: {}, collections: [], history: [], offline: {} };
+export const EMPTY_LIBRARY: LibraryData = { items: {}, favorites: {}, collections: [], history: [], offline: {}, tags: {}, sort: 'added' };
 export const HISTORY_LIMIT = 200;
+export const LIBRARY_SORTS: readonly LibrarySort[] = ['added', 'color', 'source', 'name'];
 
 export function referencedIds(state: LibraryData): Set<string> {
   const ids = new Set(Object.keys(state.favorites));
@@ -48,12 +56,14 @@ export function referencedIds(state: LibraryData): Set<string> {
   return ids;
 }
 
-/** Retire du catalogue les fonds qui ne sont plus référencés nulle part. */
+/** Retire du catalogue les fonds qui ne sont plus référencés nulle part, et les étiquettes des non-favoris. */
 export function prune(state: LibraryData): LibraryData {
   const keep = referencedIds(state);
   const items: Record<string, Wallpaper> = {};
   for (const [id, w] of Object.entries(state.items)) if (keep.has(id)) items[id] = w;
-  return { ...state, items };
+  const orphans = Object.keys(state.tags).some((id) => !state.favorites[id]);
+  const tags = orphans ? Object.fromEntries(Object.entries(state.tags).filter(([id]) => state.favorites[id])) : state.tags;
+  return { ...state, items, tags };
 }
 
 function remember(state: LibraryData, w: Wallpaper): Record<string, Wallpaper> {
@@ -152,4 +162,74 @@ export function removeHistory(state: LibraryData, entryId: string): LibraryData 
 
 export function clearHistory(state: LibraryData): LibraryData {
   return prune({ ...state, history: [] });
+}
+
+export const MAX_TAG_LENGTH = 24;
+export const MAX_TAGS_PER_WALLPAPER = 12;
+
+/** Étiquette nettoyée : espaces réduits, « # » initial retiré, 24 caractères au plus ; vide si rien ne reste. */
+export function cleanTag(raw: string): string {
+  return raw.replace(/\s+/g, ' ').trim().replace(/^#+\s*/, '').slice(0, MAX_TAG_LENGTH).trim();
+}
+
+/** « Plage » et « plage » (ou « été » et « ete ») sont la même étiquette. */
+export const sameTag = (a: string, b: string): boolean => a.localeCompare(b, 'fr', { sensitivity: 'base' }) === 0;
+
+/**
+ * Ajoute une étiquette à un favori (sans effet pour un autre fond). L'écriture déjà utilisée
+ * pour cette étiquette ailleurs dans la bibliothèque est conservée.
+ */
+export function addTag(state: LibraryData, id: string, raw: string): LibraryData {
+  const tag = cleanTag(raw);
+  if (!tag || !state.favorites[id]) return state;
+  const current = state.tags[id] ?? [];
+  if (current.length >= MAX_TAGS_PER_WALLPAPER || current.some((t) => sameTag(t, tag))) return state;
+  const known = Object.values(state.tags).flat().find((t) => sameTag(t, tag)) ?? tag;
+  return { ...state, tags: { ...state.tags, [id]: [...current, known] } };
+}
+
+export function removeTag(state: LibraryData, id: string, tag: string): LibraryData {
+  const current = state.tags[id];
+  if (!current?.some((t) => sameTag(t, tag))) return state;
+  const left = current.filter((t) => !sameTag(t, tag));
+  const { [id]: _removed, ...others } = state.tags;
+  return { ...state, tags: left.length > 0 ? { ...others, [id]: left } : others };
+}
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+/** Étiquettes utilisées, les plus fréquentes d'abord (puis par ordre alphabétique). */
+export function tagCounts(state: Pick<LibraryData, 'tags' | 'favorites'>): TagCount[] {
+  const counts = new Map<string, TagCount>();
+  for (const [id, tags] of Object.entries(state.tags)) {
+    if (!state.favorites[id]) continue;
+    for (const tag of tags) {
+      const known = [...counts.values()].find((c) => sameTag(c.tag, tag));
+      if (known) known.count++;
+      else counts.set(tag, { tag, count: 1 });
+    }
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'fr', { sensitivity: 'base' }));
+}
+
+export const hasTag = (state: Pick<LibraryData, 'tags'>, id: string, tag: string): boolean => !!state.tags[id]?.some((t) => sameTag(t, tag));
+
+/** Nouvelle collection remplie avec des fonds reçus (collection partagée) ; les fonds déjà connus gardent leur fiche. */
+export function importCollection(state: LibraryData, id: string, name: string, wallpapers: Wallpaper[], now: number): LibraryData {
+  const items = { ...state.items };
+  const itemIds: string[] = [];
+  for (const w of wallpapers) {
+    if (itemIds.includes(w.id)) continue;
+    itemIds.push(w.id);
+    items[w.id] ??= w;
+  }
+  const collection: Collection = { id, name: name.trim() || 'Sans titre', createdAt: now, itemIds };
+  return { ...state, items, collections: [collection, ...state.collections] };
+}
+
+export function setSort(state: LibraryData, sort: LibrarySort): LibraryData {
+  return LIBRARY_SORTS.includes(sort) ? { ...state, sort } : state;
 }

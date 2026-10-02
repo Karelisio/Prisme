@@ -3,7 +3,46 @@
 }
 
 .library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 0 16px 16px;
+}
+
+.library-toolbar {
+  display: flex;
+  padding: 0 8px 4px;
+}
+
+/* Étiquettes : rangée défilante sous le tri (ou groupe qui passe à la ligne dans une feuille). */
+.library-chips {
+  display: flex;
+  gap: 8px;
+  padding: 4px 16px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.library-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.library-chips--wrap {
+  flex-wrap: wrap;
+  padding: 0;
+  overflow: visible;
+}
+
+.chip__count {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.collection-hint {
+  margin: 0;
+  padding: 0 16px 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 14px/20px var(--md-font);
 }
 
 .library-fab {
@@ -88,4 +127,264 @@
 .history__actions {
   display: flex;
   padding: 4px 16px 8px;
+}
+
+/* Feuille « Étiquettes » */
+.tags-sheet {
+  display: grid;
+  gap: 12px;
+  padding: 0 24px 16px;
+}
+
+.tags-sheet__note {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 14px/20px var(--md-font);
+}
+
+.tags-sheet__form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.tags-sheet__form .text-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.tags-sheet__label {
+  margin: 4px 0 0;
+  color: var(--md-sys-color-primary);
+  font: 500 14px/20px var(--md-font);
+}
+
+/* Feuille « Partager » */
+.share {
+  display: grid;
+  gap: 12px;
+  padding: 0 24px 24px;
+}
+
+.share__summary,
+.share__note,
+.share__caption {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 14px/20px var(--md-font);
+}
+
+.share__note--error {
+  color: var(--md-sys-color-error);
+}
+
+.share__caption {
+  text-align: center;
+}
+
+.share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.share__loading {
+  display: grid;
+  place-items: center;
+  padding: 24px 0;
+}
+
+/* Le QR code reste noir sur blanc : les scanners ont besoin du contraste, thème sombre compris. */
+.qr {
+  justify-self: center;
+  width: min(100%, 320px);
+  height: auto;
+  border-radius: var(--md-shape-md);
+  background: #ffffff;
+}
+
+/* « Coller un code » */
+.paste {
+  display: block;
+}
+
+.paste__input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-shape-xs);
+  outline: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font: 400 14px/20px var(--md-font);
+  resize: vertical;
+  word-break: break-all;
+}
+
+.paste__input:focus {
+  padding: 11px 15px;
+  border: 2px solid var(--md-sys-color-primary);
+}
+
+.paste__message {
+  margin: 8px 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 12px/16px var(--md-font);
+}
+
+.paste__message--error {
+  color: var(--md-sys-color-error);
+}
+
+/* Collection reçue */
+.received__status {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.received__title {
+  margin: 0;
+  font: 500 16px/24px var(--md-font);
+}
+
+.received__detail {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 14px/20px var(--md-font);
+}
+
+.received__problems {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--md-sys-color-error);
+  font: 400 14px/20px var(--md-font);
+}
+
+.received__status .btn {
+  justify-self: start;
+}
+
+/* Colonne : le bouton reste collé au bas de l'écran, que la liste soit courte ou qu'elle défile. */
+.received {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.received__body {
+  flex: 1 0 auto;
+}
+
+.received__bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  margin-top: auto;
+  padding: 12px 16px calc(12px + var(--safe-bottom));
+  background: linear-gradient(to top, var(--md-sys-color-surface) 75%, transparent);
+}
+
+.received__bar .btn {
+  flex: 1;
+}
+
+/* Statistiques : barres horizontales en CSS pur. */
+.stats {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 24px;
+}
+
+.stats__summary {
+  padding: 0 16px 8px;
+}
+
+.stats__figure {
+  margin: 0;
+  font: 400 32px/40px var(--md-font-display);
+}
+
+.stats__since {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 14px/20px var(--md-font);
+}
+
+.stats__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+  text-align: left;
+}
+
+.stat-row__thumb {
+  flex: none;
+  width: 36px;
+  height: 56px;
+  border-radius: var(--md-shape-sm);
+  object-fit: cover;
+}
+
+.stat-row__body {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stat-row__label {
+  overflow: hidden;
+  font: 400 14px/20px var(--md-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-row__detail {
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 12px/16px var(--md-font);
+}
+
+.stat-row__value {
+  flex: none;
+  min-width: 56px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 14px/20px var(--md-font);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.bar {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--md-sys-color-primary);
+}
+
+.stats__note {
+  margin: 8px 16px 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 12px/16px var(--md-font);
 }

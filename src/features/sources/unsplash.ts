@@ -53,7 +53,12 @@ export function mapUnsplash(photo: UnsplashPhoto, thumbWidth: number): Wallpaper
   };
 }
 
-async function request<T>(path: string, params: Record<string, string | number | undefined>): Promise<T> {
+type Params = Record<string, string | number | undefined>;
+
+/** `optional` : un 404 (photo supprimée) donne null au lieu d'une erreur. */
+async function request<T>(path: string, params: Params, optional: true): Promise<T | null>;
+async function request<T>(path: string, params: Params): Promise<T>;
+async function request<T>(path: string, params: Params, optional = false): Promise<T | null> {
   if (!env.unsplashKey) throw new ApiError('unsplash', 'missing_key', 'Clé Unsplash manquante');
   let res;
   try {
@@ -66,6 +71,7 @@ async function request<T>(path: string, params: Record<string, string | number |
     throw error;
   }
   if (res.status >= 200 && res.status < 300) return res.data;
+  if (optional && res.status === 404) return null;
   throw unsplashError(res.status, res.headers, res.data);
 }
 
@@ -132,6 +138,12 @@ export async function unsplashSearch(
     items: data.results.map((p) => mapUnsplash(p, thumbWidth)),
     next: page < data.total_pages ? page + 1 : null,
   };
+}
+
+/** Une photo par son identifiant (collection reçue) ; null si elle n'existe plus. */
+export async function unsplashPhoto(id: string, thumbWidth: number): Promise<Wallpaper | null> {
+  const photo = await request<UnsplashPhoto>(`/photos/${encodeURIComponent(id)}`, {}, true);
+  return photo?.urls?.raw && photo.user && photo.links ? mapUnsplash(photo, thumbWidth) : null;
 }
 
 /** Signale un téléchargement à Unsplash (obligatoire quand une photo est utilisée). */

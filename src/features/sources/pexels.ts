@@ -44,16 +44,22 @@ export function mapPexels(photo: PexelsPhoto, thumbWidth: number): Wallpaper {
   };
 }
 
-async function request(path: string, params: Record<string, string | number | undefined>): Promise<PhotosResponse> {
+type Params = Record<string, string | number | undefined>;
+
+/** `optional` : un 404 (photo retirée) donne null au lieu d'une erreur. */
+async function request<T = PhotosResponse>(path: string, params: Params, optional: true): Promise<T | null>;
+async function request<T = PhotosResponse>(path: string, params: Params): Promise<T>;
+async function request<T = PhotosResponse>(path: string, params: Params, optional = false): Promise<T | null> {
   if (!env.pexelsKey) throw new ApiError('pexels', 'missing_key', 'Clé Pexels manquante');
   let res;
   try {
-    res = await getJson<PhotosResponse>(withParams(`${API}${path}`, params), { Authorization: env.pexelsKey });
+    res = await getJson<T>(withParams(`${API}${path}`, params), { Authorization: env.pexelsKey });
   } catch (error) {
     if (error instanceof NetworkError) throw new ApiError('pexels', 'network', 'Pexels injoignable');
     throw error;
   }
   if (res.status >= 200 && res.status < 300) return res.data;
+  if (optional && res.status === 404) return null;
   if (res.status === 429) throw new ApiError('pexels', 'rate_limit', 'Limite de requêtes Pexels atteinte, réessaie plus tard');
   if (res.status === 401 || res.status === 403) throw new ApiError('pexels', 'auth', 'Clé Pexels refusée');
   throw new ApiError('pexels', 'server', `Erreur Pexels (${res.status})`);
@@ -88,4 +94,10 @@ export async function pexelsSearch(
 export async function pexelsCollection(id: string, page: number, thumbWidth: number): Promise<SourcePage> {
   const data = await request(`/collections/${encodeURIComponent(id)}`, { type: 'photos', page, per_page: PER_PAGE });
   return toPage(data, page, thumbWidth);
+}
+
+/** Une photo par son identifiant (collection reçue) ; null si elle n'existe plus. */
+export async function pexelsPhoto(id: string, thumbWidth: number): Promise<Wallpaper | null> {
+  const photo = await request<PexelsPhoto>(`/photos/${encodeURIComponent(id)}`, {}, true);
+  return photo?.src?.original ? mapPexels(photo, thumbWidth) : null;
 }
