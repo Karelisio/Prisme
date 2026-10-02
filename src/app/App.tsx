@@ -53,6 +53,7 @@ const screens = {
   places: () => import('@/features/automation/PlacesScreen'),
   editor: () => import('@/features/editor/EditorScreen'),
   generator: () => import('@/features/generator/GeneratorScreen'),
+  collage: () => import('@/features/collage/CollageScreen'),
   focus: () => import('@/features/automation/FocusScreen'),
   similar: () => import('@/features/discover/SimilarScreen'),
   photographer: () => import('@/features/discover/PhotographerScreen'),
@@ -75,6 +76,7 @@ const MusicScreen = lazy(() => screens.music().then((m) => ({ default: m.MusicSc
 const PlacesScreen = lazy(() => screens.places().then((m) => ({ default: m.PlacesScreen })));
 const EditorScreen = lazy(() => screens.editor().then((m) => ({ default: m.EditorScreen })));
 const GeneratorScreen = lazy(() => screens.generator().then((m) => ({ default: m.GeneratorScreen })));
+const CollageScreen = lazy(() => screens.collage().then((m) => ({ default: m.CollageScreen })));
 const FocusScreen = lazy(() => screens.focus().then((m) => ({ default: m.FocusScreen })));
 const SimilarScreen = lazy(() => screens.similar().then((m) => ({ default: m.SimilarScreen })));
 const PhotographerScreen = lazy(() => screens.photographer().then((m) => ({ default: m.PhotographerScreen })));
@@ -169,6 +171,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <EditorScreen wallpaper={overlay.wallpaper} crop={overlay.crop} />;
     case 'generator':
       return <GeneratorScreen />;
+    case 'collage':
+      return <CollageScreen wallpapers={overlay.wallpapers} />;
     case 'focus':
       return <FocusScreen />;
     case 'similar':

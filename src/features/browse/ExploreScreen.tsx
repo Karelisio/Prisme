@@ -52,6 +52,11 @@ export function ExploreScreen() {
             Créer
           </Chip>
         )}
+        {generator && (
+          <Chip icon="collage" onClick={() => push({ type: 'collage' })}>
+            Collage
+          </Chip>
+        )}
         <Chip icon="layers" selected={category === 'packs'} onClick={() => select('packs')}>
           Packs
         </Chip>

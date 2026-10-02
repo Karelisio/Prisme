@@ -1,0 +1,269 @@
+.collage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface);
+  animation: overlay-in var(--md-duration-medium) var(--md-easing-emphasized-decelerate);
+}
+
+.collage__top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: calc(56px + var(--safe-top));
+  padding: var(--safe-top) 8px 0 4px;
+}
+
+.collage__progress {
+  position: absolute;
+  top: calc(56px + var(--safe-top));
+  right: 16px;
+  left: 16px;
+  z-index: 3;
+}
+
+.collage__stage {
+  position: relative;
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  place-items: center;
+  margin: 8px 16px;
+}
+
+.collage__canvas {
+  position: relative;
+}
+
+.collage__canvas canvas {
+  display: block;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+}
+
+.collage__cells {
+  position: absolute;
+  inset: 0;
+}
+
+/* Zones tactiles des cases, posées exactement sur le dessin du canevas. */
+.collage-cell {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--collage-ink, #fff);
+  cursor: pointer;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.collage-cell--framed {
+  color: rgb(0 0 0 / 0.55);
+}
+
+.collage-cell--movable {
+  cursor: grab;
+}
+
+.collage-cell--movable:active {
+  cursor: grabbing;
+}
+
+.collage-cell--empty {
+  outline: 2px dashed color-mix(in srgb, currentColor 55%, transparent);
+  outline-offset: -5px;
+}
+
+.collage-cell[aria-pressed='true'] {
+  z-index: 1;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--md-sys-color-primary);
+}
+
+.collage-cell--target {
+  outline: 2px dashed var(--md-sys-color-tertiary);
+  outline-offset: 4px;
+}
+
+.collage-cell__empty {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font: 500 12px/16px var(--md-font);
+  pointer-events: none;
+}
+
+.collage__panel {
+  padding: 8px 0 calc(var(--safe-bottom) + 12px);
+  border-radius: var(--md-shape-xl) var(--md-shape-xl) 0 0;
+  background: var(--md-sys-color-surface-container);
+}
+
+.collage__cellbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 0 16px;
+}
+
+.collage__cellname {
+  flex: 1;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 14px/20px var(--md-font);
+}
+
+.collage__hint {
+  flex: 1;
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 12px/16px var(--md-font);
+}
+
+.collage__controls {
+  /* Hauteur fixe : l'aperçu ne bouge pas quand on change d'outil. */
+  height: 112px;
+  padding: 4px 0 8px;
+  overflow-y: auto;
+}
+
+.collage__layouts {
+  display: flex;
+  align-items: flex-start;
+  padding: 0 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.collage__layouts::-webkit-scrollbar {
+  display: none;
+}
+
+.collage__layout-item {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+}
+
+.collage__divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 8px 6px;
+  background: var(--md-sys-color-outline-variant);
+}
+
+.layout-option {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 4px;
+  border: none;
+  border-radius: var(--md-shape-md);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 11px/16px var(--md-font);
+}
+
+.layout-option[aria-checked='true'] {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.layout-thumb {
+  display: block;
+}
+
+.layout-thumb__frame {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.8;
+  opacity: 0.4;
+}
+
+.layout-thumb__cell {
+  fill: currentColor;
+  opacity: 0.7;
+}
+
+.layout-thumb__card {
+  fill: var(--md-sys-color-surface-container-lowest);
+  stroke: currentColor;
+  stroke-width: 0.6;
+}
+
+.collage__sliders {
+  display: grid;
+  gap: 12px;
+  padding: 4px 24px 0;
+}
+
+.collage__range {
+  display: grid;
+  gap: 4px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 12px/16px var(--md-font);
+}
+
+.collage__range-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.collage__slider {
+  width: 100%;
+  accent-color: var(--md-sys-color-primary);
+}
+
+.collage__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  padding: 8px 20px 0;
+}
+
+.collage__swatch-group {
+  display: flex;
+  gap: 8px;
+}
+
+.collage__swatch {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
+}
+
+.collage__swatch[aria-checked='true'] {
+  outline: 3px solid var(--md-sys-color-on-surface);
+  outline-offset: 2px;
+}
+
+.collage__tools {
+  padding-top: 0;
+}
+
+.collage__actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+/* Petits écrans (360 px) : les trois onglets doivent tenir sans défiler. */
+@media (max-width: 380px) {
+  .collage__tools .chip {
+    gap: 6px;
+    padding: 0 10px;
+  }
+}

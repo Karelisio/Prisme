@@ -20,6 +20,8 @@ export type Overlay =
   | { type: 'places' }
   | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect }
   | { type: 'generator' }
+  /** Collage de 2 à 4 photos ; `wallpapers` préremplit les cases (ex. les favoris). */
+  | { type: 'collage'; wallpapers?: Wallpaper[] }
   | { type: 'focus' }
   /** « Plus comme ça » : fonds du même sujet ou de la même couleur. */
   | { type: 'similar'; wallpaper: Wallpaper }
