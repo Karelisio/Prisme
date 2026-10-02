@@ -8,6 +8,7 @@ import {
   argbFromHex,
   hexFromArgb,
 } from '@material/material-color-utilities';
+import type { ThemeMode } from '@/features/settings/store';
 import type { SystemPaletteName, SystemTheme, TonalPalette as SystemTonalPalette } from '@/shared/native';
 
 export const ROLE_NAMES = [
@@ -92,15 +93,44 @@ export function schemeFromSystemPalettes(
   return schemeFromDynamic(scheme);
 }
 
+/** Apparence demandée : sombre ou clair, et fonds noirs purs (thème « Noir », pour écrans OLED). */
+export interface Appearance {
+  isDark: boolean;
+  black: boolean;
+}
+
+/** `systemDark` : le système (ou le navigateur) est en mode sombre ; il ne sert qu'au mode « Auto ». */
+export function resolveAppearance(mode: ThemeMode, systemDark: boolean): Appearance {
+  if (mode === 'black') return { isDark: true, black: true };
+  return { isDark: mode === 'dark' || (mode === 'system' && systemDark), black: false };
+}
+
+/**
+ * Rôles passés au noir pur : fond et surfaces de base. Les conteneurs (cartes, feuilles, barres,
+ * champs) gardent les tons Material 3 du thème sombre, donc leur relief et leur teinte d'accent,
+ * et restent distincts du fond ; les textes, accents et contours aussi : leurs contrastes avec le
+ * noir sont supérieurs à ceux obtenus sur la surface sombre habituelle.
+ */
+const BLACK_ROLES = ['background', 'surface', 'surfaceDim', 'surfaceContainerLowest'] as const satisfies readonly RoleName[];
+
+/** Dérive le thème noir d'un schéma sombre. */
+export function toBlackScheme(scheme: ColorScheme): ColorScheme {
+  const out = { ...scheme };
+  for (const role of BLACK_ROLES) out[role] = '#000000';
+  return out;
+}
+
 export interface SchemeOptions {
   system?: SystemTheme;
   dynamicColor: boolean;
   seed: string;
   isDark: boolean;
+  /** Thème noir : appliqué au schéma sombre uniquement. */
+  black?: boolean;
 }
 
 /** Choisit la meilleure source : rôles exacts (Android 14+), palettes système (12+), sinon couleur d'accent. */
-export function resolveScheme({ system, dynamicColor, seed, isDark }: SchemeOptions): ColorScheme {
+function baseScheme({ system, dynamicColor, seed, isDark }: SchemeOptions): ColorScheme {
   if (dynamicColor && system?.palettes) {
     const base = schemeFromSystemPalettes(system.palettes, isDark);
     if (base) {
@@ -117,12 +147,34 @@ export function resolveScheme({ system, dynamicColor, seed, isDark }: SchemeOpti
   return schemeFromSeed(seed, isDark);
 }
 
+export function resolveScheme(options: SchemeOptions): ColorScheme {
+  const scheme = baseScheme(options);
+  return options.black && options.isDark ? toBlackScheme(scheme) : scheme;
+}
+
 export function cssVariableName(role: RoleName): string {
   return `--md-sys-color-${role.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
 }
 
-export function applySchemeToDocument(scheme: ColorScheme, isDark: boolean, root: HTMLElement = document.documentElement) {
+export function applySchemeToDocument(
+  scheme: ColorScheme,
+  isDark: boolean,
+  root: HTMLElement = document.documentElement,
+  black = false,
+) {
   for (const role of ROLE_NAMES) root.style.setProperty(cssVariableName(role), scheme[role]);
   root.style.colorScheme = isDark ? 'dark' : 'light';
   root.dataset.theme = isDark ? 'dark' : 'light';
+  // Thème noir : repère pour les quelques réglages CSS propres à l'AMOLED (barre de navigation…).
+  if (black) root.dataset.amoled = 'true';
+  else delete root.dataset.amoled;
+  // Couleur de la barre du navigateur (sans effet dans la WebView, utile en développement et en PWA).
+  const doc = root.ownerDocument;
+  let meta = doc.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta) {
+    meta = doc.createElement('meta');
+    meta.name = 'theme-color';
+    doc.head.append(meta);
+  }
+  meta.content = scheme.surface;
 }

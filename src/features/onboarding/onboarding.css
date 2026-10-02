@@ -1,0 +1,204 @@
+/* Introduction : plein écran, au-dessus de l'app (et de ses écrans), sous les feuilles et les messages. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  animation: fade-in var(--md-duration-medium) var(--md-easing-standard);
+}
+
+/* Tablette et paysage : le contenu garde la largeur d'un téléphone, centré. */
+.intro > * {
+  width: 100%;
+  max-width: 560px;
+}
+
+.intro__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(56px + var(--safe-top));
+  padding: var(--safe-top) 8px 0 4px;
+}
+
+.intro__body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 24px 16px;
+  animation: intro-next var(--md-duration-medium) var(--md-easing-emphasized-decelerate);
+}
+
+.intro__body[data-direction='previous'] {
+  animation-name: intro-previous;
+}
+
+@keyframes intro-next {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes intro-previous {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+.intro__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px calc(16px + var(--safe-bottom));
+}
+
+.intro__dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intro__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-color-outline-variant);
+  transition: width var(--md-duration-medium) var(--md-easing-standard), background-color var(--md-duration-medium) linear;
+}
+
+.intro__dot--active {
+  width: 24px;
+  background: var(--md-sys-color-primary);
+}
+
+.intro__title {
+  margin: 0 0 8px;
+  font: 400 28px/36px var(--md-font-display);
+  outline: none;
+}
+
+.intro__lead {
+  margin: 0 0 20px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 16px/24px var(--md-font);
+  letter-spacing: 0.3px;
+}
+
+.intro__label {
+  margin: 20px 0 12px;
+  color: var(--md-sys-color-primary);
+  font: 500 14px/20px var(--md-font);
+  letter-spacing: 0.1px;
+}
+
+.intro__count {
+  margin-left: 4px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 400;
+}
+
+.intro__list {
+  margin: 0 -24px;
+}
+
+/* Illustration d'accueil : trois écrans de téléphone aux couleurs du thème. */
+.intro-hero {
+  position: relative;
+  height: 160px;
+  margin: 12px 0 16px;
+}
+
+.intro-hero__card {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 144px;
+  border-radius: var(--md-shape-xl);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+  transform: translateX(-50%);
+}
+
+.intro-hero__card--left {
+  background: linear-gradient(160deg, var(--md-sys-color-tertiary), var(--md-sys-color-primary-container));
+  transform: translateX(calc(-50% - 70px)) rotate(-12deg);
+}
+
+.intro-hero__card--right {
+  background: linear-gradient(160deg, var(--md-sys-color-secondary), var(--md-sys-color-tertiary-container));
+  transform: translateX(calc(-50% + 70px)) rotate(12deg);
+}
+
+.intro-hero__card--center {
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(160deg, var(--md-sys-color-primary), var(--md-sys-color-tertiary));
+  color: var(--md-sys-color-on-primary);
+}
+
+.intro-features {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intro-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.intro-features__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.intro-features li > span:last-child {
+  display: grid;
+  gap: 2px;
+  font: 400 14px/20px var(--md-font);
+}
+
+.intro-features strong {
+  font: 500 16px/24px var(--md-font);
+}
+
+.intro-features li > span:last-child > span {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Petits écrans : l'illustration cède la place au contenu. */
+@media (max-height: 700px) {
+  .intro-hero {
+    height: 104px;
+    margin-bottom: 8px;
+    transform: scale(0.72);
+    transform-origin: top center;
+  }
+}
+
+/* Paysage : pas de place pour l'illustration. */
+@media (max-height: 520px) {
+  .intro-hero {
+    display: none;
+  }
+}

@@ -60,13 +60,22 @@ export interface MockOptions {
   pixabay?: boolean;
   art?: boolean;
   nasa?: boolean;
+  /** Montre l'introduction du premier lancement ; par défaut elle est marquée comme déjà vue. */
+  intro?: boolean;
+  /** Garde les animations et transitions ; par défaut le mouvement est réduit (pas de transition entre écrans). */
+  motion?: boolean;
+  /** Formats (largeur, hauteur) des photos Unsplash, repris en boucle ; par défaut 3000 × 6000. */
+  sizes?: [number, number][];
 }
 
-function unsplashPhoto(id: string, i: number) {
+/** Clé du stockage de l'introduction (voir features/onboarding/store.ts) : « déjà vue ». */
+const INTRO_SEEN = ['prisme-onboarding', JSON.stringify({ state: { seen: true }, version: 1 })] as const;
+
+function unsplashPhoto(id: string, i: number, [width, height]: [number, number] = [3000, 6000]) {
   return {
     id,
-    width: 3000,
-    height: 6000,
+    width,
+    height,
     color: '#204080',
     alt_description: `montagne ${id}`,
     description: null,
@@ -149,6 +158,21 @@ const json = (route: Route, body: unknown) =>
 export async function mockApis(page: Page, options: MockOptions = {}): Promise<ApiLog> {
   const log: ApiLog = { unsplash: [], pexels: [], downloads: [], wallhaven: [], pixabay: [], art: [], nasa: [] };
 
+  // L'introduction du premier lancement masquerait l'app : elle est marquée comme déjà vue (sans écraser un état existant).
+  if (!options.intro) {
+    await page.addInitScript(([key, value]) => {
+      try {
+        if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+      } catch {
+        // Stockage indisponible : rien à marquer.
+      }
+    }, INTRO_SEEN);
+  }
+  // Transitions entre écrans : coupées par défaut (elles bloquent brièvement les gestes), activées par les tests qui les
+  // vérifient, ou pour toute la suite avec PRISME_E2E_MOTION=1.
+  const motion = options.motion ?? process.env.PRISME_E2E_MOTION === '1';
+  await page.emulateMedia({ reducedMotion: motion ? 'no-preference' : 'reduce' });
+
   await page.route('https://api.unsplash.com/**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/download')) {
@@ -160,7 +184,7 @@ export async function mockApis(page: Page, options: MockOptions = {}): Promise<A
     const prefix = url.pathname.replace(/\W+/g, '-') + (url.searchParams.get('query') ?? '');
     const dark = url.searchParams.get('color') === 'black';
     const photos = Array.from({ length: 30 }, (_, i) => ({
-      ...unsplashPhoto(`${prefix}-p${page}-${i}`, i),
+      ...unsplashPhoto(`${prefix}-p${page}-${i}`, i, options.sizes?.[i % options.sizes.length]),
       ...(dark && { color: '#0a0a0a' }),
     }));
     if (url.pathname === '/search/photos') return json(route, { total: 90, total_pages: 3, results: photos });

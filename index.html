@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <title>Prisme</title>
+    <script>
+      // Thème choisi dans les réglages, lu avant le premier rendu : le fond est le bon dès le lancement (voir tokens.css).
+      try {
+        var mode = JSON.parse(localStorage.getItem('prisme-settings') || 'null').state.themeMode;
+        if (mode === 'light' || mode === 'dark' || mode === 'black') document.documentElement.dataset.boot = mode;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

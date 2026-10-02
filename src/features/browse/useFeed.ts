@@ -7,6 +7,7 @@ import { type FeedSpec, dedupe, fetchFeedPage, resolveQueries } from '@/features
 import { usableSources } from '@/features/sources/registry';
 import type { Filters, Wallpaper } from '@/features/sources/types';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
+import { GRID_MARGIN, columnCount } from './mosaic';
 import { useBrowse } from './store';
 
 /** Largeur des miniatures : basse résolution, arrondie par paliers pour profiter du cache HTTP. */
@@ -28,14 +29,14 @@ export function useFeed(spec: FeedSpec | null, options: FeedOptions = {}) {
   const filters = options.filters ?? browseFilters;
   const enabled = useSettings((s) => s.sources);
   const sources = useMemo(() => usableSources(enabled), [enabled]);
-  const columns = useSettings((s) => s.gridColumns);
+  const layout = useSettings((s) => s.gridLayout);
   const dataSaver = useSettings((s) => s.dataSaver);
   const hiddenIds = useDiscover((s) => s.hiddenIds);
   const hiddenAuthors = useDiscover((s) => s.hiddenAuthors);
   const hiddenWords = useDiscover((s) => s.hiddenWords);
   const screen = useScreenInfo();
   const ratio = screenRatio(screen);
-  const thumbWidth = thumbWidthFor(columns, dataSaver);
+  const thumbWidth = thumbWidthFor(columnCount(layout, window.innerWidth - GRID_MARGIN), dataSaver);
   const queries = useMemo(() => (spec ? resolveQueries(spec, { filters, sources }) : []), [spec, filters, sources]);
 
   const query = useInfiniteQuery({

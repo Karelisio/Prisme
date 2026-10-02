@@ -127,6 +127,13 @@
   will-change: transform;
 }
 
+/* Mosaïque : vignettes positionnées une à une (taille et décalage calculés en JS). */
+.wp-grid--mosaic .wp-cell {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 .wp-cell {
   position: relative;
   display: block;
@@ -172,6 +179,19 @@
   display: grid;
   gap: 8px;
   margin: 0 12px;
+}
+
+/* Mosaïque : colonnes indépendantes, chacune empile ses cases. */
+.wp-skeleton--mosaic {
+  display: flex;
+  align-items: flex-start;
+}
+
+.wp-skeleton__column {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
 }
 
 .wp-skeleton__cell {

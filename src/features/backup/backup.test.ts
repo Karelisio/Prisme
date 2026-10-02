@@ -32,7 +32,7 @@ const library: LibraryData = {
 
 describe('sauvegarde', () => {
   const now = new Date('2026-10-02T10:00:00Z');
-  const backup = createBackup(library, { ...DEFAULT_SETTINGS, gridColumns: 3 }, DEFAULT_AUTOMATION, now, '0.2.0.31');
+  const backup = createBackup(library, { ...DEFAULT_SETTINGS, gridLayout: '3', themeMode: 'black' }, DEFAULT_AUTOMATION, now, '0.2.0.31');
 
   it('exclut les images locales et les chemins de fichiers', () => {
     expect(Object.keys(backup.library.items).sort()).toEqual(['a', 'b']);
@@ -47,7 +47,8 @@ describe('sauvegarde', () => {
     const settings = { ...DEFAULT_SETTINGS, update: () => undefined } as unknown as typeof DEFAULT_SETTINGS;
     const out = createBackup(library, settings, DEFAULT_AUTOMATION, now, 'x');
     expect(out.settings).not.toHaveProperty('update');
-    expect(backup.settings.gridColumns).toBe(3);
+    expect(backup.settings.gridLayout).toBe('3');
+    expect(backup.settings.themeMode).toBe('black');
   });
 
   it('relit sa propre sauvegarde à l’identique', () => {
@@ -77,6 +78,14 @@ describe('sauvegarde', () => {
     expect(parsed.library.collections).toEqual([{ id: 'c', name: 'C', createdAt: 0, itemIds: ['a'] }]);
     expect(parsed.library.history.map((h) => h.id)).toEqual(['h2']);
     expect(parsed.settings).toEqual({ haptics: false, sources: { ...DEFAULT_SETTINGS.sources, pexels: false } });
+  });
+
+  it('reprend le nombre de colonnes d’une ancienne sauvegarde et écarte les réglages inconnus', () => {
+    const old = (settings: unknown) => parseBackup(JSON.stringify({ ...backup, settings })).settings;
+    expect(old({ gridColumns: 3 })).toEqual({ gridLayout: '3' });
+    expect(old({ gridLayout: 'mosaic' })).toEqual({ gridLayout: 'mosaic' });
+    expect(old({ gridColumns: 9, gridLayout: 'carré', themeMode: 'violet' })).toEqual({});
+    expect(old({ themeMode: 'black', haptics: false })).toEqual({ themeMode: 'black', haptics: false });
   });
 
   it('fusionne sans rien perdre', () => {

@@ -112,6 +112,28 @@
   }
 }
 
+/*
+ * Avant le premier rendu de l'app, index.html pose data-boot (le thème choisi dans les réglages) : le
+ * fond et le texte sont déjà les bons, sans flash au lancement. ThemeController prend ensuite le relais.
+ */
+:root[data-boot='light'] {
+  --md-sys-color-surface: #fdf7ff;
+  --md-sys-color-on-surface: #1d1b20;
+  color-scheme: light;
+}
+
+:root[data-boot='dark'] {
+  --md-sys-color-surface: #141218;
+  --md-sys-color-on-surface: #e6e0e9;
+  color-scheme: dark;
+}
+
+:root[data-boot='black'] {
+  --md-sys-color-surface: #000000;
+  --md-sys-color-on-surface: #e6e0e9;
+  color-scheme: dark;
+}
+
 .md-display-small { font: 400 36px/44px var(--md-font-display); }
 .md-headline-large { font: 400 32px/40px var(--md-font-display); }
 .md-headline-medium { font: 400 28px/36px var(--md-font-display); }

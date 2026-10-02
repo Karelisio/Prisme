@@ -9,35 +9,30 @@ import { setDailyNotification } from '@/features/discover/dailySync';
 import { hiddenCount, useDiscover } from '@/features/discover/store';
 import { useLibrary } from '@/features/library/store';
 import { UpdateSettings } from '@/features/updates/UpdateSettings';
-import { REMOTE_SOURCES, SOURCE_INFO, hasKey } from '@/features/sources/registry';
-import type { RemoteSource } from '@/features/sources/types';
 import { useCapabilities } from '@/shared/lib/capabilities';
 import { formatBytes } from '@/shared/lib/format';
 import { PrismeWallpaper, type WallpaperTarget, nativeErrorMessage } from '@/shared/native';
 import { PrismeSystem } from '@/shared/native/system';
-import { Button, Chip, Icon, ListItem, SegmentedButtons, Switch } from '@/shared/ui/components';
-import type { IconName } from '@/shared/ui/icons';
+import { Button, Chip, Icon, ListItem, Switch } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
+import { useOnboarding } from '@/features/onboarding/store';
 import { AdvancedOptions } from './AdvancedOptions';
-import { type ThemeMode, useSettings } from './store';
+import { GridPicker, ThemePicker } from './pickers';
+import { SourceToggles } from './SourceToggles';
+import { useSettings } from './store';
 import './settings.css';
 
-const THEME_OPTIONS = [
-  { value: 'system', label: 'Auto', icon: 'brightnessAuto' },
-  { value: 'light', label: 'Clair', icon: 'lightMode' },
-  { value: 'dark', label: 'Sombre', icon: 'darkMode' },
-] as const satisfies readonly { value: ThemeMode; label: string; icon: string }[];
-
-const SEEDS = ['#6750A4', '#0061A4', '#006A6A', '#386A20', '#7D5700', '#9C4146', '#8B418F', '#5C5F61'];
-
-const SOURCE_ICONS: Record<RemoteSource, IconName> = {
-  unsplash: 'image',
-  pexels: 'image',
-  wallhaven: 'wallpaper',
-  pixabay: 'image',
-  art: 'formatPaint',
-  nasa: 'stars',
-};
+/** Couleurs d'accent proposées (quand les couleurs dynamiques du système ne s'appliquent pas). */
+const SEEDS = [
+  { value: '#6750A4', name: 'Violet' },
+  { value: '#0061A4', name: 'Bleu' },
+  { value: '#006A6A', name: 'Turquoise' },
+  { value: '#386A20', name: 'Vert' },
+  { value: '#7D5700', name: 'Ambre' },
+  { value: '#9C4146', name: 'Rouge' },
+  { value: '#8B418F', name: 'Magenta' },
+  { value: '#5C5F61', name: 'Gris' },
+];
 
 const DAILY_HOURS = [7, 8, 9, 12, 18, 21];
 
@@ -110,7 +105,8 @@ export function SettingsScreen() {
       <section className="settings-section">
         <h2 className="list-subheader">Apparence</h2>
         <div className="settings-block">
-          <SegmentedButtons label="Thème" options={THEME_OPTIONS} value={settings.themeMode} onChange={(themeMode) => settings.update({ themeMode })} />
+          <ThemePicker value={settings.themeMode} onChange={(themeMode) => settings.update({ themeMode })} />
+          {settings.themeMode === 'black' && <p className="settings-hint">Fonds noirs purs : plus de contraste, et moins de batterie sur un écran OLED.</p>}
         </div>
         <ListItem
           headline="Couleurs dynamiques"
@@ -135,18 +131,19 @@ export function SettingsScreen() {
           <div className="settings-block">
             <p className="settings-label">Couleur d'accent</p>
             <div className="seed-row" role="radiogroup" aria-label="Couleur d'accent">
-              {SEEDS.map((seed) => (
+              {SEEDS.map(({ value, name }) => (
                 <button
-                  key={seed}
+                  key={value}
                   type="button"
                   role="radio"
-                  aria-checked={settings.seedColor === seed}
-                  aria-label={seed}
+                  aria-checked={settings.seedColor === value}
+                  aria-label={`${name} ${value}`}
+                  title={name}
                   className="seed"
-                  style={{ background: seed }}
-                  onClick={() => settings.update({ seedColor: seed })}
+                  style={{ background: value }}
+                  onClick={() => settings.update({ seedColor: value })}
                 >
-                  {settings.seedColor === seed && <Icon name="check" size={20} />}
+                  {settings.seedColor === value && <Icon name="check" size={20} />}
                 </button>
               ))}
             </div>
@@ -157,16 +154,9 @@ export function SettingsScreen() {
       <section className="settings-section">
         <h2 className="list-subheader">Galerie</h2>
         <div className="settings-block">
-          <p className="settings-label">Colonnes</p>
-          <SegmentedButtons
-            label="Colonnes"
-            options={[
-              { value: '2', label: '2 colonnes' },
-              { value: '3', label: '3 colonnes' },
-            ]}
-            value={String(settings.gridColumns) as '2' | '3'}
-            onChange={(v) => settings.update({ gridColumns: v === '3' ? 3 : 2 })}
-          />
+          <p className="settings-label">Disposition de la grille</p>
+          <GridPicker value={settings.gridLayout} onChange={(gridLayout) => settings.update({ gridLayout })} />
+          {settings.gridLayout === 'mosaic' && <p className="settings-hint">Chaque fond garde son format, et les colonnes restent équilibrées.</p>}
         </div>
         <ListItem
           headline="Économie de données"
@@ -186,26 +176,7 @@ export function SettingsScreen() {
 
       <section className="settings-section">
         <h2 className="list-subheader">Sources</h2>
-        {REMOTE_SOURCES.map((source) => {
-          const info = SOURCE_INFO[source];
-          const usable = hasKey(source);
-          return (
-            <ListItem
-              key={source}
-              headline={info.name}
-              supporting={usable ? info.description : 'Clé API absente de ce build'}
-              leading={<Icon name={SOURCE_ICONS[source]} />}
-              trailing={
-                <Switch
-                  label={info.name}
-                  checked={usable && settings.sources[source]}
-                  disabled={!usable}
-                  onChange={(on) => settings.update({ sources: { ...settings.sources, [source]: on } })}
-                />
-              }
-            />
-          );
-        })}
+        <SourceToggles />
       </section>
 
       <section className="settings-section">
@@ -321,6 +292,12 @@ export function SettingsScreen() {
       <section className="settings-section">
         <h2 className="list-subheader">À propos</h2>
         <UpdateSettings />
+        <ListItem
+          headline="Revoir l’introduction"
+          supporting="Bienvenue, sources et goûts qui orientent « Pour toi »"
+          leading={<Icon name="explore" />}
+          onClick={() => useOnboarding.getState().reopen()}
+        />
         <ListItem
           headline="Photos"
           supporting="Unsplash, Pexels, Wallhaven, Pixabay, Cleveland Museum of Art et NASA, selon leurs conditions"
