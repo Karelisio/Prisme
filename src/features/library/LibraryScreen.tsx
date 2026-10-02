@@ -2,6 +2,7 @@ import { type RefObject, useMemo, useRef, useState } from 'react';
 import { openPreview, useNavigation } from '@/app/navigation';
 import { WallpaperGrid } from '@/features/browse/WallpaperGrid';
 import { importAndPreview } from '@/features/browse/importAction';
+import { useSettings } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
 import { TARGET_LABELS, undoLastApply } from '@/features/preview/applyWallpaper';
 import { haptic } from '@/shared/lib/haptics';
@@ -64,6 +65,9 @@ export function LibraryScreen() {
 function Favorites({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> }) {
   const favorites = useLibrary((s) => s.favorites);
   const items = useLibrary((s) => s.items);
+  // Le collage s'active avec le générateur (même option avancée que la puce « Créer »).
+  const collageEnabled = useSettings((s) => s.features.generator);
+  const push = useNavigation((s) => s.push);
   const list = useMemo(
     () =>
       Object.entries(favorites)
@@ -75,7 +79,18 @@ function Favorites({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> 
   if (list.length === 0) {
     return <EmptyState icon="favorite" title="Aucun favori" text="Touche le cœur dans l'aperçu d'un fond pour le retrouver ici, même hors ligne." />;
   }
-  return <WallpaperGrid items={list} scrollRef={scrollRef} />;
+  return (
+    <>
+      {collageEnabled && list.length >= 2 && (
+        <div className="library-actions">
+          <Button variant="tonal" icon="collage" onClick={() => push({ type: 'collage', wallpapers: list.slice(0, 4) })}>
+            Collage avec mes favoris
+          </Button>
+        </div>
+      )}
+      <WallpaperGrid items={list} scrollRef={scrollRef} />
+    </>
+  );
 }
 
 function Collections() {

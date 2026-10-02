@@ -50,6 +50,8 @@ import aspectRatio from '@material-symbols/svg-400/rounded/aspect_ratio.svg?raw'
 import waterDrop from '@material-symbols/svg-400/rounded/water_drop.svg?raw';
 import chevronRight from '@material-symbols/svg-400/rounded/chevron_right.svg?raw';
 import gridView from '@material-symbols/svg-400/rounded/grid_view.svg?raw';
+import collage from '@material-symbols/svg-400/rounded/auto_awesome_mosaic.svg?raw';
+import swap from '@material-symbols/svg-400/rounded/swap_horiz.svg?raw';
 import darkMode from '@material-symbols/svg-400/rounded/dark_mode.svg?raw';
 import lightMode from '@material-symbols/svg-400/rounded/light_mode.svg?raw';
 import brightnessAuto from '@material-symbols/svg-400/rounded/brightness_auto.svg?raw';
@@ -163,6 +165,8 @@ export const ICONS = {
   waterDrop,
   chevronRight,
   gridView,
+  collage,
+  swap,
   darkMode,
   lightMode,
   brightnessAuto,
