@@ -1,7 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@/app/navigation';
+import { DailyCard } from '@/features/discover/DailyCard';
+import { FollowingView } from '@/features/discover/FollowingView';
+import { ForYouView } from '@/features/discover/ForYouView';
+import { useDiscover } from '@/features/discover/store';
 import { PacksList } from '@/features/packs/PacksList';
-import { COLOR_OPTIONS, RATIO_OPTIONS } from '@/features/sources/filters';
+import { RATIO_OPTIONS, colorLabel, colorSwatch } from '@/features/sources/filters';
 import { useSettings } from '@/features/settings/store';
 import { useOnline } from '@/shared/lib/useOnline';
 import { Chip, Icon, IconButton } from '@/shared/ui/components';
@@ -20,7 +24,9 @@ export function ExploreScreen() {
   const push = useNavigation((s) => s.push);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const generator = useSettings((s) => s.features.generator);
+  const following = useDiscover((s) => s.following.length > 0);
   const spec = useMemo(() => CATEGORIES.find((c) => c.key === category) ?? CATEGORIES[0]!, [category]);
+  const [featured, ...themes] = CATEGORIES;
 
   const select = (key: string) => {
     setCategory(key);
@@ -49,7 +55,20 @@ export function ExploreScreen() {
         <Chip icon="layers" selected={category === 'packs'} onClick={() => select('packs')}>
           Packs
         </Chip>
-        {CATEGORIES.map((c) => (
+        {featured && (
+          <Chip selected={category === featured.key} onClick={() => select(featured.key)}>
+            {featured.label}
+          </Chip>
+        )}
+        <Chip icon="favorite" selected={category === 'foryou'} onClick={() => select('foryou')}>
+          Pour toi
+        </Chip>
+        {(following || category === 'following') && (
+          <Chip icon="group" selected={category === 'following'} onClick={() => select('following')}>
+            Abonnements
+          </Chip>
+        )}
+        {themes.map((c) => (
           <Chip key={c.key} selected={category === c.key} onClick={() => select(c.key)}>
             {c.label}
           </Chip>
@@ -59,7 +78,18 @@ export function ExploreScreen() {
       {category !== 'packs' && <ActiveFilters onEdit={() => setFiltersOpen(true)} />}
       <OfflineBanner />
 
-      {category === 'packs' ? <PacksList /> : <FeedView key={spec.key} spec={spec} scrollRef={scrollRef} />}
+      {category === 'packs' ? (
+        <PacksList />
+      ) : category === 'foryou' ? (
+        <ForYouView scrollRef={scrollRef} />
+      ) : category === 'following' ? (
+        <FollowingView scrollRef={scrollRef} />
+      ) : (
+        <>
+          {spec.key === 'featured' && <DailyCard />}
+          <FeedView key={spec.key} spec={spec} scrollRef={scrollRef} />
+        </>
+      )}
 
       <FilterSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} />
     </div>
@@ -70,13 +100,23 @@ export function ActiveFilters({ onEdit }: { onEdit: () => void }) {
   const filters = useBrowse((s) => s.filters);
   const setFilters = useBrowse((s) => s.setFilters);
   if (!filtersActive(filters)) return null;
-  const color = COLOR_OPTIONS.find((o) => o.value === filters.color);
+  const color = filters.color;
   const ratio = RATIO_OPTIONS.find((o) => o.value === filters.ratio);
   return (
     <div className="active-filters" aria-label="Filtres actifs">
       {color && (
-        <Chip swatch={color.swatch} selected onClick={() => setFilters({ ...filters, color: null })} aria-label={`Retirer le filtre ${color.label}`}>
-          {color.label} ✕
+        <Chip
+          swatch={colorSwatch(color)}
+          selected
+          onClick={() => setFilters({ ...filters, color: null })}
+          aria-label={`Retirer le filtre ${colorLabel(color)}`}
+        >
+          {colorLabel(color)} ✕
+        </Chip>
+      )}
+      {filters.amoled && (
+        <Chip selected onClick={() => setFilters({ ...filters, amoled: false })} aria-label="Retirer le filtre AMOLED">
+          AMOLED ✕
         </Chip>
       )}
       {filters.ratio !== 'all' && ratio && (

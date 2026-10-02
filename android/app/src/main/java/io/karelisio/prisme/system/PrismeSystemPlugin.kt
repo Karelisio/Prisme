@@ -18,8 +18,11 @@ import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
+import com.getcapacitor.PermissionState
 import com.getcapacitor.annotation.ActivityCallback
 import com.getcapacitor.annotation.CapacitorPlugin
+import com.getcapacitor.annotation.Permission
+import com.getcapacitor.annotation.PermissionCallback
 import io.karelisio.prisme.R
 import io.karelisio.prisme.quick.NextWallpaperTileService
 import io.karelisio.prisme.wallpaper.WallpaperException
@@ -33,9 +36,13 @@ import java.io.File
 
 /**
  * Services de l'app hors fonds d'écran : version et mises à jour, réseau, vibrations, fichiers
- * (sauvegarde), partage de texte, journal d'erreurs et actions lancées depuis les raccourcis.
+ * (sauvegarde), partage de texte, journal d'erreurs, notification du jour et actions lancées
+ * depuis les raccourcis.
  */
-@CapacitorPlugin(name = "PrismeSystem")
+@CapacitorPlugin(
+    name = "PrismeSystem",
+    permissions = [Permission(alias = "notifications", strings = ["android.permission.POST_NOTIFICATIONS"])],
+)
 class PrismeSystemPlugin : Plugin() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var updater: UpdateInstaller
@@ -286,6 +293,28 @@ class PrismeSystemPlugin : Plugin() {
         }
     }
 
+    /** Notification « Fond du jour » ; avec `prompt`, demande l'autorisation (Android 13+) si besoin. */
+    @PluginMethod
+    fun setDailyNotification(call: PluginCall) {
+        val enabled = call.getBoolean("enabled", false) == true
+        val hour = (call.getInt("hour") ?: 9).coerceIn(0, 23)
+        DailyNotifier.configure(context, enabled, hour)
+        val prompt = call.getBoolean("prompt", false) == true
+        if (enabled && prompt && Build.VERSION.SDK_INT >= 33 && getPermissionState("notifications") != PermissionState.GRANTED) {
+            requestPermissionForAlias("notifications", call, "onNotificationPermission")
+            return
+        }
+        resolveDaily(call, enabled)
+    }
+
+    @PermissionCallback
+    private fun onNotificationPermission(call: PluginCall) = resolveDaily(call, true)
+
+    private fun resolveDaily(call: PluginCall, enabled: Boolean) {
+        val permission = if (DailyNotifier.notificationsAllowed(context)) "granted" else "denied"
+        call.resolve(JSObject().put("enabled", enabled).put("permission", permission))
+    }
+
     /** Action demandée au lancement par un raccourci (une seule fois). */
     @PluginMethod
     fun getPendingAction(call: PluginCall) {
@@ -319,10 +348,13 @@ class PrismeSystemPlugin : Plugin() {
     }
 }
 
-/** Actions des raccourcis de l'icône qui ouvrent l'app (les autres passent par QuickActionActivity). */
+/**
+ * Actions qui ouvrent l'app : raccourci « Rechercher » et notification « Fond du jour » (les autres
+ * raccourcis passent par QuickActionActivity).
+ */
 internal object AppActions {
     const val PREFIX = "io.karelisio.prisme.action."
-    private val forApp = setOf("SEARCH")
+    private val forApp = setOf("SEARCH", "DAILY")
 
     fun fromIntent(intent: Intent?): String? {
         val action = intent?.action ?: return null

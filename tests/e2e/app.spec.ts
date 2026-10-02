@@ -15,11 +15,13 @@ test.describe('galerie', () => {
     await expect(cells(page).nth(1)).toHaveAttribute('aria-label', /par Grace Hopper/);
 
     const scroller = page.locator('.tab[data-active="true"] .screen');
-    for (let i = 0; i < 12 && log.unsplash.length < 2; i++) {
+    // (Le fond du jour fait aussi sa propre requête Unsplash : on attend bien la page 2.)
+    const secondPage = () => log.unsplash.some((u) => u.searchParams.get('page') === '2');
+    for (let i = 0; i < 12 && !secondPage(); i++) {
       await scroller.evaluate((el) => el.scrollBy(0, 4000));
       await page.waitForTimeout(150);
     }
-    expect(log.unsplash.some((u) => u.searchParams.get('page') === '2')).toBe(true);
+    expect(secondPage()).toBe(true);
   });
 
   test('miniatures en basse résolution', async ({ page }) => {

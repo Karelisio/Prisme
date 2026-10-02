@@ -4,14 +4,18 @@ import { queryClient } from '@/app/queryClient';
 import { FAVORITES_SOURCE, INTERVALS } from '@/features/automation/model';
 import { useAutomationPrefs } from '@/features/automation/store';
 import { exportBackup, importBackup } from '@/features/backup/backupActions';
+import { setDailyNotification } from '@/features/discover/dailySync';
+import { hiddenCount, useDiscover } from '@/features/discover/store';
 import { useLibrary } from '@/features/library/store';
 import { UpdateSettings } from '@/features/updates/UpdateSettings';
-import { env } from '@/shared/config/env';
+import { REMOTE_SOURCES, SOURCE_INFO, hasKey } from '@/features/sources/registry';
+import type { RemoteSource } from '@/features/sources/types';
 import { useCapabilities } from '@/shared/lib/capabilities';
 import { formatBytes } from '@/shared/lib/format';
 import { PrismeWallpaper, type WallpaperTarget, nativeErrorMessage } from '@/shared/native';
 import { PrismeSystem } from '@/shared/native/system';
 import { Button, Chip, Icon, ListItem, SegmentedButtons, Switch } from '@/shared/ui/components';
+import type { IconName } from '@/shared/ui/icons';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { AdvancedOptions } from './AdvancedOptions';
 import { type ThemeMode, useSettings } from './store';
@@ -24,6 +28,17 @@ const THEME_OPTIONS = [
 ] as const satisfies readonly { value: ThemeMode; label: string; icon: string }[];
 
 const SEEDS = ['#6750A4', '#0061A4', '#006A6A', '#386A20', '#7D5700', '#9C4146', '#8B418F', '#5C5F61'];
+
+const SOURCE_ICONS: Record<RemoteSource, IconName> = {
+  unsplash: 'image',
+  pexels: 'image',
+  wallhaven: 'wallpaper',
+  pixabay: 'image',
+  art: 'formatPaint',
+  nasa: 'stars',
+};
+
+const DAILY_HOURS = [7, 8, 9, 12, 18, 21];
 
 const TARGET_OPTIONS: { value: WallpaperTarget | 'ask'; label: string }[] = [
   { value: 'ask', label: 'Demander' },
@@ -43,6 +58,7 @@ export function SettingsScreen() {
   const rotationInterval = INTERVALS.find((i) => i.minutes === rotation.intervalMinutes)?.label ?? `${rotation.intervalMinutes} min`;
   const [storage, setStorage] = useState<{ cacheBytes: number; offlineBytes: number } | null>(null);
   const dynamicSupported = capabilities?.dynamicColor ?? false;
+  const hidden = useDiscover(hiddenCount);
 
   const refreshStorage = () => void PrismeWallpaper.getCacheInfo().then(setStorage, () => undefined);
   useEffect(refreshStorage, []);
@@ -154,25 +170,63 @@ export function SettingsScreen() {
             <Switch label="HD seulement en Wi-Fi" checked={settings.hdOnWifiOnly} onChange={(hdOnWifiOnly) => settings.update({ hdOnWifiOnly })} />
           }
         />
+      </section>
+
+      <section className="settings-section">
+        <h2 className="list-subheader">Sources</h2>
+        {REMOTE_SOURCES.map((source) => {
+          const info = SOURCE_INFO[source];
+          const usable = hasKey(source);
+          return (
+            <ListItem
+              key={source}
+              headline={info.name}
+              supporting={usable ? info.description : 'Clé API absente de ce build'}
+              leading={<Icon name={SOURCE_ICONS[source]} />}
+              trailing={
+                <Switch
+                  label={info.name}
+                  checked={usable && settings.sources[source]}
+                  disabled={!usable}
+                  onChange={(on) => settings.update({ sources: { ...settings.sources, [source]: on } })}
+                />
+              }
+            />
+          );
+        })}
+      </section>
+
+      <section className="settings-section">
+        <h2 className="list-subheader">Découverte</h2>
         <ListItem
-          headline="Unsplash"
-          supporting={env.unsplashKey ? 'Source active, thème Wallpapers en priorité' : 'Clé API absente de ce build'}
-          leading={<Icon name="image" />}
+          headline="Notification « Fond du jour »"
+          supporting={settings.dailyNotification ? `Chaque jour à ${settings.dailyHour} h` : 'Une sélection chaque matin, en tête d’« À la une »'}
+          leading={<Icon name="notifications" />}
           trailing={
             <Switch
-              label="Unsplash"
-              checked={settings.sources.unsplash}
-              onChange={(unsplash) => settings.update({ sources: { ...settings.sources, unsplash } })}
+              label="Notification « Fond du jour »"
+              checked={settings.dailyNotification}
+              onChange={(on) => void report(() => setDailyNotification(on))}
             />
           }
         />
+        {settings.dailyNotification && (
+          <div className="settings-block">
+            <p className="settings-label">Heure de la notification</p>
+            <div className="chip-wrap">
+              {DAILY_HOURS.map((hour) => (
+                <Chip key={hour} selected={settings.dailyHour === hour} onClick={() => void report(() => setDailyNotification(true, hour))}>
+                  {hour} h
+                </Chip>
+              ))}
+            </div>
+          </div>
+        )}
         <ListItem
-          headline="Pexels"
-          supporting={env.pexelsKey ? 'Source active' : 'Clé API absente de ce build'}
-          leading={<Icon name="image" />}
-          trailing={
-            <Switch label="Pexels" checked={settings.sources.pexels} onChange={(pexels) => settings.update({ sources: { ...settings.sources, pexels } })} />
-          }
+          headline="Contenus masqués"
+          supporting={hidden > 0 ? `${hidden} élément${hidden > 1 ? 's' : ''} : fonds, auteurs, sujets` : 'Fonds, auteurs et sujets que tu ne veux plus voir'}
+          leading={<Icon name="visibilityOff" />}
+          onClick={() => push({ type: 'hidden' })}
         />
       </section>
 
@@ -247,7 +301,7 @@ export function SettingsScreen() {
         <UpdateSettings />
         <ListItem
           headline="Photos"
-          supporting="Fournies par Unsplash et Pexels, sous leurs licences respectives"
+          supporting="Unsplash, Pexels, Wallhaven, Pixabay, Cleveland Museum of Art et NASA, selon leurs conditions"
           leading={<Icon name="info" />}
         />
         <ListItem

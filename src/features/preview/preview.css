@@ -67,12 +67,21 @@
 .preview__credit {
   max-width: 100%;
   overflow: hidden;
+  padding: 0;
+  border: none;
+  background: none;
   color: rgb(255 255 255 / 0.9);
   font: 400 13px/18px var(--md-font);
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+}
+
+button.preview__credit {
+  text-decoration: underline;
+  text-decoration-color: rgb(255 255 255 / 0.5);
+  text-underline-offset: 3px;
 }
 
 .preview__modes {

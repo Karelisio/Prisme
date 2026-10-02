@@ -97,6 +97,16 @@ import wifi from '@material-symbols/svg-400/rounded/wifi.svg?raw';
 import contentCopy from '@material-symbols/svg-400/rounded/content_copy.svg?raw';
 import skipNext from '@material-symbols/svg-400/rounded/skip_next.svg?raw';
 import uploadFile from '@material-symbols/svg-400/rounded/upload_file.svg?raw';
+import today from '@material-symbols/svg-400/rounded/today.svg?raw';
+import personAdd from '@material-symbols/svg-400/rounded/person_add.svg?raw';
+import personCheck from '@material-symbols/svg-400/rounded/how_to_reg.svg?raw';
+import personOff from '@material-symbols/svg-400/rounded/person_off.svg?raw';
+import person from '@material-symbols/svg-400/rounded/person.svg?raw';
+import group from '@material-symbols/svg-400/rounded/group.svg?raw';
+import notifications from '@material-symbols/svg-400/rounded/notifications.svg?raw';
+import label from '@material-symbols/svg-400/rounded/label.svg?raw';
+import hideImage from '@material-symbols/svg-400/rounded/hide_image.svg?raw';
+import trendingUp from '@material-symbols/svg-400/rounded/trending_up.svg?raw';
 
 export const ICONS = {
   search,
@@ -196,6 +206,16 @@ export const ICONS = {
   contentCopy,
   skipNext,
   uploadFile,
+  today,
+  personAdd,
+  personCheck,
+  personOff,
+  person,
+  group,
+  notifications,
+  label,
+  hideImage,
+  trendingUp,
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Mises à jour intégrées : ouvrir l'installateur avec l'APK de la dernière release. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Notification « Fond du jour » (facultative, demandée quand l'option est activée). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Enregistrer dans la galerie sur Android 9 et moins (inutile ensuite). -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"

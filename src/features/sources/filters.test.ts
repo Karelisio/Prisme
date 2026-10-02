@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { classifyColor, isHighResPortrait, matchesColor, matchesRatio, pexelsColor, unsplashColor } from './filters';
+import {
+  SHADES,
+  classifyColor,
+  colorLabel,
+  hslToHex,
+  isHighResPortrait,
+  matchesAmoled,
+  matchesColor,
+  matchesRatio,
+  namedColor,
+  pexelsColor,
+  pixabayColor,
+  unsplashColor,
+  wallhavenColor,
+} from './filters';
 
 describe('filtres', () => {
   it('ne garde que les portraits haute résolution', () => {
@@ -40,5 +54,30 @@ describe('filtres', () => {
     expect(classifyColor('not a color')).toEqual([]);
     expect(matchesColor({ color: '#1e88e5' }, null)).toBe(true);
     expect(matchesColor({ color: '#1e88e5' }, 'red')).toBe(false);
+  });
+
+  it('accepte les teintes du nuancier', () => {
+    expect(hslToHex(0, 1, 0.5)).toBe('#ff0000');
+    expect(hslToHex(120, 1, 0.25)).toBe('#008000');
+    expect(SHADES).toHaveLength(56);
+    expect(new Set(SHADES).size).toBe(SHADES.length);
+    expect(namedColor('#1565c0')).toBe('blue');
+    expect(unsplashColor('#1565c0')).toBe('blue');
+    expect(pexelsColor('#1565c0')).toBe('#1565c0');
+    expect(pixabayColor('#1565c0')).toBe('blue');
+    expect(wallhavenColor('#1565c0')).toBe('0066cc');
+    expect(wallhavenColor('red')).toBe('cc0000');
+    expect(colorLabel('#1565c0')).toBe('Teinte #1565C0');
+    expect(colorLabel('teal')).toBe('Turquoise');
+    expect(matchesColor({ color: '#1e88e5' }, '#1565c0')).toBe(true);
+    // Couleur inconnue : jamais retenue par un filtre de couleur.
+    expect(matchesColor({ color: '#808080' }, 'gray')).toBe(false);
+  });
+
+  it('reconnaît les fonds AMOLED', () => {
+    expect(matchesAmoled({ color: '#0a0a0a' }, false)).toBe(true);
+    expect(matchesAmoled({ color: '#3a3a3a' }, true)).toBe(false);
+    expect(matchesAmoled({ color: '#808080' }, true)).toBe(true);
+    expect(matchesAmoled({ color: '#808080' }, false)).toBe(false);
   });
 });

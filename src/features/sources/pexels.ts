@@ -1,7 +1,7 @@
 import { env } from '@/shared/config/env';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
-import { pexelsColor } from './filters';
-import { ApiError, type ColorFilter, type SourcePage, type Wallpaper } from './types';
+import { UNKNOWN_COLOR, pexelsColor } from './filters';
+import { ApiError, type ColorChoice, type SourcePage, type Wallpaper } from './types';
 
 const API = 'https://api.pexels.com/v1';
 const PER_PAGE = 40;
@@ -34,7 +34,7 @@ export function mapPexels(photo: PexelsPhoto, thumbWidth: number): Wallpaper {
     source: 'pexels',
     width: photo.width,
     height: photo.height,
-    color: photo.avg_color ?? '#808080',
+    color: photo.avg_color ?? UNKNOWN_COLOR,
     alt: photo.alt || 'Photo Pexels',
     thumb: withParams(base, { auto: 'compress', cs: 'tinysrgb', fit: 'crop', w: thumbWidth, h: thumbHeight }),
     preview: withParams(base, { auto: 'compress', cs: 'tinysrgb', w: 1080 }),
@@ -72,7 +72,7 @@ export async function pexelsSearch(
   query: string,
   page: number,
   thumbWidth: number,
-  color: ColorFilter | null,
+  color: ColorChoice | null,
 ): Promise<SourcePage> {
   const data = await request('/search', {
     query,

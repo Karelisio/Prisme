@@ -9,11 +9,13 @@ import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
 import { haptic } from '@/shared/lib/haptics';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
-import { type NormalizedRect, PrismeWallpaper, type WallpaperTarget, isNative, nativeErrorMessage } from '@/shared/native';
+import { type NormalizedRect, PrismeWallpaper, type WallpaperTarget, isNative, nativeErrorMessage, toWebUrl } from '@/shared/native';
 import { useTheme } from '@/shared/theme/ThemeController';
 import { Button, Icon, IconButton, LinearProgress, ListItem } from '@/shared/ui/components';
 import { BottomSheet, showSnackbar } from '@/shared/ui/overlays';
 import { setLiveWallpaper } from '@/features/live/live';
+import { HideSheet } from '@/features/discover/HideSheet';
+import { photographerOf } from '@/features/discover/store';
 import { LinkedSheet } from '@/features/linked/LinkedSheet';
 import { PaletteSheet, simulationVars } from '@/features/palette/PaletteSheet';
 import type { ColorScheme } from '@/shared/theme/scheme';
@@ -21,12 +23,12 @@ import { type ApplyChoice, ApplySheet } from './ApplySheet';
 import { TARGET_LABELS, applyWallpaper, undoLastApply } from './applyWallpaper';
 import { type Size, fitStage } from './cropMath';
 import { saveToGallery, shareWallpaper } from './exportWallpaper';
-import { InfoSheet, sourceName } from './InfoSheet';
+import { InfoSheet, creditPrefix, sourceName } from './InfoSheet';
 import { Simulation, type SimulationMode } from './Simulation';
 import { usePanZoom } from './usePanZoom';
 import './preview.css';
 
-type Sheet = 'apply' | 'info' | 'collections' | 'palette' | 'linked' | 'more' | null;
+type Sheet = 'apply' | 'info' | 'collections' | 'palette' | 'linked' | 'more' | 'hide' | null;
 
 /** Tâche en cours affichée en bas de l'aperçu (application, enregistrement, partage). */
 interface Task {
@@ -63,7 +65,17 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
   const screen = useScreenInfo();
   const viewport = useViewport();
   const stage = useMemo(() => (screen ? fitStage(viewport, screenRatio(screen)) : null), [screen, viewport]);
-  const image = useMemo(() => ({ width: wallpaper.width, height: wallpaper.height }), [wallpaper.width, wallpaper.height]);
+  // Taille inconnue (certaines images NASA) : mesurée sur la miniature puis sur l'aperçu chargé.
+  const [measured, setMeasured] = useState<Size | null>(null);
+  const known = wallpaper.width > 0 && wallpaper.height > 0;
+  const image = useMemo(
+    () => (known ? { width: wallpaper.width, height: wallpaper.height } : measured),
+    [known, wallpaper.width, wallpaper.height, measured],
+  );
+  const measure = (img: HTMLImageElement, final: boolean) => {
+    if (known || !img.naturalWidth || !img.naturalHeight) return;
+    if (final || !measured) setMeasured({ width: img.naturalWidth, height: img.naturalHeight });
+  };
   const [controlsVisible, setControlsVisible] = useState(true);
   const [mode, setMode] = useState<SimulationMode>('none');
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -84,7 +96,10 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
   };
   const panZoom = usePanZoom(stage, image, () => setControlsVisible((v) => !v), { onSwipe: list ? onSwipe : undefined });
   const thumbSrc = useThumbSrc(wallpaper);
+  // Aperçu introuvable (variante absente chez la source) : on affiche l'image HD.
+  const [previewFailed, setPreviewFailed] = useState(false);
   const previewSrc = usePreviewSrc(wallpaper);
+  const imageSrc = previewFailed ? toWebUrl(wallpaper.full) : previewSrc;
   const favorite = useLibrary((s) => !!s.favorites[wallpaper.id]);
   const toggleFavorite = useLibrary((s) => s.toggleFavorite);
   const defaultTarget = useSettings((s) => s.defaultTarget);
@@ -201,6 +216,15 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
 
   const onApplyPressed = () => (defaultTarget === 'ask' ? setSheet('apply') : void apply(defaultTarget));
 
+  const photographer = photographerOf(wallpaper);
+
+  const onHidden = (message: string, undoHide: () => void) => {
+    setSheet(null);
+    haptic('tick');
+    goBack();
+    showSnackbar(message, { label: 'Annuler', onAction: undoHide });
+  };
+
   const onFavorite = () => {
     const added = toggleFavorite(wallpaper);
     haptic('tick');
@@ -215,15 +239,23 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
         {...panZoom.handlers}
         data-testid="preview-stage"
       >
-        {!previewLoaded && <img className="preview__placeholder" src={thumbSrc} alt="" draggable={false} />}
+        {!previewLoaded && (
+          <img className="preview__placeholder" src={thumbSrc} alt="" draggable={false} onLoad={(e) => measure(e.currentTarget, false)} />
+        )}
         <img
           ref={panZoom.targetRef}
           className="preview__image"
-          src={previewSrc}
+          src={imageSrc}
           alt={wallpaper.alt}
           draggable={false}
           decoding="async"
-          onLoad={() => setPreviewLoaded(true)}
+          onLoad={(e) => {
+            measure(e.currentTarget, true);
+            setPreviewLoaded(true);
+          }}
+          onError={() => {
+            if (!previewFailed && wallpaper.preview !== wallpaper.full) setPreviewFailed(true);
+          }}
           style={{ backgroundColor: wallpaper.color }}
         />
         <Simulation mode={mode} />
@@ -248,9 +280,13 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
           </div>
 
           <div className="preview__bottom">
-            {wallpaper.author ? (
+            {photographer ? (
+              <button type="button" className="preview__credit" onClick={() => push({ type: 'photographer', photographer })}>
+                Photo : {photographer.name} · {sourceName(wallpaper)}
+              </button>
+            ) : wallpaper.author ? (
               <a className="preview__credit" href={wallpaper.author.url} target="_blank" rel="noopener noreferrer">
-                Photo : {wallpaper.author.name} · {sourceName(wallpaper)}
+                {creditPrefix(wallpaper)} {wallpaper.author.name} · {sourceName(wallpaper)}
               </a>
             ) : (
               !isLocalWallpaper(wallpaper) && <span className="preview__credit">{sourceName(wallpaper)}</span>
@@ -299,6 +335,32 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
 
       <BottomSheet open={sheet === 'more'} onClose={() => setSheet(null)} label="Plus d’actions">
         <ul className="list">
+          {!isLocalWallpaper(wallpaper) && (
+            <li>
+              <ListItem
+                headline="Plus comme ça"
+                supporting="Fonds du même sujet ou de la même couleur"
+                leading={<Icon name="imageSearch" />}
+                onClick={() => {
+                  setSheet(null);
+                  push({ type: 'similar', wallpaper });
+                }}
+              />
+            </li>
+          )}
+          {photographer && (
+            <li>
+              <ListItem
+                headline={`Photos de ${photographer.name}`}
+                supporting="Tous ses fonds, et le suivre"
+                leading={<Icon name="person" />}
+                onClick={() => {
+                  setSheet(null);
+                  push({ type: 'photographer', photographer });
+                }}
+              />
+            </li>
+          )}
           <li>
             <ListItem headline="Enregistrer dans la galerie" supporting="Image HD, album Prisme" leading={<Icon name="download" />} onClick={() => void onSave()} disabled={busy} />
           </li>
@@ -321,10 +383,17 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
             </li>
           )}
           <li>
-            <ListItem headline="Informations" supporting="Photographe, source, dimensions" leading={<Icon name="info" />} onClick={() => setSheet('info')} />
+            <ListItem headline="Informations" supporting="Auteur, source, dimensions" leading={<Icon name="info" />} onClick={() => setSheet('info')} />
           </li>
+          {!isLocalWallpaper(wallpaper) && (
+            <li>
+              <ListItem headline="Ne plus voir…" supporting="Ce fond, son auteur ou un sujet" leading={<Icon name="visibilityOff" />} onClick={() => setSheet('hide')} />
+            </li>
+          )}
         </ul>
       </BottomSheet>
+
+      <HideSheet wallpaper={wallpaper} open={sheet === 'hide'} onClose={() => setSheet(null)} onHidden={onHidden} />
 
       <ApplySheet open={sheet === 'apply'} onClose={() => setSheet(null)} onApply={(t) => void apply(t)} allowLinked />
       {features.linked && (

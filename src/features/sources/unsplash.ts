@@ -1,7 +1,7 @@
 import { env } from '@/shared/config/env';
 import { NetworkError, getJson, withParams } from '@/shared/lib/http';
-import { unsplashColor } from './filters';
-import { ApiError, type ColorFilter, type SourcePage, type Wallpaper } from './types';
+import { UNKNOWN_COLOR, unsplashColor } from './filters';
+import { ApiError, type ColorChoice, type SourcePage, type Wallpaper } from './types';
 
 const API = 'https://api.unsplash.com';
 const PER_PAGE = 30;
@@ -15,8 +15,11 @@ export interface UnsplashPhoto {
   description: string | null;
   urls: { raw: string };
   links: { html: string; download_location: string };
-  user: { name: string; links: { html: string } };
+  user: { name: string; username?: string; links: { html: string } };
 }
+
+/** Ordre des photos d'un thème ou d'un photographe (« latest » par défaut chez Unsplash). */
+export type UnsplashOrder = 'latest' | 'popular';
 
 interface SearchResponse {
   total_pages: number;
@@ -35,12 +38,16 @@ export function mapUnsplash(photo: UnsplashPhoto, thumbWidth: number): Wallpaper
     source: 'unsplash',
     width: photo.width,
     height: photo.height,
-    color: photo.color ?? '#808080',
+    color: photo.color ?? UNKNOWN_COLOR,
     alt: photo.alt_description ?? photo.description ?? 'Photo Unsplash',
     thumb: withParams(photo.urls.raw, { w: thumbWidth, h: thumbHeight, fit: 'crop', q: 60, auto: 'format' }),
     preview: withParams(photo.urls.raw, { w: 1080, fit: 'max', q: 80, auto: 'format' }),
     full: withParams(photo.urls.raw, { w: Math.min(photo.width, 3200), fit: 'max', q: 90, fm: 'jpg' }),
-    author: { name: photo.user.name, url: withUtm(photo.user.links.html) },
+    author: {
+      name: photo.user.name,
+      url: withUtm(photo.user.links.html),
+      ...(photo.user.username && { username: photo.user.username }),
+    },
     pageUrl: withUtm(photo.links.html),
     downloadLocation: photo.links.download_location,
   };
@@ -75,11 +82,23 @@ function arrayPage(photos: UnsplashPhoto[], page: number, thumbWidth: number): S
   return { items: photos.map((p) => mapUnsplash(p, thumbWidth)), next: photos.length < PER_PAGE ? null : page + 1 };
 }
 
-export async function unsplashTopic(slug: string, page: number, thumbWidth: number): Promise<SourcePage> {
+export async function unsplashTopic(slug: string, page: number, thumbWidth: number, order?: UnsplashOrder): Promise<SourcePage> {
   const photos = await request<UnsplashPhoto[]>(`/topics/${encodeURIComponent(slug)}/photos`, {
     page,
     per_page: PER_PAGE,
     orientation: 'portrait',
+    order_by: order,
+  });
+  return arrayPage(photos, page, thumbWidth);
+}
+
+/** Photos d'un photographe, les plus récentes d'abord. */
+export async function unsplashUser(username: string, page: number, thumbWidth: number): Promise<SourcePage> {
+  const photos = await request<UnsplashPhoto[]>(`/users/${encodeURIComponent(username)}/photos`, {
+    page,
+    per_page: PER_PAGE,
+    orientation: 'portrait',
+    order_by: 'latest',
   });
   return arrayPage(photos, page, thumbWidth);
 }
@@ -97,7 +116,8 @@ export async function unsplashSearch(
   query: string,
   page: number,
   thumbWidth: number,
-  color: ColorFilter | null,
+  color: ColorChoice | null,
+  order?: 'latest' | 'relevant',
 ): Promise<SourcePage> {
   const data = await request<SearchResponse>('/search/photos', {
     query,
@@ -105,6 +125,7 @@ export async function unsplashSearch(
     per_page: PER_PAGE,
     orientation: 'portrait',
     color: color ? (unsplashColor(color) ?? undefined) : undefined,
+    order_by: order,
     lang: 'fr',
   });
   return {

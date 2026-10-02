@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { DEFAULT_SOURCES, type SourceToggles } from '@/features/sources/registry';
 import type { WallpaperTarget } from '@/shared/native';
 import { DEFAULT_SEED } from '@/shared/theme/scheme';
 
@@ -25,7 +26,7 @@ export interface Settings {
   seedColor: string;
   gridColumns: 2 | 3;
   dataSaver: boolean;
-  sources: { unsplash: boolean; pexels: boolean };
+  sources: SourceToggles;
   /** Écran visé par défaut ; « ask » ouvre le choix à chaque fois. */
   defaultTarget: WallpaperTarget | 'ask';
   /** Garde une copie pleine résolution des favoris pour les appliquer hors ligne. */
@@ -36,6 +37,9 @@ export interface Settings {
   haptics: boolean;
   /** Recherche automatique des nouvelles versions (releases GitHub). */
   autoUpdateCheck: boolean;
+  /** Notification quotidienne « Fond du jour », à l'heure choisie. */
+  dailyNotification: boolean;
+  dailyHour: number;
   features: FeatureFlags;
 }
 
@@ -45,12 +49,14 @@ export const DEFAULT_SETTINGS: Settings = {
   seedColor: DEFAULT_SEED,
   gridColumns: 2,
   dataSaver: false,
-  sources: { unsplash: true, pexels: true },
+  sources: DEFAULT_SOURCES,
   defaultTarget: 'ask',
   offlineFavorites: true,
   hdOnWifiOnly: false,
   haptics: true,
   autoUpdateCheck: true,
+  dailyNotification: false,
+  dailyHour: 9,
   features: {
     dynamic: false,
     live: false,

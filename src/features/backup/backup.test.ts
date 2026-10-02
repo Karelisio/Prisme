@@ -3,7 +3,7 @@ import { DEFAULT_AUTOMATION } from '@/features/automation/model';
 import { EMPTY_LIBRARY, type LibraryData } from '@/features/library/model';
 import { DEFAULT_SETTINGS } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
-import { BackupError, backupFileName, createBackup, mergeLibrary, parseBackup } from './backup';
+import { BackupError, backupFileName, createBackup, mergeDiscover, mergeLibrary, parseBackup } from './backup';
 
 const wp = (id: string, source: Wallpaper['source'] = 'unsplash'): Wallpaper => ({
   id,
@@ -75,7 +75,7 @@ describe('sauvegarde', () => {
     expect(parsed.library.favorites).toEqual({ a: 1 });
     expect(parsed.library.collections).toEqual([{ id: 'c', name: 'C', createdAt: 0, itemIds: ['a'] }]);
     expect(parsed.library.history.map((h) => h.id)).toEqual(['h2']);
-    expect(parsed.settings).toEqual({ haptics: false, sources: { unsplash: true, pexels: false } });
+    expect(parsed.settings).toEqual({ haptics: false, sources: { ...DEFAULT_SETTINGS.sources, pexels: false } });
   });
 
   it('fusionne sans rien perdre', () => {
@@ -95,5 +95,29 @@ describe('sauvegarde', () => {
     expect(merged.offline).toEqual(current.offline);
     // Restaurer deux fois ne duplique rien.
     expect(mergeLibrary(merged, backup.library)).toEqual(merged);
+  });
+
+  it('sauvegarde et fusionne abonnements et contenus masqués', () => {
+    const discover = {
+      following: [{ username: 'ada', name: 'Ada', url: 'https://unsplash.com/@ada' }],
+      hiddenWords: ['voiture'],
+      hiddenAuthors: { 'pexels:bob': { key: 'pexels:bob', name: 'Bob', source: 'pexels' as const, at: 1 } },
+      hiddenIds: { 'unsplash:x': { id: 'unsplash:x', thumb: 't', alt: 'x', at: 2 } },
+    };
+    const withDiscover = createBackup(library, DEFAULT_SETTINGS, DEFAULT_AUTOMATION, now, '0.3.0.40', discover);
+    const parsed = parseBackup(JSON.stringify(withDiscover));
+    expect(parsed.discover).toEqual(discover);
+    // Sauvegarde antérieure : pas de section découverte.
+    expect(parseBackup(JSON.stringify(backup)).discover).toBeUndefined();
+    const damaged = parseBackup(JSON.stringify({ ...withDiscover, discover: { following: [{ username: 1 }], hiddenWords: ['', 'chat'] } }));
+    expect(damaged.discover).toEqual({ following: [], hiddenWords: ['chat'], hiddenAuthors: {}, hiddenIds: {} });
+
+    const merged = mergeDiscover(
+      { following: [{ username: 'ada', name: 'Ada', url: 'u' }], hiddenWords: ['Voiture'], hiddenAuthors: {}, hiddenIds: {} },
+      discover,
+    );
+    expect(merged.following).toHaveLength(1);
+    expect(merged.hiddenWords).toEqual(['Voiture']);
+    expect(Object.keys(merged.hiddenAuthors)).toEqual(['pexels:bob']);
   });
 });

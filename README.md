@@ -1,7 +1,8 @@
 # Prisme
 
-Application Android de fonds d'écran : Unsplash (thème *Wallpapers* en priorité), Pexels, packs curés
-et galerie du téléphone. Interface Material You (Material 3, couleurs dynamiques, clair/sombre auto).
+Application Android de fonds d'écran : Unsplash (thème *Wallpapers* en priorité), Pexels, Wallhaven,
+Pixabay, peintures du Cleveland Museum of Art, images de la NASA, packs curés et galerie du téléphone.
+Interface Material You (Material 3, couleurs dynamiques, clair/sombre auto).
 
 React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs Kotlin
 (WallpaperManager, WorkManager, WallpaperService).
@@ -21,6 +22,16 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
   d'un glissement, « Annuler » après une application et « Revenir au fond précédent ».
 - Tuile « Fond suivant » (Réglages rapides) et raccourcis de l'icône : suivant, favori au hasard,
   rechercher.
+
+**Découverte**
+- Sources : Wallhaven (tout public, sans clé), Pixabay (clé facultative, 1280 px au plus, désactivée
+  par défaut), Art (Cleveland Museum of Art, domaine public), Espace (NASA), activables une à une.
+- Tendances, Nouveautés, Anime, Jeux vidéo ; « Fond du jour » en tête d'« À la une », avec
+  notification quotidienne facultative à l'heure choisie.
+- « Plus comme ça » (même sujet ou même couleur), « Pour toi » (suggestions calculées sur le téléphone
+  d'après les favoris), suivre un photographe Unsplash (onglet « Abonnements »).
+- Filtres : couleur au nuancier, AMOLED (noirs profonds) ; « Ne plus voir » un fond, un auteur ou un
+  sujet, géré dans *Réglages → Contenus masqués*.
 - Sauvegarde et restauration (fichier JSON), « HD seulement en Wi-Fi », retours haptiques.
 - Mises à jour intégrées depuis les releases GitHub (APK vérifié : même appli, même signature).
 - Journal d'erreurs (interface et natif) partageable depuis *Réglages → Diagnostic*.
@@ -54,6 +65,7 @@ secrets puis *Re-run all jobs*).
 |---|---|
 | `UNSPLASH_ACCESS_KEY` | Access Key d'une application sur https://unsplash.com/oauth/applications |
 | `PEXELS_API_KEY` | Clé obtenue sur https://www.pexels.com/api/new/ |
+| `PIXABAY_API_KEY` | Facultatif : clé gratuite sur https://pixabay.com/api/docs/ (source Pixabay) |
 | `ANDROID_KEYSTORE_BASE64` | Clé de signature release (fichier PKCS12 contenant une seule clé, alias lu automatiquement) encodée en base64 |
 | `ANDROID_KEYSTORE_PASSWORD` | Mot de passe de cette clé |
 
@@ -82,11 +94,12 @@ installable par-dessus l'app existante.
 | Permission | Pourquoi |
 |---|---|
 | `SET_WALLPAPER` | Appliquer les fonds |
-| `INTERNET` | Unsplash, Pexels, Open-Meteo, packs |
+| `INTERNET` | Sources d'images, Open-Meteo, packs, mises à jour |
 | `ACCESS_COARSE_LOCATION` | Météo des fonds dynamiques, seulement si « Ma position » est utilisé |
 | `ACCESS_NETWORK_STATE` | « HD seulement en Wi-Fi » : savoir si la connexion est limitée |
 | `REQUEST_INSTALL_PACKAGES` | Mises à jour intégrées (Android demande l'accord une fois) |
 | `WRITE_EXTERNAL_STORAGE` | Enregistrer dans la galerie, Android 9 et moins seulement |
+| `POST_NOTIFICATIONS` | Notification « Fond du jour », demandée seulement si elle est activée (Android 13+) |
 
 L'import passe par le sélecteur de photos du système : aucune permission de lecture du stockage.
 
@@ -117,7 +130,8 @@ src/
   app/                    shell : navigation, onglets, bouton retour, cache des requêtes
   features/
     browse/               Explorer : grille, catégories, recherche, filtres
-    sources/              Unsplash, Pexels, galerie, filtres, flux paginés
+    sources/              Unsplash, Pexels, Wallhaven, Pixabay, musée, NASA, galerie, filtres, flux
+    discover/             fond du jour, plus comme ça, pour toi, abonnements, contenus masqués
     packs/                packs curés
     preview/              aperçu, recadrage, simulation, application
     library/              favoris, collections, historique, hors ligne, créations
@@ -137,6 +151,7 @@ android/app/src/main/java/io/karelisio/prisme/
   automation/             moteur de règles, WorkManager, météo
   live/                   service de fond animé (parallaxe)
   quick/                  tuile « Fond suivant », raccourcis de l'icône
-  system/                 version, mises à jour, réseau, fichiers, vibrations, journal d'erreurs
+  system/                 version, mises à jour, réseau, fichiers, vibrations, journal d'erreurs,
+                          notification « Fond du jour »
 packs/packs.json          manifeste des packs curés
 ```

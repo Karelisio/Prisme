@@ -11,7 +11,7 @@ export function unsplashPhoto(id: string, overrides: Partial<UnsplashPhoto> = {}
     description: null,
     urls: { raw: `https://images.unsplash.com/photo-${id}?ixid=abc` },
     links: { html: `https://unsplash.com/photos/${id}`, download_location: `https://api.unsplash.com/photos/${id}/download?ixid=abc` },
-    user: { name: 'Ada Lovelace', links: { html: 'https://unsplash.com/@ada' } },
+    user: { name: 'Ada Lovelace', username: 'ada', links: { html: 'https://unsplash.com/@ada' } },
     ...overrides,
   };
 }

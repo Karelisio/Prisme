@@ -36,4 +36,4 @@ export const useBrowse = create<BrowseState>()(
   ),
 );
 
-export const filtersActive = (f: Filters) => f.color !== null || f.ratio !== 'all';
+export const filtersActive = (f: Filters) => f.color !== null || f.ratio !== 'all' || f.amoled;

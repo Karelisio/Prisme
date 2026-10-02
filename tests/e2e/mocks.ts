@@ -48,6 +48,18 @@ export interface ApiLog {
   unsplash: URL[];
   pexels: URL[];
   downloads: URL[];
+  wallhaven: URL[];
+  pixabay: URL[];
+  art: URL[];
+  nasa: URL[];
+}
+
+/** Sources sans clé (et Pixabay) : réponses vides par défaut, pour ne pas changer les grilles existantes. */
+export interface MockOptions {
+  wallhaven?: boolean;
+  pixabay?: boolean;
+  art?: boolean;
+  nasa?: boolean;
 }
 
 function unsplashPhoto(id: string, i: number) {
@@ -60,7 +72,59 @@ function unsplashPhoto(id: string, i: number) {
     description: null,
     urls: { raw: `https://images.unsplash.com/photo-${id}?ixid=test&c=${i % COLORS.length}` },
     links: { html: `https://unsplash.com/photos/${id}`, download_location: `https://api.unsplash.com/photos/${id}/download?ixid=test` },
-    user: { name: 'Ada Lovelace', links: { html: 'https://unsplash.com/@ada' } },
+    user: { name: 'Ada Lovelace', username: 'ada', links: { html: 'https://unsplash.com/@ada' } },
+  };
+}
+
+function wallhavenItem(id: string, i: number) {
+  return {
+    id,
+    url: `https://wallhaven.cc/w/${id}`,
+    dimension_x: 1440,
+    dimension_y: 3200,
+    colors: ['#0066cc', '#000000'],
+    path: `https://w.wallhaven.cc/full/wh/wallhaven-${id}.png?c=${i % COLORS.length}`,
+    thumbs: { original: `https://th.wallhaven.cc/orig/wh/${id}.png?c=${i % COLORS.length}`, large: '', small: '' },
+  };
+}
+
+function pixabayHit(id: number) {
+  return {
+    id,
+    pageURL: `https://pixabay.com/photos/${id}/`,
+    tags: `brume, lac ${id}`,
+    webformatURL: `https://cdn.pixabay.com/photo/${id}_640.png?c=${id % COLORS.length}`,
+    largeImageURL: `https://cdn.pixabay.com/photo/${id}_1280.png?c=${id % COLORS.length}`,
+    imageWidth: 3000,
+    imageHeight: 6000,
+    user: 'Hedy Lamarr',
+    user_id: 7,
+  };
+}
+
+function artwork(id: number) {
+  return {
+    id,
+    title: `Paysage ${id}`,
+    creation_date: '1860',
+    url: `https://clevelandart.org/art/${id}`,
+    creators: [{ description: 'Frederic Edwin Church (American, 1826–1900)' }],
+    images: {
+      web: { url: `https://openaccess-cdn.clevelandart.org/${id}_web.png?c=${id % COLORS.length}`, width: '700', height: '893' },
+      print: { url: `https://openaccess-cdn.clevelandart.org/${id}_print.png?c=${id % COLORS.length}`, width: '2666', height: '3400' },
+    },
+  };
+}
+
+function nasaItem(id: string, i: number) {
+  const base = `https://images-assets.nasa.gov/image/${id}/${id}`;
+  return {
+    data: [{ nasa_id: id, title: `Nébuleuse ${id}`, media_type: 'image', center: 'GSFC' }],
+    links: [
+      { href: `${base}~thumb.png?c=${i % COLORS.length}`, rel: 'preview', render: 'image' },
+      // Une image sur deux sans dimensions : l'aperçu les mesure.
+      ...(i % 2 === 0 ? [{ href: `${base}~orig.png?c=${i % COLORS.length}`, rel: 'canonical', render: 'image', width: 4000, height: 3000 }] : []),
+    ],
   };
 }
 
@@ -82,8 +146,8 @@ const json = (route: Route, body: unknown) =>
   route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 
 /** Intercepte les API et les CDN d'images ; renvoie le journal des requêtes pour les assertions. */
-export async function mockApis(page: Page): Promise<ApiLog> {
-  const log: ApiLog = { unsplash: [], pexels: [], downloads: [] };
+export async function mockApis(page: Page, options: MockOptions = {}): Promise<ApiLog> {
+  const log: ApiLog = { unsplash: [], pexels: [], downloads: [], wallhaven: [], pixabay: [], art: [], nasa: [] };
 
   await page.route('https://api.unsplash.com/**', (route) => {
     const url = new URL(route.request().url());
@@ -94,7 +158,11 @@ export async function mockApis(page: Page): Promise<ApiLog> {
     log.unsplash.push(url);
     const page = Number(url.searchParams.get('page') ?? '1');
     const prefix = url.pathname.replace(/\W+/g, '-') + (url.searchParams.get('query') ?? '');
-    const photos = Array.from({ length: 30 }, (_, i) => unsplashPhoto(`${prefix}-p${page}-${i}`, i));
+    const dark = url.searchParams.get('color') === 'black';
+    const photos = Array.from({ length: 30 }, (_, i) => ({
+      ...unsplashPhoto(`${prefix}-p${page}-${i}`, i),
+      ...(dark && { color: '#0a0a0a' }),
+    }));
     if (url.pathname === '/search/photos') return json(route, { total: 90, total_pages: 3, results: photos });
     return json(route, photos);
   });
@@ -107,6 +175,56 @@ export async function mockApis(page: Page): Promise<ApiLog> {
     const photos = Array.from({ length: 40 }, (_, i) => pexelsPhoto(base + i));
     return json(route, { page, per_page: 40, photos, next_page: page < 3 ? 'next' : undefined });
   });
+
+  await page.route('https://wallhaven.cc/api/**', (route) => {
+    const url = new URL(route.request().url());
+    log.wallhaven.push(url);
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const tag = (url.searchParams.get('sorting') ?? '') + (url.searchParams.get('q') ?? '').replace(/\W+/g, '');
+    const data = options.wallhaven ? Array.from({ length: 24 }, (_, i) => wallhavenItem(`${tag}${page}x${i}`, i)) : [];
+    return json(route, { data, meta: { current_page: page, last_page: 2, per_page: 24, total: 48 } });
+  });
+
+  await page.route('https://pixabay.com/api/**', (route) => {
+    const url = new URL(route.request().url());
+    log.pixabay.push(url);
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const hits = options.pixabay ? Array.from({ length: 40 }, (_, i) => pixabayHit(page * 100 + i)) : [];
+    return json(route, { total: 80, totalHits: options.pixabay ? 80 : 0, hits });
+  });
+
+  await page.route('https://openaccess-api.clevelandart.org/**', (route) => {
+    const url = new URL(route.request().url());
+    log.art.push(url);
+    const skip = Number(url.searchParams.get('skip') ?? '0');
+    const data = options.art ? Array.from({ length: 20 }, (_, i) => artwork(skip + i + 1)) : [];
+    return json(route, { info: { total: data.length }, data });
+  });
+
+  await page.route('https://images-api.nasa.gov/**', (route) => {
+    const url = new URL(route.request().url());
+    log.nasa.push(url);
+    const q = (url.searchParams.get('q') ?? '').replace(/\W+/g, '');
+    const items = options.nasa ? Array.from({ length: 10 }, (_, i) => nasaItem(`${q}${i}`, i)) : [];
+    return json(route, { collection: { items, links: [] } });
+  });
+
+  await page.route(
+    /https:\/\/((th|w)\.wallhaven\.cc|cdn\.pixabay\.com|openaccess-cdn\.clevelandart\.org|images-assets\.nasa\.gov)\/.*/,
+    (route) => {
+      const url = new URL(route.request().url());
+      const color = COLORS[Number(url.searchParams.get('c') ?? '0') % COLORS.length] as [number, number, number];
+      // Les variantes « ~large » de la NASA n'existent pas ici : l'aperçu se rabat sur l'original.
+      if (url.pathname.includes('~large')) return route.fulfill({ status: 404, body: '' });
+      const landscape = url.hostname === 'images-assets.nasa.gov';
+      return route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: landscape ? solidPng(160, 120, color) : solidPng(90, 160, color),
+      });
+    },
+  );
 
   await page.route(/https:\/\/images\.(unsplash|pexels)\.com\/.*/, (route) => {
     const url = new URL(route.request().url());

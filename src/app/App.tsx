@@ -3,6 +3,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { ExploreScreen } from '@/features/browse/ExploreScreen';
 import { startAutomationSync } from '@/features/automation/sync';
+import { startDailySync } from '@/features/discover/dailySync';
 import { startOfflineSync } from '@/features/library/offline';
 import { UpdateSheet } from '@/features/updates/UpdateSheet';
 import { startUpdateCheck } from '@/features/updates/useUpdates';
@@ -48,6 +49,9 @@ const screens = {
   editor: () => import('@/features/editor/EditorScreen'),
   generator: () => import('@/features/generator/GeneratorScreen'),
   focus: () => import('@/features/automation/FocusScreen'),
+  similar: () => import('@/features/discover/SimilarScreen'),
+  photographer: () => import('@/features/discover/PhotographerScreen'),
+  hidden: () => import('@/features/discover/HiddenScreen'),
 };
 
 const LibraryScreen = lazy(() => screens.library().then((m) => ({ default: m.LibraryScreen })));
@@ -63,6 +67,9 @@ const RotationScreen = lazy(() => screens.rotation().then((m) => ({ default: m.R
 const EditorScreen = lazy(() => screens.editor().then((m) => ({ default: m.EditorScreen })));
 const GeneratorScreen = lazy(() => screens.generator().then((m) => ({ default: m.GeneratorScreen })));
 const FocusScreen = lazy(() => screens.focus().then((m) => ({ default: m.FocusScreen })));
+const SimilarScreen = lazy(() => screens.similar().then((m) => ({ default: m.SimilarScreen })));
+const PhotographerScreen = lazy(() => screens.photographer().then((m) => ({ default: m.PhotographerScreen })));
+const HiddenScreen = lazy(() => screens.hidden().then((m) => ({ default: m.HiddenScreen })));
 
 /** Précharge les écrans secondaires une fois l'app affichée, pendant que le processeur est libre. */
 function prefetchScreens() {
@@ -91,6 +98,7 @@ function AppShell() {
   useEffect(() => startNetworkWatch(), []);
   useEffect(() => startOfflineSync(), []);
   useEffect(() => startAutomationSync(), []);
+  useEffect(() => startDailySync(), []);
   useEffect(() => startAppActions(), []);
   useEffect(() => startUpdateCheck(), []);
   useEffect(prefetchScreens, []);
@@ -145,6 +153,12 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <GeneratorScreen />;
     case 'focus':
       return <FocusScreen />;
+    case 'similar':
+      return <SimilarScreen wallpaper={overlay.wallpaper} />;
+    case 'photographer':
+      return <PhotographerScreen photographer={overlay.photographer} />;
+    case 'hidden':
+      return <HiddenScreen />;
   }
 }
 

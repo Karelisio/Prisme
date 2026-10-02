@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Photographer } from '@/features/discover/store';
 import type { Wallpaper } from '@/features/sources/types';
 import type { NormalizedRect } from '@/shared/native';
 
@@ -17,7 +18,12 @@ export type Overlay =
   | { type: 'rotation' }
   | { type: 'editor'; wallpaper: Wallpaper; crop?: NormalizedRect }
   | { type: 'generator' }
-  | { type: 'focus' };
+  | { type: 'focus' }
+  /** « Plus comme ça » : fonds du même sujet ou de la même couleur. */
+  | { type: 'similar'; wallpaper: Wallpaper }
+  | { type: 'photographer'; photographer: Photographer }
+  /** Réglages › Contenus masqués. */
+  | { type: 'hidden' };
 
 export type OverlayEntry = Overlay & { key: number };
 

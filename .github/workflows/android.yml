@@ -106,9 +106,11 @@ jobs:
         env:
           VITE_UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           VITE_PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          VITE_PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: |
           [ -n "$VITE_UNSPLASH_ACCESS_KEY" ] || echo "::warning title=Clé Unsplash absente::Ajoute le secret UNSPLASH_ACCESS_KEY (voir README)."
           [ -n "$VITE_PEXELS_API_KEY" ] || echo "::warning title=Clé Pexels absente::Ajoute le secret PEXELS_API_KEY (voir README)."
+          [ -n "$VITE_PIXABAY_API_KEY" ] || echo "::notice title=Source Pixabay indisponible::Facultatif : ajoute le secret PIXABAY_API_KEY pour l'activer (voir README)."
           npm run build
 
       - name: Synchronisation Capacitor

@@ -1,26 +1,43 @@
-import { type RefObject, useCallback } from 'react';
+import { type RefObject, useCallback, useEffect } from 'react';
 import { useNavigation } from '@/app/navigation';
 import type { FeedSpec } from '@/features/sources/feed';
 import { ApiError } from '@/features/sources/types';
 import { useOnline } from '@/shared/lib/useOnline';
 import { Button, EmptyState, Spinner } from '@/shared/ui/components';
 import { GridSkeleton, WallpaperGrid } from './WallpaperGrid';
-import { useFeed } from './useFeed';
+import { type FeedOptions, useFeed } from './useFeed';
+
+/** En dessous, la page suivante est chargée d'office (résultats filtrés ou masqués). */
+const MIN_VISIBLE = 12;
+const MAX_AUTO_PAGES = 5;
+
+interface FeedViewProps {
+  spec: FeedSpec;
+  scrollRef: RefObject<HTMLElement | null>;
+  options?: FeedOptions;
+  emptyText?: string;
+}
 
 /** Flux complet : chargement, erreurs (y compris partielles), résultats vides, grille infinie. */
-export function FeedView({ spec, scrollRef }: { spec: FeedSpec; scrollRef: RefObject<HTMLElement | null> }) {
-  const feed = useFeed(spec);
+export function FeedView({ spec, scrollRef, options, emptyText }: FeedViewProps) {
+  const feed = useFeed(spec, options);
   const online = useOnline();
   const setTab = useNavigation((s) => s.setTab);
-  const { fetchNextPage } = feed;
+  const { fetchNextPage, hasNextPage, isFetching } = feed;
   const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
+  const pages = feed.data?.pages.length ?? 0;
+  const visible = feed.items.length;
+
+  useEffect(() => {
+    if (pages > 0 && pages < MAX_AUTO_PAGES && visible < MIN_VISIBLE && hasNextPage && !isFetching) void fetchNextPage();
+  }, [pages, visible, hasNextPage, isFetching, fetchNextPage]);
 
   if (feed.noSources) {
     return (
       <EmptyState
         icon="settings"
         title="Aucune source active"
-        text="Active Unsplash ou Pexels dans les réglages."
+        text="Les sources de ce flux sont désactivées : active-les dans Réglages › Sources."
         action={<Button variant="tonal" onClick={() => setTab('settings')}>Réglages</Button>}
       />
     );
@@ -74,7 +91,11 @@ export function FeedView({ spec, scrollRef }: { spec: FeedSpec; scrollRef: RefOb
         </div>
       )}
       {feed.items.length === 0 ? (
-        <EmptyState icon="imageSearch" title="Aucun résultat" text="Essaie d'autres mots ou retire des filtres." />
+        feed.isFetching ? (
+          <GridSkeleton />
+        ) : (
+          <EmptyState icon="imageSearch" title="Aucun résultat" text={emptyText ?? "Essaie d'autres mots ou retire des filtres."} />
+        )
       ) : (
         <WallpaperGrid
           items={feed.items}

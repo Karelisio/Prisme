@@ -28,8 +28,10 @@ export interface ErrorEntry {
 
 export type ImportFileResult = { cancelled: true } | { cancelled: false; data: string };
 
-/** Action demandée par un raccourci de l'icône qui ouvre l'app. */
-export type AppAction = 'SEARCH';
+/** Action qui ouvre l'app : raccourci de l'icône (« Rechercher ») ou notification « Fond du jour ». */
+export type AppAction = 'SEARCH' | 'DAILY';
+
+export type NotificationPermission = 'granted' | 'denied';
 
 export interface PrismeSystemPlugin {
   getAppInfo(): Promise<AppInfo>;
@@ -48,6 +50,11 @@ export interface PrismeSystemPlugin {
   getPendingAction(): Promise<{ action: AppAction | null }>;
   /** Android 13+ : demande d'ajouter la tuile « Fond suivant » aux Réglages rapides. */
   requestAddTile(): Promise<{ result: 'added' | 'already' | 'declined' | 'unsupported' | 'error' }>;
+  /**
+   * Notification quotidienne « Fond du jour » à `hour` h. Avec `prompt`, demande l'autorisation
+   * d'afficher des notifications (Android 13+) si elle manque.
+   */
+  setDailyNotification(options: { enabled: boolean; hour: number; prompt?: boolean }): Promise<{ enabled: boolean; permission: NotificationPermission }>;
   addListener(event: 'appAction', listener: (e: { action: AppAction }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'networkChanged', listener: (e: NetworkStatus) => void): Promise<PluginListenerHandle>;
   addListener(event: 'updateProgress', listener: (e: { progress: number }) => void): Promise<PluginListenerHandle>;
@@ -161,6 +168,13 @@ export class PrismeSystemWeb extends WebPlugin implements PrismeSystemPlugin {
 
   tileRequests = 0;
   tileResult: 'added' | 'already' | 'declined' | 'unsupported' | 'error' = 'added';
+  notificationPermission: NotificationPermission = 'granted';
+  readonly dailyCalls: { enabled: boolean; hour: number; prompt?: boolean }[] = [];
+
+  async setDailyNotification(options: { enabled: boolean; hour: number; prompt?: boolean }) {
+    this.dailyCalls.push(options);
+    return { enabled: options.enabled, permission: this.notificationPermission };
+  }
 
   async requestAddTile() {
     this.tileRequests++;

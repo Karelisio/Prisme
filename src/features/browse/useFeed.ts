@@ -1,7 +1,11 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { isHidden } from '@/features/discover/hidden';
+import { useDiscover } from '@/features/discover/store';
 import { useSettings } from '@/features/settings/store';
 import { type FeedSpec, dedupe, fetchFeedPage, resolveQueries } from '@/features/sources/feed';
+import { usableSources } from '@/features/sources/registry';
+import type { Filters, Wallpaper } from '@/features/sources/types';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { useBrowse } from './store';
 
@@ -12,11 +16,23 @@ export function thumbWidthFor(columns: number, dataSaver: boolean, viewportWidth
   return Math.min(600, Math.max(160, Math.ceil(width / 40) * 40));
 }
 
-export function useFeed(spec: FeedSpec | null) {
-  const filters = useBrowse((s) => s.filters);
-  const sources = useSettings((s) => s.sources);
+export interface FeedOptions {
+  /** Filtres propres à cet écran (sinon ceux de l'Explorer). */
+  filters?: Filters;
+  /** Fonds à écarter en plus des contenus masqués (ex. favoris déjà connus). */
+  exclude?: (w: Wallpaper) => boolean;
+}
+
+export function useFeed(spec: FeedSpec | null, options: FeedOptions = {}) {
+  const browseFilters = useBrowse((s) => s.filters);
+  const filters = options.filters ?? browseFilters;
+  const enabled = useSettings((s) => s.sources);
+  const sources = useMemo(() => usableSources(enabled), [enabled]);
   const columns = useSettings((s) => s.gridColumns);
   const dataSaver = useSettings((s) => s.dataSaver);
+  const hiddenIds = useDiscover((s) => s.hiddenIds);
+  const hiddenAuthors = useDiscover((s) => s.hiddenAuthors);
+  const hiddenWords = useDiscover((s) => s.hiddenWords);
   const screen = useScreenInfo();
   const ratio = screenRatio(screen);
   const thumbWidth = thumbWidthFor(columns, dataSaver);
@@ -31,7 +47,12 @@ export function useFeed(spec: FeedSpec | null) {
     maxPages: 12,
   });
 
-  const items = useMemo(() => dedupe(query.data?.pages.flatMap((p) => p.items) ?? []), [query.data]);
+  // Contenus masqués retirés à l'affichage : les réafficher ne demande aucun rechargement.
+  const { exclude } = options;
+  const items = useMemo(() => {
+    const hidden = { hiddenIds, hiddenAuthors, hiddenWords };
+    return dedupe(query.data?.pages.flatMap((p) => p.items) ?? []).filter((w) => !isHidden(w, hidden) && !exclude?.(w));
+  }, [query.data, hiddenIds, hiddenAuthors, hiddenWords, exclude]);
   const errors = query.data?.pages[query.data.pages.length - 1]?.errors ?? [];
   return { ...query, items, errors, noSources: !!spec && queries.length === 0 };
 }

@@ -1,8 +1,13 @@
-export type WallpaperSource = 'unsplash' | 'pexels' | 'pack' | 'device' | 'creation';
+export type WallpaperSource = 'unsplash' | 'pexels' | 'wallhaven' | 'pixabay' | 'art' | 'nasa' | 'pack' | 'device' | 'creation';
+
+/** Sources en ligne interrogées par les flux. */
+export type RemoteSource = 'unsplash' | 'pexels' | 'wallhaven' | 'pixabay' | 'art' | 'nasa';
 
 export interface Author {
   name: string;
   url: string;
+  /** Unsplash : identifiant du photographe, pour afficher et suivre ses photos. */
+  username?: string;
 }
 
 /** Fond d'écran normalisé, quelle que soit sa source. */
@@ -44,12 +49,17 @@ export type ColorFilter =
 
 export type RatioFilter = 'all' | 'screen' | 'tall' | 'standard' | 'wide';
 
+/** Couleur filtrée : une teinte nommée, ou un code « #rrggbb » choisi au nuancier. */
+export type ColorChoice = ColorFilter | `#${string}`;
+
 export interface Filters {
-  color: ColorFilter | null;
+  color: ColorChoice | null;
   ratio: RatioFilter;
+  /** Fonds très sombres (noirs profonds, économes sur écran OLED). */
+  amoled: boolean;
 }
 
-export const DEFAULT_FILTERS: Filters = { color: null, ratio: 'all' };
+export const DEFAULT_FILTERS: Filters = { color: null, ratio: 'all', amoled: false };
 
 /** Page de résultats d'une source : `next` vaut null quand il n'y a plus rien. */
 export interface SourcePage {
@@ -61,7 +71,7 @@ export type ApiErrorKind = 'missing_key' | 'auth' | 'rate_limit' | 'network' | '
 
 export class ApiError extends Error {
   constructor(
-    readonly source: 'unsplash' | 'pexels' | 'packs',
+    readonly source: RemoteSource | 'packs',
     readonly kind: ApiErrorKind,
     message: string,
   ) {

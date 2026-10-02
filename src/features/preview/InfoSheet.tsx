@@ -1,34 +1,41 @@
-import type { Wallpaper } from '@/features/sources/types';
+import { FollowButton } from '@/features/discover/PhotographerScreen';
+import { photographerOf } from '@/features/discover/store';
+import { SOURCE_INFO, sourceLabel } from '@/features/sources/registry';
+import type { RemoteSource, Wallpaper } from '@/features/sources/types';
 import { Icon, ListItem } from '@/shared/ui/components';
 import { BottomSheet } from '@/shared/ui/overlays';
 
-const SOURCE_NAMES: Record<Wallpaper['source'], string> = {
-  unsplash: 'Unsplash',
-  pexels: 'Pexels',
-  pack: 'Pack Prisme',
-  device: 'Galerie du téléphone',
-  creation: 'Création Prisme',
-};
-
-const LICENSES: Partial<Record<Wallpaper['source'], { label: string; url: string }>> = {
-  unsplash: { label: 'Licence Unsplash', url: 'https://unsplash.com/license' },
-  pexels: { label: 'Licence Pexels', url: 'https://www.pexels.com/license/' },
-};
+const remote = (w: Wallpaper): RemoteSource | null => (w.source in SOURCE_INFO ? (w.source as RemoteSource) : null);
 
 export function sourceName(w: Wallpaper): string {
-  return SOURCE_NAMES[w.source];
+  return sourceLabel(w.source);
+}
+
+/** « Photo : », « Œuvre : »… devant le nom de l'auteur. */
+export function creditPrefix(w: Wallpaper): string {
+  if (w.source === 'art') return 'Œuvre :';
+  if (w.source === 'nasa') return 'Crédit :';
+  return 'Photo :';
 }
 
 export function InfoSheet({ wallpaper, open, onClose }: { wallpaper: Wallpaper; open: boolean; onClose: () => void }) {
-  const license = LICENSES[wallpaper.source];
+  const source = remote(wallpaper);
+  const license = source ? SOURCE_INFO[source].license : undefined;
+  const role = source ? SOURCE_INFO[source].authorRole : 'Auteur';
+  const photographer = photographerOf(wallpaper);
   return (
     <BottomSheet open={open} onClose={onClose} title="Informations">
       <ul className="list">
         {wallpaper.author && (
           <li>
             <a className="list-link" href={wallpaper.author.url} target="_blank" rel="noopener noreferrer">
-              <ListItem headline={wallpaper.author.name} supporting="Photographe" leading={<Icon name="image" />} trailing={<Icon name="openInNew" size={20} />} />
+              <ListItem headline={wallpaper.author.name} supporting={role} leading={<Icon name="image" />} trailing={<Icon name="openInNew" size={20} />} />
             </a>
+          </li>
+        )}
+        {photographer && (
+          <li className="info-follow">
+            <ListItem headline="Ses nouveaux fonds dans Abonnements" leading={<Icon name="personAdd" />} trailing={<FollowButton photographer={photographer} />} />
           </li>
         )}
         {wallpaper.pageUrl ? (
@@ -42,9 +49,11 @@ export function InfoSheet({ wallpaper, open, onClose }: { wallpaper: Wallpaper; 
             <ListItem headline={sourceName(wallpaper)} supporting="Source" leading={<Icon name="explore" />} />
           </li>
         )}
-        <li>
-          <ListItem headline={`${wallpaper.width} × ${wallpaper.height} px`} supporting="Résolution d'origine" leading={<Icon name="aspectRatio" />} />
-        </li>
+        {wallpaper.width > 0 && wallpaper.height > 0 && (
+          <li>
+            <ListItem headline={`${wallpaper.width} × ${wallpaper.height} px`} supporting="Résolution d'origine" leading={<Icon name="aspectRatio" />} />
+          </li>
+        )}
         {license && (
           <li>
             <a className="list-link" href={license.url} target="_blank" rel="noopener noreferrer">

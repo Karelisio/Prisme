@@ -20,4 +20,8 @@
     <string name="tile_empty">Aucun favori</string>
     <string name="tile_failed">Échec, voir Prisme</string>
     <string name="quick_failed">Prisme n\'a pas pu changer le fond : %1$s</string>
+    <string name="daily_channel">Fond du jour</string>
+    <string name="daily_channel_description">Une sélection de fond d\'écran chaque jour, à l\'heure choisie dans Prisme</string>
+    <string name="daily_title">Ton fond du jour est prêt</string>
+    <string name="daily_text">Touche pour le découvrir et l\'appliquer</string>
 </resources>
