@@ -75,7 +75,8 @@ class PrismeAutomationPlugin : Plugin() {
                 // « Assombrir le soir » coupé : les fonds retrouvent tout de suite leur luminosité.
                 if (previous.dim.enabled && !config.dim.enabled) {
                     runCatching { CurrentWallpapers(context).refreshDim(0f) }
-                    CurrentWallpapers(context).clear()
+                    // Les copies d'origine restent tant que la citation du jour en a besoin.
+                    CurrentWallpapers(context).dropIfUnused(dimEnabled = false)
                 }
                 // Activation, changement de mode ou d'écran : on réapplique tout de suite.
                 previous.signature() != config.signature()

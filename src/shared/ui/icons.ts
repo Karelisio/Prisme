@@ -116,6 +116,7 @@ import movie from '@material-symbols/svg-400/rounded/movie.svg?raw';
 import gif from '@material-symbols/svg-400/rounded/gif.svg?raw';
 import bubble from '@material-symbols/svg-400/rounded/bubble.svg?raw';
 import flare from '@material-symbols/svg-400/rounded/flare.svg?raw';
+import formatQuote from '@material-symbols/svg-400/rounded/format_quote.svg?raw';
 
 export const ICONS = {
   search,
@@ -234,6 +235,7 @@ export const ICONS = {
   gif,
   bubble,
   flare,
+  formatQuote,
 } as const;
 
 export type IconName = keyof typeof ICONS;

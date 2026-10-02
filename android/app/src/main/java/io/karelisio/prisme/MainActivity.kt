@@ -5,6 +5,7 @@ import com.getcapacitor.BridgeActivity
 import io.karelisio.prisme.automation.PrismeAutomationPlugin
 import io.karelisio.prisme.live.PrismeLivePlugin
 import io.karelisio.prisme.music.PrismeMusicPlugin
+import io.karelisio.prisme.quote.PrismeQuotePlugin
 import io.karelisio.prisme.system.PrismeSystemPlugin
 import io.karelisio.prisme.wallpaper.PrismeWallpaperPlugin
 
@@ -15,6 +16,7 @@ class MainActivity : BridgeActivity() {
         registerPlugin(PrismeLivePlugin::class.java)
         registerPlugin(PrismeSystemPlugin::class.java)
         registerPlugin(PrismeMusicPlugin::class.java)
+        registerPlugin(PrismeQuotePlugin::class.java)
         super.onCreate(savedInstanceState)
     }
 }

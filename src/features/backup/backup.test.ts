@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_AUTOMATION } from '@/features/automation/model';
 import { EMPTY_LIBRARY, type LibraryData } from '@/features/library/model';
+import { DEFAULT_QUOTE_PREFS } from '@/features/quote/model';
 import { DEFAULT_SETTINGS } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
 import { BackupError, backupFileName, createBackup, mergeDiscover, mergeLibrary, parseBackup } from './backup';
@@ -119,5 +120,48 @@ describe('sauvegarde', () => {
     expect(merged.following).toHaveLength(1);
     expect(merged.hiddenWords).toEqual(['Voiture']);
     expect(Object.keys(merged.hiddenAuthors)).toEqual(['pexels:bob']);
+  });
+
+  it('sauvegarde la citation du jour : réglages et citations perso, sans le cran « Une autre »', () => {
+    const quotes = {
+      ...DEFAULT_QUOTE_PREFS,
+      target: 'both' as const,
+      source: 'both' as const,
+      font: 'sans' as const,
+      shift: 4,
+      custom: [{ id: 'q1', text: 'Carpe diem', author: 'Moi' }, { id: 'q2', text: 'Un jour à la fois' }],
+    };
+    const withQuotes = createBackup(library, DEFAULT_SETTINGS, DEFAULT_AUTOMATION, now, '0.5.0.1', undefined, quotes);
+    expect(withQuotes.quotes).toEqual({
+      target: 'both',
+      source: 'both',
+      font: 'sans',
+      position: 'bottom',
+      size: 'medium',
+      color: 'auto',
+      custom: [{ id: 'q1', text: 'Carpe diem', author: 'Moi' }, { id: 'q2', text: 'Un jour à la fois' }],
+    });
+    expect(parseBackup(JSON.stringify(withQuotes)).quotes).toEqual(withQuotes.quotes);
+    // Sauvegarde antérieure : pas de section citations.
+    expect(backup.quotes).toBeUndefined();
+    expect(parseBackup(JSON.stringify(backup)).quotes).toBeUndefined();
+  });
+
+  it('ignore les citations et réglages abîmés', () => {
+    const damaged = {
+      ...backup,
+      quotes: {
+        target: 'plafond',
+        source: 'mine',
+        font: 12,
+        position: 'top',
+        size: 'énorme',
+        shift: 9,
+        custom: [{ id: 'ok', text: '  Bien   vu ' }, { id: '', text: 'sans id' }, { id: 'vide', text: '   ' }, { id: 'n', text: 3 }, 'texte'],
+      },
+    };
+    const parsed = parseBackup(JSON.stringify(damaged));
+    expect(parsed.quotes).toEqual({ source: 'mine', position: 'top', custom: [{ id: 'ok', text: 'Bien vu' }] });
+    expect(parseBackup(JSON.stringify({ ...backup, quotes: 'oups' })).quotes).toBeUndefined();
   });
 });

@@ -27,7 +27,8 @@ export type Overlay =
   /** Réglages › Contenus masqués. */
   | { type: 'hidden' }
   | { type: 'events' }
-  | { type: 'dim' };
+  | { type: 'dim' }
+  | { type: 'quote' };
 
 export type OverlayEntry = Overlay & { key: number };
 

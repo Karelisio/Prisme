@@ -8,6 +8,7 @@ import { startOfflineSync } from '@/features/library/offline';
 import { startLiveSync } from '@/features/live/liveSync';
 import { startPlaylistSync } from '@/features/live/playlistSync';
 import { startMusicSync } from '@/features/music/musicSync';
+import { startQuoteSync } from '@/features/quote/quoteSync';
 import { UpdateSheet } from '@/features/updates/UpdateSheet';
 import { startUpdateCheck } from '@/features/updates/useUpdates';
 import { startNetworkWatch } from '@/shared/lib/network';
@@ -59,6 +60,7 @@ const screens = {
   hidden: () => import('@/features/discover/HiddenScreen'),
   events: () => import('@/features/automation/EventsScreen'),
   dim: () => import('@/features/automation/DimScreen'),
+  quote: () => import('@/features/quote/QuoteScreen'),
 };
 
 const LibraryScreen = lazy(() => screens.library().then((m) => ({ default: m.LibraryScreen })));
@@ -81,6 +83,7 @@ const PhotographerScreen = lazy(() => screens.photographer().then((m) => ({ defa
 const HiddenScreen = lazy(() => screens.hidden().then((m) => ({ default: m.HiddenScreen })));
 const EventsScreen = lazy(() => screens.events().then((m) => ({ default: m.EventsScreen })));
 const DimScreen = lazy(() => screens.dim().then((m) => ({ default: m.DimScreen })));
+const QuoteScreen = lazy(() => screens.quote().then((m) => ({ default: m.QuoteScreen })));
 
 /** Précharge les écrans secondaires une fois l'app affichée, pendant que le processeur est libre. */
 function prefetchScreens() {
@@ -110,6 +113,7 @@ function AppShell() {
   useEffect(() => startOfflineSync(), []);
   useEffect(() => startAutomationSync(), []);
   useEffect(() => startMusicSync(), []);
+  useEffect(() => startQuoteSync(), []);
   useEffect(() => startLiveSync(), []);
   useEffect(() => startPlaylistSync(), []);
   useEffect(() => startDailySync(), []);
@@ -181,6 +185,8 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <EventsScreen />;
     case 'dim':
       return <DimScreen />;
+    case 'quote':
+      return <QuoteScreen />;
   }
 }
 
