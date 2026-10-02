@@ -2,12 +2,15 @@ package io.karelisio.prisme.automation
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import com.getcapacitor.JSArray
 import com.getcapacitor.JSObject
 import com.getcapacitor.PermissionState
@@ -26,10 +29,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-/** Pont des automatismes : configuration, état, journal et position approximative (météo). */
+/** Pont des automatismes : configuration, état, journal, position approximative (météo) et position précise (lieux). */
 @CapacitorPlugin(
     name = "PrismeAutomation",
-    permissions = [Permission(alias = "location", strings = [Manifest.permission.ACCESS_COARSE_LOCATION])],
+    permissions = [
+        Permission(alias = "location", strings = [Manifest.permission.ACCESS_COARSE_LOCATION]),
+        // Depuis Android 12, la position précise se demande avec l'approximative, en une seule fois.
+        Permission(alias = "preciseLocation", strings = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION]),
+        Permission(alias = "backgroundLocation", strings = ["android.permission.ACCESS_BACKGROUND_LOCATION"]),
+    ],
 )
 class PrismeAutomationPlugin : Plugin() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -199,6 +207,92 @@ class PrismeAutomationPlugin : Plugin() {
 
     private fun resolveLocation(call: PluginCall, location: Location) {
         call.resolve(JSObject().put("latitude", location.latitude).put("longitude", location.longitude))
+    }
+
+    /** Position précise (ajout d'un lieu) : demande l'autorisation au besoin, échoue au bout d'environ 20 s. */
+    @PluginMethod
+    fun getCurrentPosition(call: PluginCall) {
+        if (PlaceLocator.hasPrecise(context)) findPosition(call)
+        else requestPermissionForAlias("preciseLocation", call, "onPositionPermission")
+    }
+
+    @PermissionCallback
+    private fun onPositionPermission(call: PluginCall) {
+        if (PlaceLocator.hasPrecise(context)) findPosition(call)
+        else call.reject("Autorisation de position précise refusée : accorde-la dans les réglages de l'app", "PERMISSION_DENIED")
+    }
+
+    private fun findPosition(call: PluginCall) {
+        PlaceLocator.fresh(context, PlaceLocator.FIX_TIMEOUT_MS) { location ->
+            if (location == null) {
+                call.reject("Position introuvable ou trop imprécise : active la localisation, puis réessaie près d'une fenêtre ou dehors", "UNAVAILABLE")
+            } else {
+                val position = JSObject().put("latitude", location.latitude).put("longitude", location.longitude)
+                if (location.hasAccuracy()) position.put("accuracy", location.accuracy.toDouble())
+                call.resolve(position)
+            }
+        }
+    }
+
+    @PluginMethod
+    fun getLocationPermissions(call: PluginCall) = call.resolve(locationPermissions())
+
+    /**
+     * Autorisations de « Selon le lieu » : position précise d'abord, puis (Android 10+) « Toujours
+     * autoriser », qui permet de lire la position app fermée. À partir d'Android 11, ce dernier accès ne se
+     * donne plus dans une boîte de dialogue mais dans les réglages de l'app : on les ouvre et on renvoie
+     * la consigne à afficher.
+     */
+    @PluginMethod
+    fun requestLocationPermissions(call: PluginCall) {
+        if (PlaceLocator.hasPrecise(context)) {
+            requestBackgroundLocation(call)
+            return
+        }
+        // Refusée pour de bon (« ne plus demander ») : le système n'affiche plus rien, seuls les réglages peuvent l'accorder.
+        if (getPermissionState("preciseLocation") == PermissionState.DENIED) {
+            call.resolve(permissionResult(openAppSettings(), "Autorise la position précise dans les réglages de l'app (Autorisations › Position)."))
+            return
+        }
+        requestPermissionForAlias("preciseLocation", call, "onPreciseLocationResult")
+    }
+
+    @PermissionCallback
+    private fun onPreciseLocationResult(call: PluginCall) {
+        if (PlaceLocator.hasPrecise(context)) requestBackgroundLocation(call) else call.resolve(permissionResult())
+    }
+
+    private fun requestBackgroundLocation(call: PluginCall) {
+        when {
+            PlaceLocator.hasBackground(context) -> call.resolve(permissionResult())
+            // Android 10 : la boîte de dialogue propose encore « Toujours autoriser ».
+            Build.VERSION.SDK_INT < 30 -> requestPermissionForAlias("backgroundLocation", call, "onBackgroundLocationResult")
+            else -> call.resolve(permissionResult(openAppSettings(), alwaysAllowHint()))
+        }
+    }
+
+    @PermissionCallback
+    private fun onBackgroundLocationResult(call: PluginCall) = call.resolve(permissionResult())
+
+    private fun locationPermissions() =
+        JSObject().put("precise", PlaceLocator.hasPrecise(context)).put("background", PlaceLocator.hasBackground(context))
+
+    private fun permissionResult(settingsOpened: Boolean = false, message: String? = null): JSObject {
+        val result = locationPermissions().put("settingsOpened", settingsOpened)
+        if (message != null) result.put("message", message)
+        return result
+    }
+
+    private fun openAppSettings(): Boolean {
+        val host = activity ?: return false
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+        return runCatching { host.startActivity(intent) }.isSuccess
+    }
+
+    /** Consigne pour l'accès « Toujours » ; son libellé exact vient du système (Android 11+), dans la langue de l'appareil. */
+    private fun alwaysAllowHint(): String {
+        val label = if (Build.VERSION.SDK_INT >= 30) context.packageManager.backgroundPermissionOptionLabel.toString() else ""
+        return "Dans les réglages de l'app, ouvre Autorisations › Position et choisis « ${label.ifBlank { "Toujours autoriser" }} »."
     }
 
     private companion object {

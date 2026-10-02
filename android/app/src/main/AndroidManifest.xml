@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <!-- Météo des fonds dynamiques : position approximative, demandée seulement si l'option est utilisée. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- « Selon le lieu » : position précise, puis « Toujours autoriser » pour la lire app fermée ; demandées seulement si l'option est utilisée. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <!-- « HD seulement en Wi-Fi » : savoir si la connexion est limitée (données mobiles). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Mises à jour intégrées : ouvrir l'installateur avec l'APK de la dernière release. -->

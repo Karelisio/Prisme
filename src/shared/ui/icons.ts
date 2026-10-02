@@ -17,6 +17,8 @@ import exploreFill from '@material-symbols/svg-400/rounded/explore-fill.svg?raw'
 import library from '@material-symbols/svg-400/rounded/photo_library.svg?raw';
 import libraryFill from '@material-symbols/svg-400/rounded/photo_library-fill.svg?raw';
 import home from '@material-symbols/svg-400/rounded/home.svg?raw';
+import place from '@material-symbols/svg-400/rounded/location_on.svg?raw';
+import myLocation from '@material-symbols/svg-400/rounded/my_location.svg?raw';
 import lock from '@material-symbols/svg-400/rounded/lock.svg?raw';
 import mobile from '@material-symbols/svg-400/rounded/mobile.svg?raw';
 import check from '@material-symbols/svg-400/rounded/check.svg?raw';
@@ -126,6 +128,8 @@ export const ICONS = {
   library,
   libraryFill,
   home,
+  place,
+  myLocation,
   lock,
   mobile,
   check,

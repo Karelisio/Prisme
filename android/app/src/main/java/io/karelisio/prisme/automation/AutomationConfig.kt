@@ -71,14 +71,31 @@ data class FocusConfig(
     val schedules: List<FocusSchedule> = emptyList(),
 )
 
+/** Zone circulaire (rayon en mètres) dont le fond remplace le fond habituel quand l'appareil s'y trouve. */
+data class PlaceConfig(val name: String, val latitude: Double, val longitude: Double, val radius: Double, val ref: WallpaperRef) {
+    /** Identité du lieu pour la mémoire des allées et venues : le rayon et le fond peuvent changer sans qu'on le « quitte ». */
+    val key: String
+        get() = "$name|$latitude|$longitude"
+}
+
+data class PlacesConfig(
+    val enabled: Boolean = false,
+    val target: WallpaperTarget = WallpaperTarget.BOTH,
+    val items: List<PlaceConfig> = emptyList(),
+) {
+    val active: Boolean
+        get() = enabled && items.isNotEmpty()
+}
+
 /** Configuration envoyée par l'app ; le moteur l'évalue en tâche de fond, app fermée. */
 data class AutomationConfig(
     val rotation: RotationConfig = RotationConfig(),
     val dynamic: DynamicConfig = DynamicConfig(),
+    val places: PlacesConfig = PlacesConfig(),
     val focus: FocusConfig = FocusConfig(),
 ) {
     val anyEnabled: Boolean
-        get() = rotation.active ||
+        get() = rotation.active || places.active ||
             (dynamic.enabled && dynamic.mode != null) ||
             (focus.enabled && focus.ref != null && focus.schedules.isNotEmpty())
 
@@ -89,6 +106,7 @@ data class AutomationConfig(
     fun signature(): String = listOf(
         rotation.enabled, rotation.target, rotation.online?.key,
         dynamic.enabled, dynamic.target, dynamic.mode?.javaClass?.simpleName,
+        places.enabled, places.target,
         focus.enabled, focus.target,
     ).joinToString("|")
 
@@ -106,11 +124,16 @@ data class AutomationConfig(
             }
             null -> Unit
         }
+        out += places.items.map { it.ref }
         focus.ref?.let { out += it }
         return out
     }
 
     companion object {
+        /** Rayon par défaut et rayon minimal d'un lieu, en mètres : en dessous, la précision de la position ne suffit plus à trancher. */
+        private const val DEFAULT_PLACE_RADIUS = 300.0
+        private const val MIN_PLACE_RADIUS = 50.0
+
         fun parse(raw: String?): AutomationConfig {
             if (raw.isNullOrBlank()) return AutomationConfig()
             return runCatching { fromJson(JSONObject(raw)) }.getOrDefault(AutomationConfig())
@@ -119,6 +142,7 @@ data class AutomationConfig(
         fun fromJson(json: JSONObject): AutomationConfig = AutomationConfig(
             rotation = json.optJSONObject("rotation")?.let(::rotation) ?: RotationConfig(),
             dynamic = json.optJSONObject("dynamic")?.let(::dynamic) ?: DynamicConfig(),
+            places = json.optJSONObject("places")?.let(::places) ?: PlacesConfig(),
             focus = json.optJSONObject("focus")?.let(::focus) ?: FocusConfig(),
         )
 
@@ -164,6 +188,20 @@ data class AutomationConfig(
                     if (levels.isEmpty() && charging == null) null else DynamicMode.Battery(levels, charging)
                 }
                 else -> null
+            },
+        )
+
+        private fun places(json: JSONObject) = PlacesConfig(
+            enabled = json.optBoolean("enabled"),
+            target = target(json),
+            items = objects(json.optJSONArray("items")).mapNotNull { place ->
+                val ref = WallpaperRef.fromJson(place.optJSONObject("item")) ?: return@mapNotNull null
+                val latitude = place.optDouble("latitude")
+                val longitude = place.optDouble("longitude")
+                // Coordonnées absentes ou hors du globe (NaN compris) : lieu ignoré.
+                if (latitude !in -90.0..90.0 || longitude !in -180.0..180.0) return@mapNotNull null
+                val radius = place.optDouble("radius", DEFAULT_PLACE_RADIUS).coerceAtLeast(MIN_PLACE_RADIUS)
+                PlaceConfig(place.optString("name"), latitude, longitude, radius, ref)
             },
         )
 
