@@ -7,7 +7,7 @@ import { t, tn } from '@/shared/i18n';
 import { isNative, nativeErrorMessage } from '@/shared/native';
 import { type DevicePosition, type LocationPermissions, PrismeAutomation } from '@/shared/native/automation';
 import { Button, Chip, Icon, IconButton, Switch, TextField } from '@/shared/ui/components';
-import { showSnackbar } from '@/shared/ui/overlays';
+import { showSnackbar, undoLabel } from '@/shared/ui/overlays';
 import { RefRow, TargetChips, WallpaperPicker } from './components';
 import { DEFAULT_PLACE_RADIUS, PLACE_RADII, PLACE_SUGGESTIONS, type PlaceZone } from './model';
 import { useAutomationPrefs } from './store';
@@ -62,7 +62,7 @@ export function PlacesScreen() {
     const index = prefs.items.findIndex((p) => p.id === place.id);
     update({ items: prefs.items.filter((p) => p.id !== place.id) });
     showSnackbar(t('Lieu « {name} » supprimé', { name: place.name }), {
-      label: t('Annuler'),
+      label: undoLabel(),
       onAction: () => {
         const items = useAutomationPrefs.getState().places.items;
         update({ items: [...items.slice(0, index), place, ...items.slice(index)] });

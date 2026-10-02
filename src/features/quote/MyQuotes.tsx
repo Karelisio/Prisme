@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { t } from '@/shared/i18n';
 import { Button, Icon, IconButton, ListItem } from '@/shared/ui/components';
-import { BottomSheet, showSnackbar } from '@/shared/ui/overlays';
+import { BottomSheet, showSnackbar, undoLabel } from '@/shared/ui/overlays';
 import { type CustomQuote, MAX_CUSTOM_QUOTES, MAX_QUOTE_AUTHOR, MAX_QUOTE_TEXT } from './model';
 import { useQuotePrefs } from './store';
 
@@ -71,7 +71,7 @@ export function MyQuotes() {
   const removeWithUndo = (quote: CustomQuote) => {
     const index = custom.findIndex((q) => q.id === quote.id);
     remove(quote.id);
-    showSnackbar(t('Citation supprimée'), { label: t('Annuler'), onAction: () => restore(quote, index) });
+    showSnackbar(t('Citation supprimée'), { label: undoLabel(), onAction: () => restore(quote, index) });
   };
 
   return (

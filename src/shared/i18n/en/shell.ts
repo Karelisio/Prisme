@@ -134,7 +134,7 @@ export const SHELL: Readonly<Record<string, string>> = {
   'Citation du jour': 'Quote of the day',
   'Une phrase sur ton fond d’écran, renouvelée chaque matin': 'A phrase on your wallpaper, renewed every morning',
   'Fonds d’écran': 'Wallpapers',
-  'mot-clé à choisir': 'keyword to choose',
+  'mot-clé à choisir': 'choose a keyword',
 
   // Sources en ligne : noms, descriptions, licences, rôles, erreurs
   'Photos, thème Wallpapers en priorité': 'Photos, Wallpapers topic first',
@@ -215,7 +215,7 @@ export const SHELL: Readonly<Record<string, string>> = {
   'Blanc': 'White',
   'Jaune': 'Yellow',
   'Rose': 'Pink',
-  'Noir et blanc': 'Black and white',
+  'Noir et blanc': 'Black & white',
   'Teinte {hex}': 'Shade {hex}',
   'Couleur': 'Color',
   'Nuancier': 'Shades',
@@ -276,7 +276,7 @@ export const SHELL: Readonly<Record<string, string>> = {
   'Recentrer': 'Recenter',
   'Retirer des favoris': 'Remove from favorites',
   'Ajouter aux favoris': 'Add to favorites',
-  'Ajouter à une collection': 'Add to a collection',
+  'Ajouter à une collection': 'Add to collection',
   'Partager': 'Share',
   'Plus d’actions': 'More actions',
   'Image seule': 'Image only',

@@ -86,7 +86,7 @@ export const CREATION: Readonly<Record<string, string>> = {
   // Bibliothèque : historique
   'Historique vide': 'No history yet',
   'Les fonds que tu appliques apparaîtront ici.': 'Wallpapers you apply will show up here.',
-  'Revenir au fond précédent': 'Revert to previous wallpaper',
+  'Revenir au fond précédent': 'Restore previous wallpaper',
   'automatique': 'automatic',
   "Aujourd'hui": 'Today',
   'Hier': 'Yesterday',
