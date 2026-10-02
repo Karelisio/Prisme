@@ -15,6 +15,8 @@ ext {
     cordovaAndroidVersion = '14.0.1'
     coroutinesVersion = '1.11.0'
     exifInterfaceVersion = '1.4.2'
+    // Relief 3D : détourage du sujet (Google Play services, modèle téléchargé à la demande ; seule version publiée).
+    mlkitSubjectSegmentationVersion = '16.0.0-beta1'
     orgJsonVersion = '20251224'
     workVersion = '2.11.2'
 }

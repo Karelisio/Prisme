@@ -235,6 +235,46 @@ class PrismeLivePlugin : Plugin() {
         }
     }
 
+    /**
+     * Relief 3D : détoure le sujet de la photo et comble l'arrière-plan derrière lui, hors du fil principal ;
+     * les étapes sont annoncées par l'événement « reliefProgress ». En cas d'échec, le relief précédent reste.
+     */
+    @PluginMethod
+    fun prepareRelief(call: PluginCall) {
+        val uri = call.getString("uri")
+        if (uri.isNullOrBlank()) {
+            call.reject("Image manquante", "INVALID_ARGUMENT")
+            return
+        }
+        val crop = WallpaperRef.cropFromJson(call.getObject("crop"))
+        val screen = ScreenInfo.read(context, activity)
+        scope.launch {
+            try {
+                val info = withContext(Dispatchers.IO) {
+                    val prepared = ReliefPreparer(context).prepare(uri, crop, screen) { stage, progress ->
+                        val data = JSObject().put("stage", stage.key)
+                        if (progress != null) data.put("progress", progress.toDouble())
+                        bridge.executeOnMainThread { notifyListeners(EVENT_RELIEF_PROGRESS, data) }
+                    }
+                    ReliefPreparer.info(context, prepared)
+                }
+                call.resolve(info)
+            } catch (e: WallpaperException) {
+                call.reject(e.message, e.code, e)
+            } catch (e: Exception) {
+                // Erreur imprévue : gardée pour l'écran Diagnostic (écriture hors du fil principal).
+                withContext(Dispatchers.IO) { ErrorLog.record(context, "Relief 3D", e) }
+                call.reject(e.message ?: "Erreur inattendue", "UNKNOWN", e)
+            }
+        }
+    }
+
+    /** Relief 3D : prêt ou non, avec la vignette du sujet détouré. */
+    @PluginMethod
+    fun getRelief(call: PluginCall) {
+        scope.launch { call.resolve(withContext(Dispatchers.IO) { ReliefPreparer.info(context) }) }
+    }
+
     /** Prépare l'image à la taille de l'écran plus la marge de parallaxe, dans un nouveau fichier. */
     private fun prepare(uri: String, intensity: Float, crop: NormalizedRect?, screen: ScreenInfo.Size): String {
         val dir = File(context.filesDir, "live").apply { mkdirs() }
@@ -254,5 +294,10 @@ class PrismeLivePlugin : Plugin() {
         } catch (e: ActivityNotFoundException) {
             activity.startActivity(Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER))
         }
+    }
+
+    private companion object {
+        /** Étape de la préparation du relief 3D : `stage`, et `progress` (0..1) si elle est connue. */
+        const val EVENT_RELIEF_PROGRESS = "reliefProgress"
     }
 }

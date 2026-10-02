@@ -3,6 +3,7 @@ import type { LiveMode, LiveStatus } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
 import { GifSection } from './GifSection';
 import { ImageSection } from './ImageSection';
+import { ReliefSection } from './ReliefSection';
 import { VideoSection } from './VideoSection';
 
 export interface ModeSectionProps {
@@ -29,4 +30,5 @@ export const LIVE_MODES: readonly LiveModeDef[] = [
   PHOTO_MODE,
   { key: 'video', label: 'Vidéo', icon: 'movie', Section: VideoSection },
   { key: 'gif', label: 'GIF', icon: 'gif', Section: GifSection },
+  { key: 'relief', label: 'Relief 3D', icon: 'layers', Section: ReliefSection },
 ];

@@ -78,3 +78,22 @@
   color: var(--md-sys-color-on-surface-variant);
   font: 400 14px/20px var(--md-font);
 }
+
+/* Relief 3D : sujet détouré sur un damier (transparence), progression de la préparation. */
+.relief-preview {
+  object-fit: contain;
+  background: repeating-conic-gradient(var(--md-sys-color-surface-container-high) 0 25%, var(--md-sys-color-surface-container-highest) 0 50%) 50% / 16px 16px;
+}
+
+.relief-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 16px 8px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 13px/18px var(--md-font);
+}
+
+.relief-error {
+  color: var(--md-sys-color-error);
+}
