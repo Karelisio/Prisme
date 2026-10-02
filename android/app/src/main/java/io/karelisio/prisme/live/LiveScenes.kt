@@ -9,11 +9,15 @@ internal object LiveScenes {
         // Genres pas encore disponibles : la photo avec parallaxe.
         LiveMode.VIDEO -> ImageScene(context)
         LiveMode.GIF -> ImageScene(context)
-        LiveMode.GRADIENT -> ImageScene(context)
-        LiveMode.PARTICLES -> ImageScene(context)
+        LiveMode.GRADIENT -> GradientScene(context)
+        LiveMode.PARTICLES -> ParticlesScene(context)
         LiveMode.RELIEF -> ImageScene(context)
     }
 
     /** Couche dessinée par-dessus la scène du genre [mode] (météo animée), ou null. */
-    fun overlay(context: Context, mode: LiveMode): SceneOverlay? = null
+    fun overlay(context: Context, mode: LiveMode): SceneOverlay? = when (mode) {
+        // Réglée avec la photo (`scene_image`) : elle ne dessine rien tant qu'elle est désactivée.
+        LiveMode.IMAGE -> WeatherOverlay(context)
+        else -> null
+    }
 }

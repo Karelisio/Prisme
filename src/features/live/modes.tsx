@@ -1,7 +1,9 @@
 import type { ComponentType } from 'react';
 import type { LiveMode, LiveStatus } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
+import { GradientSection } from './GradientSection';
 import { ImageSection } from './ImageSection';
+import { ParticlesSection } from './ParticlesSection';
 
 export interface ModeSectionProps {
   /** Option « Fonds animés » activée dans les réglages. */
@@ -25,4 +27,6 @@ export const PHOTO_MODE: LiveModeDef = { key: 'image', label: 'Photo', icon: 'im
 /** Genres proposés, dans l'ordre des puces. */
 export const LIVE_MODES: readonly LiveModeDef[] = [
   PHOTO_MODE,
+  { key: 'gradient', label: 'Dégradé', icon: 'gradient', Section: GradientSection },
+  { key: 'particles', label: 'Particules', icon: 'bubble', Section: ParticlesSection },
 ];

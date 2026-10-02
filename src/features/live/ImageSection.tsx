@@ -5,6 +5,7 @@ import type { Wallpaper } from '@/features/sources/types';
 import { Button, Icon } from '@/shared/ui/components';
 import { LiveActivateButton } from './LiveActivate';
 import { UnlockSection } from './UnlockSection';
+import { WeatherOverlaySection } from './WeatherOverlaySection';
 import { setLiveWallpaper, useLive } from './live';
 import type { ModeSectionProps } from './modes';
 
@@ -53,6 +54,8 @@ export function ImageSection({ optionOn, status, refresh }: ModeSectionProps) {
       />
 
       <UnlockSection optionOn={optionOn} status={status} onChanged={() => setTimeout(refresh, 1500)} />
+
+      <WeatherOverlaySection status={status} />
 
       <WallpaperPicker open={picking} title="Image du fond animé" onClose={() => setPicking(false)} onPick={(w) => useLive.setState({ wallpaper: w })} />
     </>

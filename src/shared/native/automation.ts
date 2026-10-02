@@ -286,6 +286,18 @@ export interface LivePlaylist {
   unlock?: boolean;
 }
 
+/** Dernier relevé de la météo animée (natif) : code WMO, lieu et heure du relevé (ms). */
+export interface LiveWeatherStatus {
+  code: number;
+  isDay: boolean;
+  /** Précipitations (mm) et vent (km/h). */
+  precipitation: number;
+  wind: number;
+  latitude: number;
+  longitude: number;
+  updatedAt: number;
+}
+
 export interface LiveStatus {
   active: boolean;
   intensity: number;
@@ -298,6 +310,8 @@ export interface LiveStatus {
   paused: boolean;
   /** `count` : images prêtes (préparées sur l'appareil), `every` : déverrouillages entre deux changements. */
   playlist: { enabled: boolean; count: number; every: number; unlock?: boolean };
+  /** Météo animée : dernier relevé, absent tant qu'aucun n'a été fait. */
+  weather?: LiveWeatherStatus;
 }
 
 /** Genre, options communes et réglages propres au genre (objet libre, lu par la scène native). */
@@ -331,6 +345,8 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
   activated = false;
   /** Tests : fond figé (économie d'énergie). */
   paused = false;
+  /** Tests : dernier relevé de la météo animée (fait par le natif quand le fond est visible). */
+  weather: LiveWeatherStatus | undefined;
 
   constructor() {
     super();
@@ -377,6 +393,7 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
         every: playlist?.every ?? 1,
         unlock: playlist?.unlock ?? true,
       },
+      ...(this.weather ? { weather: { ...this.weather } } : {}),
     };
   }
 }

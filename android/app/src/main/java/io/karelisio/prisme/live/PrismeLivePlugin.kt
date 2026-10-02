@@ -37,7 +37,7 @@ class PrismeLivePlugin : Plugin() {
     @PluginMethod
     fun getStatus(call: PluginCall) {
         val config = LiveWallpaperStore.read(context)
-        call.resolve(
+        val status =
             JSObject()
                 .put("active", LiveWallpaperStore.isActive(context))
                 .put("intensity", config.intensity.toDouble())
@@ -54,8 +54,22 @@ class PrismeLivePlugin : Plugin() {
                         .put("count", config.playlist.paths.size)
                         .put("every", config.playlist.every)
                         .put("unlock", config.playlist.unlock),
-                ),
-        )
+                )
+        // Dernier relevé de la météo animée (lieu et heure), pour l'état affiché dans l'app.
+        LiveWeather.read(context)?.let {
+            status.put(
+                "weather",
+                JSObject()
+                    .put("code", it.code)
+                    .put("isDay", it.isDay)
+                    .put("precipitation", it.precipitation.toDouble())
+                    .put("wind", it.windKmh.toDouble())
+                    .put("latitude", it.latitude)
+                    .put("longitude", it.longitude)
+                    .put("updatedAt", it.fetchedAt),
+            )
+        }
+        call.resolve(status)
     }
 
     @PluginMethod

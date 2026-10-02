@@ -1,0 +1,16 @@
+/* Fonds animés « Dégradé » et « Particules », météo animée. */
+
+.motion-tile[aria-pressed='true'] {
+  color: var(--md-sys-color-primary);
+}
+
+.motion-tile[aria-pressed='true'] canvas {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 1px var(--md-sys-color-primary);
+}
+
+.live-weather {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}

@@ -111,6 +111,8 @@ import label from '@material-symbols/svg-400/rounded/label.svg?raw';
 import hideImage from '@material-symbols/svg-400/rounded/hide_image.svg?raw';
 import trendingUp from '@material-symbols/svg-400/rounded/trending_up.svg?raw';
 import touchApp from '@material-symbols/svg-400/rounded/touch_app.svg?raw';
+import bubble from '@material-symbols/svg-400/rounded/bubble.svg?raw';
+import flare from '@material-symbols/svg-400/rounded/flare.svg?raw';
 
 export const ICONS = {
   search,
@@ -224,6 +226,8 @@ export const ICONS = {
   hideImage,
   trendingUp,
   touchApp,
+  bubble,
+  flare,
 } as const;
 
 export type IconName = keyof typeof ICONS;
