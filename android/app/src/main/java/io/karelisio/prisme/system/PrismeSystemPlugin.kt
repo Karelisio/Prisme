@@ -2,6 +2,7 @@ package io.karelisio.prisme.system
 
 import android.app.Activity
 import android.app.StatusBarManager
+import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.drawable.Icon
@@ -26,6 +27,7 @@ import com.getcapacitor.annotation.PermissionCallback
 import io.karelisio.prisme.R
 import io.karelisio.prisme.quick.NextWallpaperTileService
 import io.karelisio.prisme.wallpaper.WallpaperException
+import io.karelisio.prisme.widget.PrismeWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,8 +38,8 @@ import java.io.File
 
 /**
  * Services de l'app hors fonds d'écran : version et mises à jour, réseau, vibrations, fichiers
- * (sauvegarde), partage de texte, journal d'erreurs, notification du jour et actions lancées
- * depuis les raccourcis.
+ * (sauvegarde), partage de texte, journal d'erreurs, notification du jour, actions lancées
+ * depuis les raccourcis, tuile des Réglages rapides et widget d'accueil.
  */
 @CapacitorPlugin(
     name = "PrismeSystem",
@@ -291,6 +293,28 @@ class PrismeSystemPlugin : Plugin() {
             }
             call.resolve(JSObject().put("result", status))
         }
+    }
+
+    /**
+     * Android 8+ : demande au lanceur de poser le widget d'accueil (il affiche sa propre confirmation).
+     * `requested` : la demande est partie ; `unsupported` : le lanceur ne sait pas poser de widget
+     * (ou Android trop ancien), l'utilisateur le trouve dans la liste des widgets.
+     */
+    @PluginMethod
+    fun requestPinWidget(call: PluginCall) {
+        if (Build.VERSION.SDK_INT < 26) {
+            call.resolve(JSObject().put("result", "unsupported"))
+            return
+        }
+        pinWidget(call)
+    }
+
+    @RequiresApi(26)
+    private fun pinWidget(call: PluginCall) {
+        val manager = AppWidgetManager.getInstance(context)
+        val provider = ComponentName(context, PrismeWidgetProvider::class.java)
+        val requested = manager.isRequestPinAppWidgetSupported && manager.requestPinAppWidget(provider, null, null)
+        call.resolve(JSObject().put("result", if (requested) "requested" else "unsupported"))
     }
 
     /** Notification « Fond du jour » ; avec `prompt`, demande l'autorisation (Android 13+) si besoin. */

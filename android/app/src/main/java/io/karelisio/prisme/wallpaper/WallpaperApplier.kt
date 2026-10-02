@@ -10,6 +10,7 @@ import androidx.core.content.edit
 import androidx.core.graphics.ColorUtils
 import io.karelisio.prisme.automation.AutomationStore
 import io.karelisio.prisme.automation.EveningDim
+import io.karelisio.prisme.widget.WidgetUpdater
 import java.io.File
 import java.io.IOException
 
@@ -32,6 +33,8 @@ internal class WallpaperApplier(private val context: Context) {
             val level = EveningDim.current(context)
             setDimmed(manager, bitmap, level, target)
             current.recordLevel(target, level)
+            // Aperçu du widget d'accueil (jamais bloquant : ses erreurs vont dans le journal).
+            WidgetUpdater(context).onWallpaperApplied(bitmap, target)
         } finally {
             bitmap.recycle()
         }

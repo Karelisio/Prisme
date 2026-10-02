@@ -108,6 +108,7 @@ import notifications from '@material-symbols/svg-400/rounded/notifications.svg?r
 import label from '@material-symbols/svg-400/rounded/label.svg?raw';
 import hideImage from '@material-symbols/svg-400/rounded/hide_image.svg?raw';
 import trendingUp from '@material-symbols/svg-400/rounded/trending_up.svg?raw';
+import widgets from '@material-symbols/svg-400/rounded/widgets.svg?raw';
 
 export const ICONS = {
   search,
@@ -218,6 +219,7 @@ export const ICONS = {
   label,
   hideImage,
   trendingUp,
+  widgets,
 } as const;
 
 export type IconName = keyof typeof ICONS;

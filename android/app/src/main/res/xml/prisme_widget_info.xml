@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget d'accueil : redimensionnable, 2×2 cases au minimum. Pas de mise à jour périodique : l'aperçu change
+     quand Prisme pose un fond (voir WidgetUpdater). Android 12+ : taille par défaut en cases et aperçu en layout
+     (couleurs Material You de l'utilisateur) ; l'image sert avant Android 12 et de secours aux lanceurs qui ignorent le layout. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_prisme"
+    android:minHeight="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="110dp"
+    android:previewImage="@drawable/widget_preview"
+    android:previewLayout="@layout/widget_prisme_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    tools:targetApi="31" />

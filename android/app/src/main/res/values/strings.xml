@@ -26,4 +26,9 @@
     <string name="daily_channel_description">Une sélection de fond d\'écran chaque jour, à l\'heure choisie dans Prisme</string>
     <string name="daily_title">Ton fond du jour est prêt</string>
     <string name="daily_text">Touche pour le découvrir et l\'appliquer</string>
+    <string name="widget_name">Fond d\'écran</string>
+    <string name="widget_description">Aperçu du fond actuel et bouton pour passer au suivant.</string>
+    <string name="widget_preview_description">Fond d\'écran actuel. Touche pour ouvrir Prisme</string>
+    <string name="widget_next">Fond suivant</string>
+    <string name="widget_changing">Changement…</string>
 </resources>
