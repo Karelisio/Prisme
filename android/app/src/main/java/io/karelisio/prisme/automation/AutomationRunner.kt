@@ -39,7 +39,14 @@ internal object AutomationRunner {
         val env = Environment(moment, battery?.level, battery?.charging == true, weather(store, config, moment.epochMillis))
         val stored = store.state()
         val previous = if (force) stored.copy(appliedHome = null, appliedLock = null) else stored
-        val decision = RulesEngine.decide(config, env, previous, AppliedWallpapers(context)::lastManual, nextOnline = { pickOnline(context, config) })
+        val decision = RulesEngine.decide(
+            config,
+            env,
+            previous,
+            AppliedWallpapers(context)::lastManual,
+            nextOnline = { pickOnline(context, config) },
+            overrides = Overrides.compute(context, config, moment),
+        )
 
         val outcome = try {
             store.saveState(apply(context, decision, files, store, config).copy(lastRunAt = moment.epochMillis))

@@ -61,7 +61,7 @@ export interface AutomationLogEntry {
   target: WallpaperTarget;
   at: number;
   /** « quick » : tuile ou raccourci de l'icône (choix de l'utilisateur, pas un automatisme). */
-  reason: 'focus' | 'dynamic' | 'rotation' | 'restore' | 'quick';
+  reason: 'focus' | 'event' | 'place' | 'dynamic' | 'rotation' | 'restore' | 'quick';
   /** Fond trouvé en ligne par la rotation : sa description complète (forme `Wallpaper`). */
   wallpaper?: unknown;
 }

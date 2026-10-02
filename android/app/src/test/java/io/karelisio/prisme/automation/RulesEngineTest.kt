@@ -233,4 +233,34 @@ class RulesEngineTest {
         assertEquals(14 * 60 + 30, m.minuteOfDay)
         assertEquals(10, m.month)
     }
+
+    @Test
+    fun `fête ou lieu prioritaire sur la rotation, puis retour à la rotation ou au fond manuel`() {
+        val rotation = AutomationConfig(rotation = RotationConfig(enabled = true, items = listOf(ref("a"), ref("b"))))
+        val override = Override(ref("noel"), WallpaperTarget.HOME, Reason.EVENT)
+        val during = RulesEngine.decide(rotation, Environment(at(10)), AutomationState(), noManual, overrides = listOf(override))
+        assertEquals(Reason.EVENT, during.reason)
+        assertEquals("noel", during.home?.id)
+        assertNull(during.lock)
+        assertEquals(WallpaperTarget.HOME, during.state.overrideTarget)
+
+        val after = RulesEngine.decide(rotation, Environment(at(11)), during.state, noManual)
+        assertEquals(Reason.ROTATION, after.reason)
+        assertNull(after.state.overrideTarget)
+
+        // Sans autre automatisme : le fond choisi à la main revient, sur l'écran concerné seulement.
+        val manual = mapOf(WallpaperTarget.HOME to ref("maison"), WallpaperTarget.LOCK to ref("verrou"))
+        val restored = RulesEngine.decide(AutomationConfig(), Environment(at(11)), during.state, { manual[it] })
+        assertEquals(Reason.RESTORE, restored.reason)
+        assertEquals("maison", restored.home?.id)
+        assertNull(restored.lock)
+        assertNull(restored.state.overrideTarget)
+    }
+
+    @Test
+    fun `le mode focus reste prioritaire sur une fête`() {
+        val config = AutomationConfig(focus = workFocus)
+        val decision = RulesEngine.decide(config, Environment(at(10)), AutomationState(), noManual, overrides = listOf(Override(ref("noel"), WallpaperTarget.BOTH, Reason.EVENT)))
+        assertEquals(Reason.FOCUS, decision.reason)
+    }
 }

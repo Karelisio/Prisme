@@ -26,7 +26,15 @@ data class AutomationState(
     val lastRunAt: Long = 0,
     /** Rotation en ligne : fond en cours, jusqu'au prochain changement. */
     val onlineRef: WallpaperRef? = null,
+    /** Écran(s) occupé(s) par un automatisme prioritaire (fête, lieu) ; null si aucun. */
+    val overrideTarget: WallpaperTarget? = null,
 )
+
+/**
+ * Automatisme prioritaire sur les fonds dynamiques et la rotation (fête du jour, lieu) : le premier
+ * de la liste fournie au moteur l'emporte.
+ */
+data class Override(val ref: WallpaperRef, val target: WallpaperTarget, val reason: Reason)
 
 /** Résultat d'un fond dynamique : un fond, rien à changer (donnée inconnue), ou aucun fond prévu. */
 sealed interface DynamicChoice {
@@ -35,7 +43,7 @@ sealed interface DynamicChoice {
     data object Unset : DynamicChoice
 }
 
-enum class Reason { FOCUS, DYNAMIC, ROTATION, RESTORE, NONE }
+enum class Reason { FOCUS, EVENT, PLACE, DYNAMIC, ROTATION, RESTORE, NONE }
 
 /** Fonds voulus par écran (null = ne rien changer) ; [retry] : réessayer bientôt (source injoignable). */
 data class Decision(
@@ -47,9 +55,9 @@ data class Decision(
 )
 
 /**
- * Logique pure, testée sur JVM. Priorités : mode focus > fonds dynamiques > rotation.
- * Quand le focus se termine, ou qu'aucun fond dynamique n'est prévu pour la situation, et qu'aucun
- * autre automatisme ne prend le relais, on restaure le dernier fond choisi à la main.
+ * Logique pure, testée sur JVM. Priorités : mode focus > fête du jour > lieu > fonds dynamiques >
+ * rotation. Quand un automatisme prioritaire se termine, ou qu'aucun fond dynamique n'est prévu pour
+ * la situation, et qu'aucun autre ne prend le relais, on restaure le dernier fond choisi à la main.
  */
 object RulesEngine {
     private const val MINUTES_PER_DAY = 24 * 60
@@ -57,16 +65,24 @@ object RulesEngine {
     fun decide(
         config: AutomationConfig,
         env: Environment,
-        state: AutomationState,
+        previous: AutomationState,
         lastManual: (WallpaperTarget) -> WallpaperRef?,
         random: Random = Random.Default,
         nextOnline: () -> OnlinePick = { OnlinePick.Failed },
+        overrides: List<Override> = emptyList(),
     ): Decision {
         val focus = config.focus
         if (focusActive(focus, env.moment)) {
             val ref = focus.ref!!
-            return decision(ref, focus.target, Reason.FOCUS, state.copy(focusApplied = true))
+            return decision(ref, focus.target, Reason.FOCUS, previous.copy(focusApplied = true))
         }
+
+        overrides.firstOrNull()?.let { o ->
+            return decision(o.ref, o.target, o.reason, previous.copy(focusApplied = false, dynamicApplied = false, overrideTarget = o.target))
+        }
+        // Plus d'automatisme prioritaire : la suite décide (ou restaure le fond manuel).
+        val previousOverride = previous.overrideTarget
+        val state = previous.copy(overrideTarget = null)
 
         val dynamic = config.dynamic
         if (dynamic.enabled) {
@@ -84,7 +100,7 @@ object RulesEngine {
             val rotating = state.copy(focusApplied = false, dynamicApplied = false)
             val current = state.onlineRef
             val due = current == null || env.moment.epochMillis - state.lastRotationAt >= rotation.intervalMinutes * 60_000L
-            if (!due) return decision(current!!, rotation.target, Reason.ROTATION, rotating)
+            if (!due) return decision(current, rotation.target, Reason.ROTATION, rotating)
             return when (val pick = nextOnline()) {
                 is OnlinePick.Ready ->
                     decision(pick.ref, rotation.target, Reason.ROTATION, rotating.copy(onlineRef = pick.ref, lastRotationAt = env.moment.epochMillis))
@@ -107,8 +123,8 @@ object RulesEngine {
             return decision(rotation.items[next.rotationIndex], rotation.target, Reason.ROTATION, next.copy(focusApplied = false, dynamicApplied = false))
         }
 
-        if (state.focusApplied || state.dynamicApplied) {
-            val targets = listOfNotNull(focus.target.takeIf { state.focusApplied }, dynamic.target.takeIf { state.dynamicApplied })
+        if (state.focusApplied || state.dynamicApplied || previousOverride != null) {
+            val targets = listOfNotNull(focus.target.takeIf { state.focusApplied }, dynamic.target.takeIf { state.dynamicApplied }, previousOverride)
             val home = targets.any { it != WallpaperTarget.LOCK }
             val lock = targets.any { it != WallpaperTarget.HOME }
             return Decision(

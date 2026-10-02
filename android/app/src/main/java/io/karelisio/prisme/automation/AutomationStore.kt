@@ -2,6 +2,7 @@ package io.karelisio.prisme.automation
 
 import android.content.Context
 import io.karelisio.prisme.wallpaper.WallpaperRef
+import io.karelisio.prisme.wallpaper.WallpaperTarget
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
@@ -30,6 +31,7 @@ internal class AutomationStore(context: Context) {
                 dynamicApplied = json.optBoolean("dynamicApplied"),
                 lastRunAt = json.optLong("lastRunAt"),
                 onlineRef = WallpaperRef.fromJson(json.optJSONObject("onlineRef")),
+                overrideTarget = WallpaperTarget.fromKey(json.optString("overrideTarget")),
             )
         }.getOrDefault(AutomationState())
     }
@@ -44,6 +46,7 @@ internal class AutomationStore(context: Context) {
             .put("dynamicApplied", state.dynamicApplied)
             .put("lastRunAt", state.lastRunAt)
         state.onlineRef?.let { json.put("onlineRef", it.toJson()) }
+        state.overrideTarget?.let { json.put("overrideTarget", it.key) }
         prefs.edit().putString(KEY_STATE, json.toString()).apply()
     }
 
