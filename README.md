@@ -39,21 +39,27 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
 **Options** (désactivées par défaut, *Réglages → Options avancées*)
 - Fonds dynamiques : selon l'heure (heures fixes ou lever/coucher du soleil de ta ville), la météo
   (Open-Meteo, sans clé), la saison, la batterie ou le mode sombre du téléphone.
-- Fond animé avec parallaxe (capteur coupé quand le fond est masqué ou en économie d'énergie).
+- Fond animé avec parallaxe (capteur coupé quand le fond est masqué ou en économie d'énergie) ;
+  option « à chaque déverrouillage » : nouvelle image d'une liste (favoris, collection) tous les N
+  déverrouillages, avec un fondu.
 - Rotation à intervalle (WorkManager, 15 min à 24 h) : fonds pris au hasard en ligne (thème, mot-clé
   ou « Pour toi », sources activées, Wi-Fi seulement en option ; recherché par le natif, app fermée,
   3 fonds préchargés pour changer hors ligne), parmi les favoris et collections, ou les photos d'un
   dossier du téléphone ; rotation intelligente (pas de répétition, teintes variées, sombre la nuit).
 - Fêtes et dates perso : Noël, Halloween, Pâques, anniversaires… fond choisi ou thème trouvé en ligne.
 - Assombrir le soir : voile progressif après le coucher du soleil, effacé avant le lever.
+- Selon le lieu : un fond par lieu (maison, travail…), rayon réglable ; position lue app fermée.
+- Pochette de la musique : le fond devient la pochette du morceau en cours (fond flouté autour),
+  puis le fond précédent revient quand la musique s'arrête.
 - Éditeur : flou, assombrissement, grain, dégradé, texte, noir et blanc.
 - Générateur de fonds minimalistes (uni, dégradés, aurore, vagues, formes).
 - Aperçu de la palette Material You que donnera un fond.
 - Fonds accueil/verrouillage liés (variante floue, sombre, gros plan…).
 - Mode focus : fond épuré pendant des plages horaires, puis retour au fond habituel.
 
-Les automatismes tournent app fermée. Priorités : mode focus, fête du jour, lieu, fonds
-dynamiques, puis rotation ; quand l'un se termine, le suivant reprend ou le fond choisi à la main revient.
+Les automatismes tournent app fermée. Priorités : pochette de la musique, mode focus, fête du jour,
+lieu, fonds dynamiques, puis rotation ; quand l'un se termine, le suivant reprend ou le fond choisi à
+la main revient.
 
 ## Installer l'APK
 
@@ -102,12 +108,15 @@ installable par-dessus l'app existante.
 | `SET_WALLPAPER` | Appliquer les fonds |
 | `INTERNET` | Sources d'images, Open-Meteo, packs, mises à jour |
 | `ACCESS_COARSE_LOCATION` | Météo des fonds dynamiques, seulement si « Ma position » est utilisé |
+| `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION` | « Selon le lieu » seulement : savoir où tu es, app fermée |
 | `ACCESS_NETWORK_STATE` | « HD seulement en Wi-Fi » : savoir si la connexion est limitée |
 | `REQUEST_INSTALL_PACKAGES` | Mises à jour intégrées (Android demande l'accord une fois) |
 | `WRITE_EXTERNAL_STORAGE` | Enregistrer dans la galerie, Android 9 et moins seulement |
 | `POST_NOTIFICATIONS` | Notification « Fond du jour », demandée seulement si elle est activée (Android 13+) |
 
 L'import passe par le sélecteur de photos du système : aucune permission de lecture du stockage.
+« Pochette de la musique » demande l'accès aux notifications dans les réglages Android : il sert
+seulement à voir le morceau en cours (aucune notification n'est lue).
 
 ## Publier une version
 
@@ -142,8 +151,9 @@ src/
     preview/              aperçu, recadrage, simulation, application
     library/              favoris, collections, historique, hors ligne, créations
     settings/             réglages et options avancées
-    automation/           fonds dynamiques, rotation, mode focus (configuration)
-    live/                 fond animé
+    automation/           fonds dynamiques, rotation, mode focus, fêtes, soir, lieux (configuration)
+    live/                 fond animé, liste « à chaque déverrouillage »
+    music/                pochette de la musique
     editor/               éditeur
     generator/            générateur
     palette/              palette Material You
@@ -154,8 +164,9 @@ src/
   shared/                 thème Material 3, composants, ponts natifs, utilitaires
 android/app/src/main/java/io/karelisio/prisme/
   wallpaper/              application des fonds, cache d'images, import, thème système
-  automation/             moteur de règles, WorkManager, météo
-  live/                   service de fond animé (parallaxe)
+  automation/             moteur de règles, WorkManager, météo, soleil, fêtes, lieux, dossier
+  live/                   service de fond animé (parallaxe, déverrouillage)
+  music/                  écoute des sessions média, composition de la pochette
   quick/                  tuile « Fond suivant », raccourcis de l'icône
   system/                 version, mises à jour, réseau, fichiers, vibrations, journal d'erreurs,
                           notification « Fond du jour »
