@@ -10,6 +10,7 @@ export const PATTERN_KINDS = ['geometric', 'dots', 'wavy', 'bauhaus', 'stripes',
 export type PatternKind = (typeof PATTERN_KINDS)[number];
 
 export type GeometricShape = 'triangles' | 'hexagons' | 'diamonds';
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 export const GEOMETRIC_SHAPES: readonly { value: GeometricShape; label: string }[] = [
   { value: 'triangles', label: 'Triangles' },
   { value: 'hexagons', label: 'Hexagones' },

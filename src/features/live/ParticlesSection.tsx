@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { Chip, SegmentedButtons } from '@/shared/ui/components';
 import { LiveActivateButton } from './LiveActivate';
 import { PaletteTiles, useAccentSync } from './PaletteTiles';
@@ -5,6 +6,7 @@ import { activateLiveMode, useSceneSettings } from './live';
 import type { ModeSectionProps } from './modes';
 import { PARTICLES_DEFAULTS, PARTICLE_BACKGROUNDS, PARTICLE_COLORS, PARTICLE_STYLES, type ParticlesSettings } from './motion';
 
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 const TOUCH_OPTIONS: readonly { value: ParticlesSettings['touch']; label: string }[] = [
   { value: 'repel', label: 'Repousser' },
   { value: 'attract', label: 'Attirer' },
@@ -21,23 +23,24 @@ export function ParticlesSection({ optionOn, status, refresh }: ModeSectionProps
   return (
     <>
       <p className="option-hint option-hint--padded">
-        Des particules qui suivent l’inclinaison du téléphone et réagissent quand tu touches l’écran d’accueil. Avec le
-        double-tap, une gerbe d’étincelles jaillit au centre.
+        {t(
+          'Des particules qui suivent l’inclinaison du téléphone et réagissent quand tu touches l’écran d’accueil. Avec le double-tap, une gerbe d’étincelles jaillit au centre.',
+        )}
       </p>
 
       <div className="option-block">
-        <h2 className="option-block__title">Style</h2>
-        <div className="chip-wrap" role="group" aria-label="Style de particules">
+        <h2 className="option-block__title">{t('Style')}</h2>
+        <div className="chip-wrap" role="group" aria-label={t('Style de particules')}>
           {PARTICLE_STYLES.map((s) => (
             <Chip key={s.value} icon={s.icon} selected={settings.style === s.value} onClick={() => update({ style: s.value })}>
-              {s.label}
+              {t(s.label)}
             </Chip>
           ))}
         </div>
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Densité</h2>
+        <h2 className="option-block__title">{t('Densité')}</h2>
         <input
           className="slider"
           type="range"
@@ -45,46 +48,56 @@ export function ParticlesSection({ optionOn, status, refresh }: ModeSectionProps
           max={1}
           step={0.05}
           value={settings.density}
-          aria-label="Densité des particules"
+          aria-label={t('Densité des particules')}
           onChange={(e) => update({ density: Number(e.target.value) })}
         />
         <div className="live-scale">
-          <span>Clairsemées</span>
-          <span>Nombreuses</span>
+          <span>{t('Clairsemées')}</span>
+          <span>{t('Nombreuses')}</span>
         </div>
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Toucher</h2>
-        <SegmentedButtons label="Effet du toucher" options={TOUCH_OPTIONS} value={settings.touch} onChange={(touch) => update({ touch })} />
+        <h2 className="option-block__title">{t('Toucher')}</h2>
+        <SegmentedButtons
+          label={t('Effet du toucher')}
+          options={TOUCH_OPTIONS.map((option) => ({ ...option, label: t(option.label) }))}
+          value={settings.touch}
+          onChange={(touch) => update({ touch })}
+        />
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Fond</h2>
-        <SegmentedButtons label="Fond des particules" options={PARTICLE_BACKGROUNDS} value={settings.background} onChange={(background) => update({ background })} />
+        <h2 className="option-block__title">{t('Fond')}</h2>
+        <SegmentedButtons
+          label={t('Fond des particules')}
+          options={PARTICLE_BACKGROUNDS.map((option) => ({ ...option, label: t(option.label) }))}
+          value={settings.background}
+          onChange={(background) => update({ background })}
+        />
         {settings.background === 'photo' && (
           <p className="option-hint">
             {status?.configured
-              ? 'L’image du genre Photo, légèrement assombrie.'
-              : 'Choisis d’abord une image dans le genre Photo ; en attendant, le dégradé est affiché.'}
+              ? t('L’image du genre Photo, légèrement assombrie.')
+              : t('Choisis d’abord une image dans le genre Photo ; en attendant, le dégradé est affiché.')}
           </p>
         )}
       </div>
 
       {settings.background === 'gradient' && (
         <div className="option-block">
-          <h2 className="option-block__title">Palette du fond</h2>
-          <PaletteTiles label="Palette du fond" value={settings.palette} gain={BACKGROUND_GAIN} onChange={(palette) => update({ palette })} />
+          <h2 className="option-block__title">{t('Palette du fond')}</h2>
+          <PaletteTiles label={t('Palette du fond')} value={settings.palette} gain={BACKGROUND_GAIN} onChange={(palette) => update({ palette })} />
         </div>
       )}
 
       {settings.background === 'color' && (
         <div className="option-block">
-          <h2 className="option-block__title">Couleur du fond</h2>
-          <div className="chip-wrap" role="group" aria-label="Couleur du fond">
+          <h2 className="option-block__title">{t('Couleur du fond')}</h2>
+          <div className="chip-wrap" role="group" aria-label={t('Couleur du fond')}>
             {PARTICLE_COLORS.map((c) => (
               <Chip key={c.value} swatch={c.value} selected={settings.color === c.value} onClick={() => update({ color: c.value })}>
-                {c.label}
+                {t(c.label)}
               </Chip>
             ))}
           </div>

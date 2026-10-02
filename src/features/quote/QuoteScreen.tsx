@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { goBack } from '@/app/navigation';
 import { TargetChips } from '@/features/automation/components';
 import { useSettings } from '@/features/settings/store';
+import { getLanguage, t } from '@/shared/i18n';
 import { useScreenInfo, screenRatio } from '@/shared/lib/screen';
 import { Button, Chip, Icon, IconButton, SegmentedButtons, Switch } from '@/shared/ui/components';
 import type { QuoteScreen as ScreenKind, QuoteStyle } from './layout';
@@ -32,7 +33,7 @@ function Choice<T extends string>({ label, options, value, onChange }: { label: 
       <div className="chip-wrap" role="group" aria-label={label}>
         {options.map((option) => (
           <Chip key={option.value} selected={value === option.value} onClick={() => onChange(option.value)}>
-            {option.label}
+            {t(option.label)}
           </Chip>
         ))}
       </div>
@@ -63,19 +64,20 @@ export function QuoteScreen() {
   return (
     <div className="screen overlay-screen option-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Citation du jour</h1>
-        <Switch label="Activer la citation du jour" checked={enabled} onChange={(v) => setFeature('quote', v)} />
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Citation du jour')}</h1>
+        <Switch label={t('Activer la citation du jour')} checked={enabled} onChange={(v) => setFeature('quote', v)} />
       </header>
       <p className="option-intro">
-        Une phrase posée sur ton fond d’écran, renouvelée chaque matin vers 6 h, même app fermée. Elle s’ajoute aux fonds que Prisme
-        applique : l’image d’origine est gardée intacte, et le voile du soir se pose par-dessus.
+        {t(
+          'Une phrase posée sur ton fond d’écran, renouvelée chaque matin vers 6 h, même app fermée. Elle s’ajoute aux fonds que Prisme applique : l’image d’origine est gardée intacte, et le voile du soir se pose par-dessus.',
+        )}
       </p>
 
       {kind && (
         <div className="option-status" role="status">
           <Icon name={QUOTE_STATUS[kind].icon} />
-          {QUOTE_STATUS[kind].text}
+          {t(QUOTE_STATUS[kind].text)}
         </div>
       )}
 
@@ -83,51 +85,59 @@ export function QuoteScreen() {
         <QuotePreview quote={today} style={style} screen={shown} background={background} ratio={screenRatio(screenInfo)} />
         {target === 'both' && (
           <SegmentedButtons
-            label="Aperçu sur"
+            label={t('Aperçu sur')}
             options={[
-              { value: 'lock', label: 'Verrouillage' },
-              { value: 'home', label: 'Accueil' },
+              { value: 'lock', label: t('Verrouillage') },
+              { value: 'home', label: t('Accueil') },
             ]}
             value={previewScreen}
             onChange={setPreviewScreen}
           />
         )}
-        <div className="chip-wrap quote-stage__backgrounds" role="group" aria-label="Fond de l’aperçu">
+        <div className="chip-wrap quote-stage__backgrounds" role="group" aria-label={t('Fond de l’aperçu')}>
           {PREVIEW_BACKGROUNDS.map((choice) => (
             <Chip key={choice.value} selected={background === choice.value} onClick={() => setBackground(choice.value)}>
-              {choice.label}
+              {t(choice.label)}
             </Chip>
           ))}
         </div>
         {today && (
-          <figure className="quote-today" aria-label="Phrase du jour">
+          <figure className="quote-today" aria-label={t('Phrase du jour')}>
             <blockquote>{today.text}</blockquote>
             {today.author && <figcaption>— {today.author}</figcaption>}
           </figure>
         )}
         <Button variant="tonal" icon="shuffle" onClick={another} disabled={list.length < 2}>
-          Une autre
+          {t('Une autre')}
         </Button>
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Écran</h2>
-        <TargetChips value={target} onChange={(t) => update({ target: t })} />
+        <h2 className="option-block__title">{t('Écran')}</h2>
+        <TargetChips value={target} onChange={(next) => update({ target: next })} />
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Source</h2>
-        <SegmentedButtons label="Source" options={SOURCE_CHOICES} value={source} onChange={(v) => update({ source: v })} />
-        {noCustom && <p className="option-hint">Aucune citation perso pour l’instant : les proverbes sont utilisés.</p>}
+        <h2 className="option-block__title">{t('Source')}</h2>
+        <SegmentedButtons
+          label={t('Source')}
+          options={SOURCE_CHOICES.map((choice) => ({ ...choice, label: t(choice.label) }))}
+          value={source}
+          onChange={(v) => update({ source: v })}
+        />
+        {noCustom && <p className="option-hint">{t('Aucune citation perso pour l’instant : les proverbes sont utilisés.')}</p>}
+        {/* Les proverbes sont du contenu, pas de l'interface : ils restent en français quel que soit la langue choisie. */}
+        {getLanguage() !== 'fr' && <p className="option-hint">{t('Les proverbes sont en français.')}</p>}
       </div>
 
-      <Choice label="Police" options={FONT_CHOICES} value={font} onChange={(v) => update({ font: v })} />
-      <Choice label="Position" options={POSITION_CHOICES} value={position} onChange={(v) => update({ position: v })} />
-      <Choice label="Taille" options={SIZE_CHOICES} value={size} onChange={(v) => update({ size: v })} />
-      <Choice label="Couleur" options={COLOR_CHOICES} value={color} onChange={(v) => update({ color: v })} />
+      <Choice label={t('Police')} options={FONT_CHOICES} value={font} onChange={(v) => update({ font: v })} />
+      <Choice label={t('Position')} options={POSITION_CHOICES} value={position} onChange={(v) => update({ position: v })} />
+      <Choice label={t('Taille')} options={SIZE_CHOICES} value={size} onChange={(v) => update({ size: v })} />
+      <Choice label={t('Couleur')} options={COLOR_CHOICES} value={color} onChange={(v) => update({ color: v })} />
       <p className="option-hint option-hint--padded">
-        En automatique, le texte est blanc ou noir selon la luminosité du fond à l’endroit où il se pose, avec un voile léger et une
-        ombre pour rester lisible. Au verrouillage, « Haut » se place sous l’horloge.
+        {t(
+          'En automatique, le texte est blanc ou noir selon la luminosité du fond à l’endroit où il se pose, avec un voile léger et une ombre pour rester lisible. Au verrouillage, « Haut » se place sous l’horloge.',
+        )}
       </p>
 
       <MyQuotes />

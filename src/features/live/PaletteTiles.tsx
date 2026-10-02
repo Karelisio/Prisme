@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { useTheme } from '@/shared/theme/ThemeController';
 import { MOTION_PALETTES, type MotionPalette, type MotionPaletteKey, paintMotionGradient, resolvePalette } from './motion';
 import './motion.css';
@@ -23,7 +24,7 @@ export function PaletteTiles({
       {MOTION_PALETTES.map((p) => (
         <PaletteTile
           key={p.key}
-          label={p.label}
+          label={t(p.label)}
           palette={resolvePalette(p.key, system, seed)}
           gain={gain}
           selected={value === p.key}
@@ -44,7 +45,7 @@ function PaletteTile({ label, palette, gain, selected, onPick }: { label: string
     // Repeint seulement quand les couleurs changent (l'objet palette est recréé à chaque rendu).
   }, [colors]);
   return (
-    <button type="button" className="preset-tile motion-tile" aria-pressed={selected} aria-label={`Palette ${label}`} onClick={onPick}>
+    <button type="button" className="preset-tile motion-tile" aria-pressed={selected} aria-label={t('Palette {label}', { label })} onClick={onPick}>
       <canvas ref={ref} width={90} height={200} className="preset" />
       <span>{label}</span>
     </button>

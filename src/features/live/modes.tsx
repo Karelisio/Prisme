@@ -18,6 +18,7 @@ export interface ModeSectionProps {
 
 export interface LiveModeDef {
   key: LiveMode;
+  /** En français (donnée) : `t(label)` à l'affichage. */
   label: string;
   icon: IconName;
   /** Réglages et bouton d'activation du genre. */

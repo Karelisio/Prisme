@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { applyUri } from '@/features/library/useImageSrc';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { PrismeLive, type ReliefInfo, type ReliefProgress } from '@/shared/native/automation';
 
 /** Réglages de la scène « Relief 3D », envoyés au natif avec le genre. */
@@ -34,15 +35,15 @@ export function reliefReady(info: ReliefInfo | undefined, wallpaper: Wallpaper |
 export function reliefStageLabel({ stage, progress }: ReliefProgress): string {
   switch (stage) {
     case 'image':
-      return 'Préparation de la photo…';
+      return t('Préparation de la photo…');
     case 'module':
       return progress !== undefined && progress < 1
-        ? `Téléchargement du module de détourage… ${Math.round(progress * 100)} %`
-        : 'Téléchargement du module de détourage…';
+        ? t('Téléchargement du module de détourage… {percent} %', { percent: Math.round(progress * 100) })
+        : t('Téléchargement du module de détourage…');
     case 'segment':
-      return 'Détourage du sujet…';
+      return t('Détourage du sujet…');
     case 'compose':
-      return 'Comblement de l’arrière-plan…';
+      return t('Comblement de l’arrière-plan…');
   }
 }
 

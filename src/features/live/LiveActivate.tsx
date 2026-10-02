@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '@/shared/i18n';
 import { nativeErrorMessage } from '@/shared/native';
 import type { LiveComponent, LiveStatus } from '@/shared/native/automation';
 import { Button } from '@/shared/ui/components';
@@ -37,7 +38,7 @@ export function LiveActivateButton({
   return (
     <div className="option-actions">
       <Button icon="rotation3d" disabled={disabled || busy} onClick={() => void run()}>
-        {status?.component === component ? 'Mettre à jour' : 'Activer le fond animé'}
+        {status?.component === component ? t('Mettre à jour') : t('Activer le fond animé')}
       </Button>
     </div>
   );

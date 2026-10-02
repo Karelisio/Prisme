@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { LiveActivateButton } from './LiveActivate';
 import { MediaChoice } from './MediaChoice';
 import { activateVideo } from './live';
@@ -10,8 +11,10 @@ export function VideoSection({ optionOn, status, refresh }: ModeSectionProps) {
   return (
     <>
       <p className="option-hint option-hint--padded">
-        La vidéo tourne en boucle, sans le son, et se fige quand l’écran est éteint ou en économie de batterie. Elle est
-        copiée dans l’app ({MEDIA_LIMIT_MB.video} Mo au plus) ; une vidéo courte ménage la batterie.
+        {t(
+          'La vidéo tourne en boucle, sans le son, et se fige quand l’écran est éteint ou en économie de batterie. Elle est copiée dans l’app ({limit} Mo au plus) ; une vidéo courte ménage la batterie.',
+          { limit: MEDIA_LIMIT_MB.video },
+        )}
       </p>
       <MediaChoice kind="video" media={video} refresh={refresh} />
       <LiveActivateButton

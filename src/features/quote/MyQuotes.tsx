@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '@/shared/i18n';
 import { Button, Icon, IconButton, ListItem } from '@/shared/ui/components';
 import { BottomSheet, showSnackbar } from '@/shared/ui/overlays';
 import { type CustomQuote, MAX_CUSTOM_QUOTES, MAX_QUOTE_AUTHOR, MAX_QUOTE_TEXT } from './model';
@@ -18,12 +19,12 @@ function QuoteEditor({ quote, onClose }: { quote: CustomQuote | 'new' | null; on
   const save = () => {
     const saved = editing ? edit(editing.id, text, author) : add(text, author) !== null;
     if (!saved) return;
-    showSnackbar(editing ? 'Citation modifiée' : 'Citation ajoutée');
+    showSnackbar(editing ? t('Citation modifiée') : t('Citation ajoutée'));
     onClose();
   };
 
   return (
-    <BottomSheet open={quote !== null} onClose={onClose} title={editing ? 'Modifier la citation' : 'Nouvelle citation'}>
+    <BottomSheet open={quote !== null} onClose={onClose} title={editing ? t('Modifier la citation') : t('Nouvelle citation')}>
       <form
         className="sheet__form quote-form"
         onSubmit={(e) => {
@@ -33,7 +34,7 @@ function QuoteEditor({ quote, onClose }: { quote: CustomQuote | 'new' | null; on
       >
         <div className="text-field quote-form__field">
           <label className="text-field__label" htmlFor="quote-text">
-            Citation
+            {t('Citation')}
           </label>
           <textarea id="quote-text" value={text} maxLength={MAX_QUOTE_TEXT} rows={4} autoFocus onChange={(e) => setText(e.target.value)} />
           <span className="quote-form__count" aria-hidden="true">
@@ -42,16 +43,16 @@ function QuoteEditor({ quote, onClose }: { quote: CustomQuote | 'new' | null; on
         </div>
         <div className="text-field quote-form__field">
           <label className="text-field__label" htmlFor="quote-author">
-            Auteur (facultatif)
+            {t('Auteur (facultatif)')}
           </label>
           <input id="quote-author" value={author} maxLength={MAX_QUOTE_AUTHOR} onChange={(e) => setAuthor(e.target.value)} />
         </div>
         <div className="sheet__actions">
           <Button variant="text" onClick={onClose}>
-            Annuler
+            {t('Annuler')}
           </Button>
           <Button type="submit" disabled={!text.trim()}>
-            Enregistrer
+            {t('Enregistrer')}
           </Button>
         </div>
       </form>
@@ -70,16 +71,16 @@ export function MyQuotes() {
   const removeWithUndo = (quote: CustomQuote) => {
     const index = custom.findIndex((q) => q.id === quote.id);
     remove(quote.id);
-    showSnackbar('Citation supprimée', { label: 'Annuler', onAction: () => restore(quote, index) });
+    showSnackbar(t('Citation supprimée'), { label: t('Annuler'), onAction: () => restore(quote, index) });
   };
 
   return (
     <section className="option-block" aria-labelledby="my-quotes-title">
       <h2 className="option-block__title" id="my-quotes-title">
-        {custom.length > 0 ? `Mes citations (${custom.length})` : 'Mes citations'}
+        {custom.length > 0 ? t('Mes citations ({count})', { count: custom.length }) : t('Mes citations')}
       </h2>
       <p className="option-hint quote-hint">
-        Ajoute tes propres phrases (un mot doux, une devise…) puis choisis « Mes citations » ou « Les deux » comme source.
+        {t('Ajoute tes propres phrases (un mot doux, une devise…) puis choisis « Mes citations » ou « Les deux » comme source.')}
       </p>
       {custom.length > 0 && (
         <ul className="list quote-list">
@@ -91,8 +92,8 @@ export function MyQuotes() {
                 supporting={quote.author ? `— ${quote.author}` : undefined}
                 trailing={
                   <span className="quote-list__actions">
-                    <IconButton icon="edit" label={`Modifier la citation « ${short(quote.text)} »`} onClick={() => setEditor(quote)} />
-                    <IconButton icon="delete" label={`Supprimer la citation « ${short(quote.text)} »`} onClick={() => removeWithUndo(quote)} />
+                    <IconButton icon="edit" label={t('Modifier la citation « {text} »', { text: short(quote.text) })} onClick={() => setEditor(quote)} />
+                    <IconButton icon="delete" label={t('Supprimer la citation « {text} »', { text: short(quote.text) })} onClick={() => removeWithUndo(quote)} />
                   </span>
                 }
               />
@@ -102,10 +103,10 @@ export function MyQuotes() {
       )}
       <div className="option-actions quote-actions">
         <Button variant="tonal" icon="add" disabled={full} onClick={() => setEditor('new')}>
-          Ajouter une citation
+          {t('Ajouter une citation')}
         </Button>
       </div>
-      {full && <p className="option-hint">Limite de {MAX_CUSTOM_QUOTES} citations atteinte : supprime-en pour en ajouter.</p>}
+      {full && <p className="option-hint">{t('Limite de {max} citations atteinte : supprime-en pour en ajouter.', { max: MAX_CUSTOM_QUOTES })}</p>}
       {/* Remonté à chaque ouverture : le formulaire repart de la citation choisie. */}
       <QuoteEditor key={editor === null ? 'closed' : editor === 'new' ? 'new' : editor.id} quote={editor} onClose={() => setEditor(null)} />
     </section>

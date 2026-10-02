@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { WallpaperPicker } from '@/features/automation/components';
 import { useThumbSrc } from '@/features/library/useImageSrc';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { Button, Icon } from '@/shared/ui/components';
 import { LiveActivateButton } from './LiveActivate';
 import { UnlockSection } from './UnlockSection';
@@ -19,17 +20,17 @@ export function ImageSection({ optionOn, status, refresh }: ModeSectionProps) {
   return (
     <>
       <p className="option-hint option-hint--padded">
-        L’image glisse légèrement quand tu inclines le téléphone, comme si elle était derrière l’écran.
+        {t('L’image glisse légèrement quand tu inclines le téléphone, comme si elle était derrière l’écran.')}
       </p>
       <div className="option-block live-choice">
         {wallpaper ? <LiveThumb wallpaper={wallpaper} /> : <div className="live-thumb live-thumb--empty"><Icon name="image" size={32} /></div>}
         <Button variant="outlined" onClick={() => setPicking(true)}>
-          {wallpaper ? 'Changer d’image' : 'Choisir une image'}
+          {wallpaper ? t('Changer d’image') : t('Choisir une image')}
         </Button>
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Intensité de la parallaxe</h2>
+        <h2 className="option-block__title">{t('Intensité de la parallaxe')}</h2>
         <input
           className="slider"
           type="range"
@@ -37,12 +38,12 @@ export function ImageSection({ optionOn, status, refresh }: ModeSectionProps) {
           max={1}
           step={0.05}
           value={intensity}
-          aria-label="Intensité de la parallaxe"
+          aria-label={t('Intensité de la parallaxe')}
           onChange={(e) => setIntensity(Number(e.target.value))}
         />
         <div className="live-scale">
-          <span>Subtile</span>
-          <span>Prononcée</span>
+          <span>{t('Subtile')}</span>
+          <span>{t('Prononcée')}</span>
         </div>
       </div>
 
@@ -57,7 +58,7 @@ export function ImageSection({ optionOn, status, refresh }: ModeSectionProps) {
 
       <WeatherOverlaySection status={status} />
 
-      <WallpaperPicker open={picking} title="Image du fond animé" onClose={() => setPicking(false)} onPick={(w) => useLive.setState({ wallpaper: w })} />
+      <WallpaperPicker open={picking} title={t('Image du fond animé')} onClose={() => setPicking(false)} onPick={(w) => useLive.setState({ wallpaper: w })} />
     </>
   );
 }

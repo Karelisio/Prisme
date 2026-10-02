@@ -111,6 +111,7 @@ export function buildQuoteConfig(enabled: boolean, prefs: QuotePrefs): QuoteConf
   };
 }
 
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 export const SOURCE_CHOICES: readonly { value: QuoteSource; label: string }[] = [
   { value: 'proverbs', label: 'Proverbes' },
   { value: 'mine', label: 'Mes citations' },
@@ -155,6 +156,7 @@ export function quoteStatusKind(status: QuoteStatus, enabled: boolean, target: W
   return wanted.some((screen) => screen.live) ? 'live' : 'none';
 }
 
+/** Textes en français (données) : `t(text)` à l'affichage. */
 export const QUOTE_STATUS: Record<QuoteStatusKind, { icon: IconName; text: string }> = {
   off: { icon: 'info', text: 'Option désactivée : active-la pour poser la phrase du jour' },
   live: { icon: 'info', text: 'Un fond animé est actif : la phrase n’y est pas ajoutée' },

@@ -106,6 +106,10 @@ export const DEFAULT_AUTOMATION: AutomationPrefs = {
   },
 };
 
+/*
+ * Libellés ci-dessous : le français reste dans les données, la traduction se fait à l'affichage (`t(label)`),
+ * jamais au chargement du module (la langue peut changer).
+ */
 export type DimStrength = 'light' | 'medium' | 'strong';
 
 export const DIM_STRENGTHS: readonly { value: DimStrength; label: string; max: number }[] = [
@@ -154,14 +158,15 @@ export const BATTERY_LEVELS: readonly { key: BatteryKey; label: string; min: num
   { key: 'charging', label: 'En charge', min: null, max: 101, icon: 'bolt' },
 ];
 
-export const DAYS: readonly { value: number; short: string; label: string }[] = [
-  { value: 1, short: 'L', label: 'Lundi' },
-  { value: 2, short: 'M', label: 'Mardi' },
-  { value: 3, short: 'M', label: 'Mercredi' },
-  { value: 4, short: 'J', label: 'Jeudi' },
-  { value: 5, short: 'V', label: 'Vendredi' },
-  { value: 6, short: 'S', label: 'Samedi' },
-  { value: 7, short: 'D', label: 'Dimanche' },
+/** Jours de la semaine ; l'initiale affichée est celle du nom traduit (L, M, M, J, V, S, D en français). */
+export const DAYS: readonly { value: number; label: string }[] = [
+  { value: 1, label: 'Lundi' },
+  { value: 2, label: 'Mardi' },
+  { value: 3, label: 'Mercredi' },
+  { value: 4, label: 'Jeudi' },
+  { value: 5, label: 'Vendredi' },
+  { value: 6, label: 'Samedi' },
+  { value: 7, label: 'Dimanche' },
 ];
 
 export const INTERVALS: readonly { minutes: number; label: string }[] = [
