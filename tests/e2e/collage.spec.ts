@@ -23,7 +23,7 @@ async function addFavorites(page: Page, count: number) {
 
 async function enableCollage(page: Page) {
   await page.getByRole('button', { name: 'Réglages' }).click();
-  await page.locator('.tab[data-active="true"]').getByRole('switch', { name: 'Générateur minimaliste' }).click();
+  await page.locator('.tab[data-active="true"]').getByRole('switch', { name: 'Générateur de fonds' }).click();
   await page.getByRole('button', { name: 'Explorer' }).click();
 }
 
