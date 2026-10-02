@@ -54,7 +54,12 @@ class PrismeAutomationPlugin : Plugin() {
                 val store = AutomationStore(context)
                 val previous = store.config()
                 store.saveConfig(json.toString())
-                AutomationFiles(context).cleanup(config)
+                // Nouveau thème de rotation en ligne (ou fin de celle-ci) : un nouveau fond tout de suite.
+                if (previous.rotation.online?.key != config.rotation.online?.key) {
+                    store.saveState(store.state().copy(onlineRef = null, lastRotationAt = 0))
+                    OnlineQueue(context).clear()
+                }
+                AutomationFiles(context).cleanup(config, store.state().onlineRef)
                 // Activation, changement de mode ou d'écran : on réapplique tout de suite.
                 previous.signature() != config.signature()
             }

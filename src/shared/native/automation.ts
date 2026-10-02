@@ -8,8 +8,37 @@ export interface AutomationRef {
   crop?: NormalizedRect;
 }
 
+/** Requête d'une source pour la rotation en ligne (le natif tire les fonds au hasard). */
+export interface NativeOnlineQuery {
+  provider: 'unsplash' | 'pexels' | 'wallhaven' | 'nasa' | 'art';
+  query?: string;
+  /** Unsplash : photos de ce photographe. */
+  username?: string;
+  /** Wallhaven : catégories (« 100 » = général). */
+  categories?: string;
+  /** En-tête Authorization (Unsplash, Pexels). */
+  auth?: string;
+}
+
+export interface NativeOnlineConfig {
+  /** Change avec le thème : le natif repart d'une file vide et change de fond tout de suite. */
+  key: string;
+  queries: NativeOnlineQuery[];
+  wifiOnly: boolean;
+  /** Contenus masqués dans l'app. */
+  exclude: { ids: string[]; authors: string[]; words: string[] };
+}
+
 export interface NativeAutomationConfig {
-  rotation: { enabled: boolean; intervalMinutes: number; target: WallpaperTarget; shuffle: boolean; items: AutomationRef[] };
+  rotation: {
+    enabled: boolean;
+    intervalMinutes: number;
+    target: WallpaperTarget;
+    shuffle: boolean;
+    items: AutomationRef[];
+    /** Fonds pris au hasard en ligne (remplace `items`). */
+    online?: NativeOnlineConfig;
+  };
   dynamic: {
     enabled: boolean;
     target: WallpaperTarget;
@@ -33,6 +62,8 @@ export interface AutomationLogEntry {
   at: number;
   /** « quick » : tuile ou raccourci de l'icône (choix de l'utilisateur, pas un automatisme). */
   reason: 'focus' | 'dynamic' | 'rotation' | 'restore' | 'quick';
+  /** Fond trouvé en ligne par la rotation : sa description complète (forme `Wallpaper`). */
+  wallpaper?: unknown;
 }
 
 export interface AutomationStatus {
@@ -77,15 +108,21 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
   async configure(options: { config: NativeAutomationConfig }) {
     this.config = options.config;
     const c = options.config;
-    return { enabled: (c.rotation.enabled && c.rotation.items.length > 0) || c.dynamic.enabled || (c.focus.enabled && !!c.focus.item) };
+    const rotation = c.rotation.enabled && (c.rotation.items.length > 0 || !!c.rotation.online);
+    return { enabled: rotation || c.dynamic.enabled || (c.focus.enabled && !!c.focus.item) };
   }
 
   async getStatus(): Promise<AutomationStatus> {
     return { enabled: !!this.config, focusActive: false, lastRotationAt: 0, lastRunAt: 0, quickPoolSize: this.quickPool?.items.length ?? 0 };
   }
 
+  /** Tests : entrées que le prochain `drainLog` renverra (fonds appliqués app fermée). */
+  pendingLog: AutomationLogEntry[] = window.__prismeAutomationPendingLog ?? [];
+
   async drainLog() {
-    return { entries: [] };
+    const entries = this.pendingLog;
+    this.pendingLog = [];
+    return { entries };
   }
 
   async runNow() {
@@ -130,6 +167,8 @@ export const PrismeAutomation = registerPlugin<PrismeAutomationPlugin>('PrismeAu
 declare global {
   interface Window {
     __prismeAutomationWeb?: PrismeAutomationWeb;
+    /** Tests : journal natif simulé, lu au premier `drainLog`. */
+    __prismeAutomationPendingLog?: AutomationLogEntry[];
     __prismeLiveWeb?: PrismeLiveWeb;
   }
 }

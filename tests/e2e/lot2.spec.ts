@@ -256,3 +256,83 @@ test.describe('découverte', () => {
     await expect(cells(page).first()).toBeVisible();
   });
 });
+
+test.describe('rotation en ligne', () => {
+  const rotation = (page: Page) => page.evaluate(() => window.__prismeAutomationWeb?.config?.rotation);
+
+  test('fonds au hasard en ligne : thème, mot-clé, Wi-Fi et contenus masqués envoyés au natif', async ({ page }) => {
+    await mockApis(page);
+    await page.goto('/');
+    const settings = await openSettings(page);
+    await settings.getByRole('button', { name: /Changement automatique/ }).click();
+    const screen = topOverlay(page);
+    await screen.getByRole('switch', { name: 'Activer la rotation' }).click();
+    await expect(screen.getByRole('button', { name: 'En ligne, au hasard' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(screen.getByText(/^Fonds au hasard en ligne : Fonds d’écran/)).toBeVisible();
+    await expect(screen.getByText(/^Sources : Unsplash, Pexels, Wallhaven, Cleveland Museum of Art, NASA/)).toBeVisible();
+    await expect.poll(async () => (await rotation(page))?.online?.queries).toEqual([
+      { provider: 'unsplash', query: 'wallpaper', auth: 'Client-ID e2e-unsplash' },
+      { provider: 'pexels', auth: 'e2e-pexels' },
+      { provider: 'wallhaven', query: '', categories: '100' },
+    ]);
+    expect((await rotation(page))?.items).toEqual([]);
+    await expect(screen.getByRole('switch', { name: 'Ordre aléatoire' })).toHaveCount(0);
+
+    await screen.getByRole('button', { name: 'Nature' }).click();
+    await expect.poll(async () => (await rotation(page))?.online?.key).toBe('nature:');
+    expect((await rotation(page))?.online?.queries).toContainEqual({ provider: 'unsplash', query: 'nature landscape', auth: 'Client-ID e2e-unsplash' });
+
+    await screen.getByRole('button', { name: 'Mot-clé…' }).click();
+    await expect(screen.getByText('Saisis un mot-clé pour la rotation en ligne.')).toBeVisible();
+    await screen.getByLabel('Mot-clé').fill('aurore');
+    await screen.getByLabel('Mot-clé').press('Enter');
+    await expect.poll(async () => (await rotation(page))?.online?.key).toBe('custom:aurore');
+    await screen.getByRole('switch', { name: 'Uniquement en Wi-Fi' }).click();
+    await expect.poll(async () => (await rotation(page))?.online?.wifiOnly).toBe(true);
+
+    await screen.getByRole('button', { name: 'Changer maintenant' }).click();
+    await expect.poll(() => page.evaluate(() => window.__prismeAutomationWeb?.rotations)).toBe(1);
+    await page.keyboard.press('Escape');
+    await expect(settings.getByRole('button', { name: /Changement automatique/ })).toContainText('Toutes les 1 h · en ligne, « aurore »');
+
+    // Un sujet masqué n'est jamais choisi par la rotation.
+    await settings.getByRole('button', { name: /Contenus masqués/ }).click();
+    await topOverlay(page).getByLabel('Masquer un sujet').fill('voiture');
+    await topOverlay(page).getByRole('button', { name: 'Ajouter' }).click();
+    await expect.poll(async () => (await rotation(page))?.online?.exclude.words).toEqual(['voiture']);
+  });
+
+  test('les fonds trouvés en ligne app fermée arrivent dans l’historique', async ({ page }) => {
+    await mockApis(page);
+    await page.addInitScript(() => {
+      window.__prismeAutomationPendingLog = [
+        {
+          id: 'unsplash:enligne',
+          target: 'both',
+          at: Date.now() - 60_000,
+          reason: 'rotation',
+          wallpaper: {
+            id: 'unsplash:enligne',
+            source: 'unsplash',
+            width: 3000,
+            height: 6000,
+            color: '#204080',
+            alt: 'aurore en ligne',
+            thumb: 'https://images.unsplash.com/photo-enligne?w=360',
+            preview: 'https://images.unsplash.com/photo-enligne?w=1080',
+            full: 'https://images.unsplash.com/photo-enligne?w=3000',
+            author: { name: 'Hedy Lamarr', url: 'https://unsplash.com/@hedy', username: 'hedy' },
+          },
+        },
+      ];
+    });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Bibliothèque' }).click();
+    const library = page.locator('.tab[data-active="true"]');
+    await library.getByRole('radio', { name: 'Historique' }).click();
+    const entry = library.getByRole('button', { name: /Hedy Lamarr · automatique/ });
+    await expect(entry).toBeVisible();
+    await entry.click();
+    await expect(preview(page).getByRole('button', { name: 'Photo : Hedy Lamarr · Unsplash' })).toBeVisible();
+  });
+});

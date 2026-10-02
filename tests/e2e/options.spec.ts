@@ -117,6 +117,7 @@ test('rotation : source, intervalle, écran et changement immédiat', async ({ p
   await settings.getByRole('switch', { name: 'Rotation automatique' }).click();
   await settings.getByRole('button', { name: /Rotation automatique/ }).click();
   const screen = page.locator('.overlay-screen');
+  await screen.getByRole('button', { name: 'Favoris (3)' }).click();
   await expect(screen.getByText('3 fonds en rotation')).toBeVisible();
   await screen.getByRole('button', { name: '3 h' }).click();
   await screen.getByRole('switch', { name: 'Ordre aléatoire' }).click();

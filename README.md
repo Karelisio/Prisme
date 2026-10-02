@@ -39,7 +39,9 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
 **Options** (désactivées par défaut, *Réglages → Options avancées*)
 - Fonds dynamiques : selon l'heure, la météo (Open-Meteo, sans clé), la saison ou la batterie.
 - Fond animé avec parallaxe (capteur coupé quand le fond est masqué ou en économie d'énergie).
-- Rotation à intervalle (WorkManager, 15 min à 24 h).
+- Rotation à intervalle (WorkManager, 15 min à 24 h) : fonds pris au hasard en ligne (thème, mot-clé
+  ou « Pour toi », sources activées, Wi-Fi seulement en option ; recherché par le natif, app fermée)
+  ou parmi les favoris et collections.
 - Éditeur : flou, assombrissement, grain, dégradé, texte, noir et blanc.
 - Générateur de fonds minimalistes (uni, dégradés, aurore, vagues, formes).
 - Aperçu de la palette Material You que donnera un fond.

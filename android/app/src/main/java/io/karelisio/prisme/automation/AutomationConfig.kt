@@ -51,7 +51,12 @@ data class RotationConfig(
     val target: WallpaperTarget = WallpaperTarget.BOTH,
     val shuffle: Boolean = true,
     val items: List<WallpaperRef> = emptyList(),
-)
+    /** Fonds pris au hasard en ligne (remplace [items]). */
+    val online: OnlineConfig? = null,
+) {
+    val active: Boolean
+        get() = enabled && (online != null || items.isNotEmpty())
+}
 
 data class DynamicConfig(
     val enabled: Boolean = false,
@@ -73,7 +78,7 @@ data class AutomationConfig(
     val focus: FocusConfig = FocusConfig(),
 ) {
     val anyEnabled: Boolean
-        get() = (rotation.enabled && rotation.items.isNotEmpty()) ||
+        get() = rotation.active ||
             (dynamic.enabled && dynamic.mode != null) ||
             (focus.enabled && focus.ref != null && focus.schedules.isNotEmpty())
 
@@ -82,7 +87,7 @@ data class AutomationConfig(
      * Un simple changement d'images est géré par le moteur, qui compare les identifiants.
      */
     fun signature(): String = listOf(
-        rotation.enabled, rotation.target,
+        rotation.enabled, rotation.target, rotation.online?.key,
         dynamic.enabled, dynamic.target, dynamic.mode?.javaClass?.simpleName,
         focus.enabled, focus.target,
     ).joinToString("|")
@@ -125,6 +130,7 @@ data class AutomationConfig(
             target = target(json),
             shuffle = json.optBoolean("shuffle", true),
             items = refs(json.optJSONArray("items")),
+            online = OnlineConfig.fromJson(json.optJSONObject("online")),
         )
 
         private fun dynamic(json: JSONObject) = DynamicConfig(

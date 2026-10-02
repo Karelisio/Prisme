@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigation } from '@/app/navigation';
 import { queryClient } from '@/app/queryClient';
 import { FAVORITES_SOURCE, INTERVALS } from '@/features/automation/model';
+import { DEFAULT_ONLINE, ONLINE_SOURCE, onlineThemeLabel } from '@/features/automation/online';
 import { useAutomationPrefs } from '@/features/automation/store';
 import { exportBackup, importBackup } from '@/features/backup/backupActions';
 import { setDailyNotification } from '@/features/discover/dailySync';
@@ -54,7 +55,11 @@ export function SettingsScreen() {
   const rotation = useAutomationPrefs((s) => s.rotation);
   const collections = useLibrary((s) => s.collections);
   const rotationSource =
-    rotation.source === FAVORITES_SOURCE ? 'favoris' : `collection « ${collections.find((c) => c.id === rotation.source)?.name ?? '?'} »`;
+    rotation.source === ONLINE_SOURCE
+      ? `en ligne, ${onlineThemeLabel({ ...DEFAULT_ONLINE, ...rotation.online })}`
+      : rotation.source === FAVORITES_SOURCE
+        ? 'favoris'
+        : `collection « ${collections.find((c) => c.id === rotation.source)?.name ?? '?'} »`;
   const rotationInterval = INTERVALS.find((i) => i.minutes === rotation.intervalMinutes)?.label ?? `${rotation.intervalMinutes} min`;
   const [storage, setStorage] = useState<{ cacheBytes: number; offlineBytes: number } | null>(null);
   const dynamicSupported = capabilities?.dynamicColor ?? false;
@@ -244,7 +249,11 @@ export function SettingsScreen() {
         </div>
         <ListItem
           headline="Changement automatique"
-          supporting={settings.features.rotation ? `Toutes les ${rotationInterval} · ${rotationSource}` : 'Désactivé · de 15 min à 24 h, même app fermée'}
+          supporting={
+            settings.features.rotation
+              ? `Toutes les ${rotationInterval} · ${rotationSource}`
+              : 'Désactivé · de 15 min à 24 h, depuis Internet ou tes favoris, même app fermée'
+          }
           leading={<Icon name="autorenew" />}
           onClick={() => push({ type: 'rotation' })}
         />

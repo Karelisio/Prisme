@@ -18,6 +18,16 @@
   font: 500 14px/20px var(--md-font);
 }
 
+.option-field {
+  margin-top: 16px;
+}
+
+.option-hint {
+  margin: 12px 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: 400 13px/18px var(--md-font);
+}
+
 .option-status {
   display: flex;
   align-items: center;

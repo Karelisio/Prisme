@@ -24,6 +24,8 @@ data class AutomationState(
     val dynamicApplied: Boolean = false,
     /** Dernière évaluation des automatismes (affichée dans Diagnostic). */
     val lastRunAt: Long = 0,
+    /** Rotation en ligne : fond en cours, jusqu'au prochain changement. */
+    val onlineRef: WallpaperRef? = null,
 )
 
 /** Résultat d'un fond dynamique : un fond, rien à changer (donnée inconnue), ou aucun fond prévu. */
@@ -35,8 +37,14 @@ sealed interface DynamicChoice {
 
 enum class Reason { FOCUS, DYNAMIC, ROTATION, RESTORE, NONE }
 
-/** Fonds voulus par écran (null = ne rien changer). */
-data class Decision(val home: WallpaperRef?, val lock: WallpaperRef?, val reason: Reason, val state: AutomationState)
+/** Fonds voulus par écran (null = ne rien changer) ; [retry] : réessayer bientôt (source injoignable). */
+data class Decision(
+    val home: WallpaperRef?,
+    val lock: WallpaperRef?,
+    val reason: Reason,
+    val state: AutomationState,
+    val retry: Boolean = false,
+)
 
 /**
  * Logique pure, testée sur JVM. Priorités : mode focus > fonds dynamiques > rotation.
@@ -52,6 +60,7 @@ object RulesEngine {
         state: AutomationState,
         lastManual: (WallpaperTarget) -> WallpaperRef?,
         random: Random = Random.Default,
+        nextOnline: () -> OnlinePick = { OnlinePick.Failed },
     ): Decision {
         val focus = config.focus
         if (focusActive(focus, env.moment)) {
@@ -71,6 +80,20 @@ object RulesEngine {
         }
 
         val rotation = config.rotation
+        if (rotation.enabled && rotation.online != null) {
+            val rotating = state.copy(focusApplied = false, dynamicApplied = false)
+            val current = state.onlineRef
+            val due = current == null || env.moment.epochMillis - state.lastRotationAt >= rotation.intervalMinutes * 60_000L
+            if (!due) return decision(current!!, rotation.target, Reason.ROTATION, rotating)
+            return when (val pick = nextOnline()) {
+                is OnlinePick.Ready ->
+                    decision(pick.ref, rotation.target, Reason.ROTATION, rotating.copy(onlineRef = pick.ref, lastRotationAt = env.moment.epochMillis))
+                // Fond actuel conservé ; une source injoignable sera réessayée.
+                OnlinePick.Later -> current?.let { decision(it, rotation.target, Reason.ROTATION, rotating) } ?: Decision(null, null, Reason.NONE, state)
+                OnlinePick.Failed ->
+                    (current?.let { decision(it, rotation.target, Reason.ROTATION, rotating) } ?: Decision(null, null, Reason.NONE, state)).copy(retry = true)
+            }
+        }
         if (rotation.enabled && rotation.items.isNotEmpty()) {
             var next = state
             val intervalMillis = rotation.intervalMinutes * 60_000L
@@ -215,7 +238,8 @@ object RulesEngine {
         if (config.dynamic.enabled && mode is DynamicMode.Time) {
             for (slot in mode.slots) candidates += untilDaily(slot.startMinute, m.minuteOfDay)
         }
-        if (config.rotation.enabled && config.rotation.items.size > 1 && state.lastRotationAt > 0) {
+        val rotation = config.rotation
+        if (rotation.enabled && (rotation.online != null || rotation.items.size > 1) && state.lastRotationAt > 0) {
             val dueAt = state.lastRotationAt + config.rotation.intervalMinutes * 60_000L
             candidates += ((dueAt - m.epochMillis) / 60_000L).toInt().coerceAtLeast(1)
         }

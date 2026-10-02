@@ -48,8 +48,7 @@ internal class QuickPool(context: Context) {
          * prioritaire (mode focus en cours, fonds dynamiques) ne décide du fond ; sinon, favori au hasard.
          */
         fun rotationDrivesNext(config: AutomationConfig, moment: Moment): Boolean {
-            val rotation = config.rotation
-            if (!rotation.enabled || rotation.items.isEmpty()) return false
+            if (!config.rotation.active) return false
             val focus = config.focus
             if (focus.enabled && focus.ref != null && RulesEngine.focusActive(focus, moment)) return false
             return !(config.dynamic.enabled && config.dynamic.mode != null)

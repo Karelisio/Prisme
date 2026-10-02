@@ -8,6 +8,7 @@ import io.karelisio.prisme.wallpaper.WallpaperException
 import io.karelisio.prisme.wallpaper.WallpaperRef
 import io.karelisio.prisme.wallpaper.WallpaperTarget
 import org.json.JSONObject
+import kotlin.random.Random
 
 /**
  * Évaluation des automatismes (rotation, fonds dynamiques, mode focus) et application du fond
@@ -38,11 +39,11 @@ internal object AutomationRunner {
         val env = Environment(moment, battery?.level, battery?.charging == true, weather(store, config, moment.epochMillis))
         val stored = store.state()
         val previous = if (force) stored.copy(appliedHome = null, appliedLock = null) else stored
-        val decision = RulesEngine.decide(config, env, previous, AppliedWallpapers(context)::lastManual)
+        val decision = RulesEngine.decide(config, env, previous, AppliedWallpapers(context)::lastManual, nextOnline = { pickOnline(context, config) })
 
         val outcome = try {
-            store.saveState(apply(context, decision, files, store).copy(lastRunAt = moment.epochMillis))
-            Outcome.DONE
+            store.saveState(apply(context, decision, files, store, config).copy(lastRunAt = moment.epochMillis))
+            if (decision.retry) Outcome.RETRY else Outcome.DONE
         } catch (e: WallpaperException) {
             store.saveState(
                 decision.state.copy(appliedHome = previous.appliedHome, appliedLock = previous.appliedLock, lastRunAt = moment.epochMillis),
@@ -62,7 +63,18 @@ internal object AutomationRunner {
             .getOrNull()
     }
 
-    private fun apply(context: Context, decision: Decision, files: AutomationFiles, store: AutomationStore): AutomationState {
+    /** Nouveau fond en ligne (rotation « au hasard »), sauf sur connexion limitée avec « Wi-Fi seulement ». */
+    private fun pickOnline(context: Context, config: AutomationConfig): OnlinePick {
+        val online = config.rotation.online ?: return OnlinePick.Failed
+        if (online.wifiOnly && OnlineQueue.metered(context)) return OnlinePick.Later
+        val size = ScreenInfo.read(context, null)
+        val screen = OnlineSources.Screen(size.width, size.height)
+        val random = Random.Default
+        val candidate = OnlineQueue(context).next(online, random) { OnlineSources.fetch(it, random, screen) }
+        return candidate?.let { OnlinePick.Ready(it.ref()) } ?: OnlinePick.Failed
+    }
+
+    private fun apply(context: Context, decision: Decision, files: AutomationFiles, store: AutomationStore, config: AutomationConfig): AutomationState {
         var state = decision.state
         val home = decision.home?.takeIf { it.id != state.appliedHome }
         val lock = decision.lock?.takeIf { it.id != state.appliedLock }
@@ -71,6 +83,7 @@ internal object AutomationRunner {
         val screen = ScreenInfo.read(context, null)
         val applier = WallpaperApplier(context)
         val log = mutableListOf<JSONObject>()
+        val online = state.onlineRef?.let { OnlineQueue(context).current(it.id) }
         fun applyRef(ref: WallpaperRef, target: WallpaperTarget) {
             applier.apply(files.resolve(ref), target, ref.crop, screen)
             log += JSONObject()
@@ -78,6 +91,8 @@ internal object AutomationRunner {
                 .put("target", target.key)
                 .put("at", System.currentTimeMillis())
                 .put("reason", decision.reason.name.lowercase())
+                // Fond trouvé en ligne : l'app l'ajoute à l'historique avec sa description complète.
+                .apply { if (online != null && online.id == ref.id) put("wallpaper", online.toWallpaperJson()) }
         }
 
         if (home != null && lock != null && home.id == lock.id) {
@@ -94,6 +109,12 @@ internal object AutomationRunner {
             }
         }
         store.appendLog(log)
+        val onlineConfig = config.rotation.online
+        if (online != null && onlineConfig != null && (home?.id == online.id || lock?.id == online.id)) {
+            OnlineSources.trackDownload(online, onlineConfig)
+            // Les fonds en ligne précédents ne servent plus : seule l'image actuelle est gardée.
+            files.cleanup(config, state.onlineRef)
+        }
         return state
     }
 }

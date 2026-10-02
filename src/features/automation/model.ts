@@ -4,6 +4,7 @@ import type { Wallpaper } from '@/features/sources/types';
 import type { WallpaperTarget } from '@/shared/native';
 import type { AutomationRef, NativeAutomationConfig, QuickPool } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
+import { DEFAULT_ONLINE, ONLINE_SOURCE, type OnlineContext, type OnlineRotationPrefs, onlineConfig } from './online';
 
 export type DynamicModeKey = 'time' | 'weather' | 'season' | 'battery';
 export type SlotKey = 'morning' | 'day' | 'evening' | 'night';
@@ -27,7 +28,8 @@ export interface FocusScheduleDraft {
 
 /** Choix de l'utilisateur ; la configuration native en est dérivée avec les fonds de la bibliothèque. */
 export interface AutomationPrefs {
-  rotation: { intervalMinutes: number; target: WallpaperTarget; shuffle: boolean; source: string };
+  /** `source` : « online » (au hasard en ligne), « favorites » ou l'identifiant d'une collection. */
+  rotation: { intervalMinutes: number; target: WallpaperTarget; shuffle: boolean; source: string; online: OnlineRotationPrefs };
   dynamic: {
     mode: DynamicModeKey;
     target: WallpaperTarget;
@@ -45,7 +47,7 @@ export interface AutomationPrefs {
 export const FAVORITES_SOURCE = 'favorites';
 
 export const DEFAULT_AUTOMATION: AutomationPrefs = {
-  rotation: { intervalMinutes: 60, target: 'both', shuffle: true, source: FAVORITES_SOURCE },
+  rotation: { intervalMinutes: 60, target: 'both', shuffle: true, source: ONLINE_SOURCE, online: DEFAULT_ONLINE },
   dynamic: {
     mode: 'time',
     target: 'both',
@@ -166,11 +168,15 @@ function refMap<K extends string>(ids: Partial<Record<K, string>>, items: Record
   return out;
 }
 
-/** Configuration envoyée au natif : options désactivées dans les réglages = automatismes coupés. */
+/**
+ * Configuration envoyée au natif : options désactivées dans les réglages = automatismes coupés.
+ * La rotation en ligne a besoin du contexte (sources utilisables, clés, contenus masqués).
+ */
 export function buildConfig(
   prefs: AutomationPrefs,
   flags: Pick<FeatureFlags, 'rotation' | 'dynamic' | 'focus'>,
   library: Pick<LibraryData, 'items' | 'favorites' | 'collections'>,
+  online?: OnlineContext,
 ): NativeAutomationConfig {
   const { items } = library;
   const d = prefs.dynamic;
@@ -204,13 +210,16 @@ export function buildConfig(
   }
 
   const focusWallpaper = prefs.focus.wallpaperId ? items[prefs.focus.wallpaperId] : undefined;
+  const isOnline = prefs.rotation.source === ONLINE_SOURCE;
+  const onlineRotation = isOnline && online ? onlineConfig({ ...DEFAULT_ONLINE, ...prefs.rotation.online }, online) : undefined;
   return {
     rotation: {
       enabled: flags.rotation,
       intervalMinutes: prefs.rotation.intervalMinutes,
       target: prefs.rotation.target,
       shuffle: prefs.rotation.shuffle,
-      items: rotationItems(prefs.rotation.source, library).map(toRef),
+      items: isOnline ? [] : rotationItems(prefs.rotation.source, library).map(toRef),
+      ...(onlineRotation && { online: onlineRotation }),
     },
     dynamic,
     focus: {

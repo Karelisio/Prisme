@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Wallpaper } from '@/features/sources/types';
 import { DEFAULT_AUTOMATION, FAVORITES_SOURCE, QUICK_POOL_LIMIT, buildConfig, buildQuickPool, rotationItems } from './model';
+import { DEFAULT_ONLINE, ONLINE_THEMES, type OnlineContext, onlineQueries, onlineSpec, onlineThemeLabel } from './online';
 
 const wp = (id: string, local = false): Wallpaper => ({
   id,
@@ -118,5 +119,61 @@ describe('configuration des automatismes', () => {
     ];
     const pool = buildQuickPool({ items: { a: wp('a'), b: wp('b') }, favorites: {}, offline: {}, history }, 'ask');
     expect(pool.items.map((i) => i.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('rotation en ligne', () => {
+  const sources = { unsplash: true, pexels: true, wallhaven: true, pixabay: true, art: true, nasa: true };
+  const ctx: OnlineContext = {
+    sources,
+    keys: { unsplash: 'cle-u', pexels: 'cle-p' },
+    hidden: {
+      hiddenIds: { 'unsplash:x': { id: 'unsplash:x', thumb: '', alt: '', at: 0 } },
+      hiddenAuthors: { 'pexels:bob': { key: 'pexels:bob', name: 'Bob', source: 'pexels', at: 0 } },
+      hiddenWords: ['voiture'],
+    },
+    favorites: [],
+  };
+  const online = (patch: Partial<typeof DEFAULT_AUTOMATION.rotation>) => ({ ...DEFAULT_AUTOMATION, rotation: { ...DEFAULT_AUTOMATION.rotation, ...patch } });
+
+  it('par défaut : fonds d’écran au hasard sur toutes les sources (sauf Pixabay)', () => {
+    const config = buildConfig(DEFAULT_AUTOMATION, { ...off, rotation: true }, library, ctx);
+    expect(config.rotation.items).toEqual([]);
+    expect(config.rotation.online?.key).toBe('featured:');
+    expect(config.rotation.online?.queries).toEqual([
+      { provider: 'unsplash', query: 'wallpaper', auth: 'Client-ID cle-u' },
+      { provider: 'pexels', auth: 'cle-p' },
+      { provider: 'wallhaven', query: '', categories: '100' },
+    ]);
+    expect(config.rotation.online?.exclude).toEqual({ ids: ['unsplash:x'], authors: ['pexels:bob'], words: ['voiture'] });
+  });
+
+  it('thème, mot-clé et sources désactivées', () => {
+    const space = buildConfig(online({ online: { ...DEFAULT_ONLINE, theme: 'space' } }), { ...off, rotation: true }, library, {
+      ...ctx,
+      sources: { ...sources, pexels: false },
+    });
+    expect(space.rotation.online?.queries.map((q) => q.provider)).toEqual(['nasa', 'unsplash', 'wallhaven', 'nasa', 'nasa']);
+    expect(space.rotation.online?.queries).toContainEqual({ provider: 'nasa', query: 'earth from space' });
+
+    const keyword = buildConfig(online({ online: { theme: 'custom', keyword: ' Aurore ', wifiOnly: true } }), { ...off, rotation: true }, library, ctx);
+    expect(keyword.rotation.online).toMatchObject({ key: 'custom:aurore', wifiOnly: true });
+    expect(keyword.rotation.online?.queries[0]).toEqual({ provider: 'unsplash', query: 'Aurore', auth: 'Client-ID cle-u' });
+    expect(onlineThemeLabel({ theme: 'custom', keyword: 'Aurore', wifiOnly: false })).toBe('« Aurore »');
+
+    // Aucune source utilisable : pas de rotation en ligne.
+    const none = Object.fromEntries(Object.keys(sources).map((k) => [k, false])) as typeof sources;
+    expect(buildConfig(DEFAULT_AUTOMATION, { ...off, rotation: true }, library, { ...ctx, sources: none }).rotation.online).toBeUndefined();
+  });
+
+  it('« Pour toi » suit les favoris, sinon fonds d’écran', () => {
+    const fav = (id: string, alt: string): Wallpaper => ({ ...wp(id), alt, author: { name: 'Ada', url: 'u', username: 'ada' } });
+    const spec = onlineSpec({ ...DEFAULT_ONLINE, theme: 'foryou' }, [fav('1', 'mountain lake'), fav('2', 'mountain sky'), fav('3', 'mountain')]);
+    const queries = onlineQueries(spec, ctx);
+    expect(queries).toContainEqual({ provider: 'unsplash', query: 'mountain', auth: 'Client-ID cle-u' });
+    expect(queries).toContainEqual({ provider: 'unsplash', username: 'ada', auth: 'Client-ID cle-u' });
+    expect(queries.some((q) => (q as { provider: string }).provider === 'pixabay')).toBe(false);
+    expect(onlineSpec({ ...DEFAULT_ONLINE, theme: 'foryou' }, []).key).toBe('featured');
+    expect(ONLINE_THEMES.map((t) => t.key)).not.toContain('trending');
   });
 });

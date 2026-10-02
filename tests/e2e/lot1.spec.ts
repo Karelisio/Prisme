@@ -160,7 +160,7 @@ test.describe('raccourcis', () => {
     await entry.click();
     await page.getByRole('switch', { name: 'Activer la rotation' }).click();
     await page.keyboard.press('Escape');
-    await expect(entry).toContainText('Toutes les 1 h · favoris');
+    await expect(entry).toContainText('Toutes les 1 h · en ligne, Fonds d’écran');
 
     await settings.getByRole('button', { name: /Diagnostic/ }).click();
     const automation = page.locator('section', { has: page.getByRole('heading', { name: 'Automatismes' }) });
