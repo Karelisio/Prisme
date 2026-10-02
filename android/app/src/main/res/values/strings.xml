@@ -18,6 +18,8 @@
     <string name="tile_working">Changement…</string>
     <string name="tile_done">Fond changé</string>
     <string name="tile_empty">Aucun favori</string>
+    <string name="tile_music">Pochette affichée</string>
+    <string name="quick_music">Pochette de la musique affichée : le fond changera quand la musique s\'arrêtera</string>
     <string name="tile_failed">Échec, voir Prisme</string>
     <string name="quick_failed">Prisme n\'a pas pu changer le fond : %1$s</string>
     <string name="daily_channel">Fond du jour</string>

@@ -5,6 +5,7 @@ import android.widget.Toast
 import io.karelisio.prisme.R
 import io.karelisio.prisme.automation.AutomationRunner
 import io.karelisio.prisme.automation.AutomationStore
+import io.karelisio.prisme.music.MusicArtwork
 import io.karelisio.prisme.wallpaper.AppliedWallpapers
 import io.karelisio.prisme.wallpaper.ImageStore
 import io.karelisio.prisme.wallpaper.ScreenInfo
@@ -22,10 +23,14 @@ internal class QuickChanger(private val context: Context) {
     sealed interface Outcome {
         data object Applied : Outcome
         data object Empty : Outcome
+
+        /** Pochette de la musique affichée : le fond reste en place jusqu'à la fin de la musique. */
+        data object Music : Outcome
         data class Failed(val message: String) : Outcome
     }
 
     fun run(mode: String): Outcome {
+        if (MusicArtwork.isShowing(context)) return Outcome.Music
         if (mode == QuickActions.MODE_NEXT && advanceRotation()) return Outcome.Applied
         return applyFromPool()
     }
@@ -57,6 +62,7 @@ internal class QuickChanger(private val context: Context) {
         fun message(context: Context, outcome: Outcome): String = when (outcome) {
             Outcome.Applied -> context.getString(R.string.quick_applied)
             Outcome.Empty -> context.getString(R.string.quick_no_favorites)
+            Outcome.Music -> context.getString(R.string.quick_music)
             is Outcome.Failed -> context.getString(R.string.quick_failed, outcome.message)
         }
 
@@ -65,6 +71,7 @@ internal class QuickChanger(private val context: Context) {
             when (outcome) {
                 Outcome.Applied -> R.string.tile_done
                 Outcome.Empty -> R.string.tile_empty
+                Outcome.Music -> R.string.tile_music
                 is Outcome.Failed -> R.string.tile_failed
             },
         )
