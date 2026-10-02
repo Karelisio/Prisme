@@ -8,12 +8,53 @@ import type { Wallpaper } from '@/features/sources/types';
 import { getScreenInfo, screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { nativeErrorMessage } from '@/shared/native';
 import { useTheme } from '@/shared/theme/ThemeController';
-import { Button, Chip, IconButton, Switch } from '@/shared/ui/components';
+import { Button, Chip, IconButton, type SegmentOption, SegmentedButtons, Switch } from '@/shared/ui/components';
 import { FittedCanvas } from '@/shared/ui/FittedCanvas';
 import { showSnackbar } from '@/shared/ui/overlays';
-import { CURATED_PALETTES, DEFAULT_GENERATOR, type GeneratorParams, STYLES, exportGenerated, randomize, renderGenerated, schemePalette } from './generate';
+import {
+  CONTROL_RANGES,
+  CURATED_PALETTES,
+  type ControlKey,
+  DEFAULT_GENERATOR,
+  type GeneratorParams,
+  STYLES,
+  STYLE_CONTROLS,
+  STYLE_GROUPS,
+  applyStyle,
+  exportGenerated,
+  nextSeed,
+  randomize,
+  renderGenerated,
+  resolveSettings,
+  schemeAccents,
+  schemePalette,
+} from './generate';
+import { GEOMETRIC_SHAPES } from './patterns';
 import '@/features/editor/editor.css';
 import './generator.css';
+
+interface PaletteChoice {
+  colors: GeneratorParams['colors'];
+  accents?: GeneratorParams['accents'];
+}
+
+const POINT_OPTIONS: readonly SegmentOption<'4' | '5' | '6'>[] = [
+  { value: '4', label: '4' },
+  { value: '5', label: '5' },
+  { value: '6', label: '6' },
+];
+
+function Slider({ label, value, min = 0, max = 1, step = 0.01, unit, onChange }: { label: string; value: number; min?: number; max?: number; step?: number; unit?: string; onChange: (v: number) => void }) {
+  return (
+    <label className="generator__slider">
+      <span className="generator__slider-head">
+        <span>{label}</span>
+        {unit && <output>{`${Math.round(value)}${unit}`}</output>}
+      </span>
+      <input className="slider" type="range" min={min} max={max} step={step} value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))} />
+    </label>
+  );
+}
 
 export function GeneratorScreen() {
   const screen = useScreenInfo();
@@ -24,13 +65,33 @@ export function GeneratorScreen() {
   const [params, setParams] = useState<GeneratorParams>(DEFAULT_GENERATOR);
   const [busy, setBusy] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
-  const palettes = useMemo(() => (scheme ? [schemePalette(scheme), ...CURATED_PALETTES] : [...CURATED_PALETTES]), [scheme]);
+  const palettes = useMemo<PaletteChoice[]>(() => {
+    const curated = CURATED_PALETTES.map((colors) => ({ colors }));
+    return scheme ? [{ colors: schemePalette(scheme), accents: schemeAccents(scheme) }, ...curated] : curated;
+  }, [scheme]);
   const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => renderGenerated(ctx, params, w, h), [params]);
   const set = (patch: Partial<GeneratorParams>) => setParams((p) => ({ ...p, ...patch }));
   const setColor = (index: 0 | 1 | 2, color: string) => {
     const colors = [...params.colors] as GeneratorParams['colors'];
     colors[index] = color;
-    set({ colors });
+    // Modifier une couleur à la main : les teintes d'appoint sont de nouveau dérivées des trois couleurs.
+    set({ colors, accents: undefined });
+  };
+
+  const settings = resolveSettings(params);
+  const controls = STYLE_CONTROLS[params.style];
+  const hasControl = (key: ControlKey) => controls.some((c) => c.key === key);
+  const labelOf = (key: ControlKey) => controls.find((c) => c.key === key)?.label ?? '';
+  const sliderKeys = controls.filter((c) => c.key !== 'shape' && c.key !== 'points');
+
+  const sliderValue = (key: ControlKey): number => (key === 'angle' ? params.angle : key === 'shape' || key === 'points' ? 0 : settings[key]);
+  const sliderRange = (key: ControlKey) => (key === 'angle' ? CONTROL_RANGES.angle : key === 'rotation' ? CONTROL_RANGES.rotation : CONTROL_RANGES.unit);
+  const setSlider = (key: ControlKey, value: number) => {
+    if (key === 'angle') set({ angle: value });
+    else if (key === 'scale') set({ scale: value });
+    else if (key === 'thickness') set({ thickness: value });
+    else if (key === 'rotation') set({ rotation: value });
+    else if (key === 'softness') set({ softness: value });
   };
 
   const save = async (): Promise<Wallpaper | null> => {
@@ -63,7 +124,7 @@ export function GeneratorScreen() {
   };
 
   return (
-    <div className="editor" role="dialog" aria-label="Générateur">
+    <div className="editor generator" role="dialog" aria-label="Générateur">
       <header className="editor__top">
         <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
         <h1 className="top-bar__title">Créer un fond</h1>
@@ -75,25 +136,32 @@ export function GeneratorScreen() {
 
       <FittedCanvas className="editor__stage" ratio={screenRatio(screen)} draw={draw} label="Aperçu de la création" />
 
-      <div className="editor__panel">
-        <div className="editor__controls">
-          <div className="chip-wrap" aria-label="Style">
-            {STYLES.map((s) => (
-              <Chip key={s.value} selected={params.style === s.value} onClick={() => set({ style: s.value })}>
-                {s.label}
-              </Chip>
+      <div className="editor__panel generator__panel">
+        <div className="editor__controls generator__controls">
+          <div className="generator__styles" aria-label="Style">
+            {STYLE_GROUPS.map((group) => (
+              <div key={group.value} className="generator__group" role="group" aria-label={group.label}>
+                <span className="generator__group-label">{group.label}</span>
+                <div className="generator__chips">
+                  {STYLES.filter((s) => s.group === group.value).map((s) => (
+                    <Chip key={s.value} selected={params.style === s.value} onClick={() => setParams((p) => (p.style === s.value ? p : applyStyle(p, s.value)))}>
+                      {s.label}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
           <div className="palette-row" aria-label="Palettes">
             {palettes.map((palette, i) => (
               <button
-                key={palette.join('-')}
+                key={palette.colors.join('-')}
                 type="button"
                 className="palette-chip"
                 aria-label={i === 0 && scheme ? 'Palette Material You' : `Palette ${i + 1}`}
-                aria-pressed={palette.join() === params.colors.join()}
-                style={{ background: `linear-gradient(135deg, ${palette[0]} 0 33%, ${palette[1]} 33% 66%, ${palette[2]} 66%)` }}
-                onClick={() => set({ colors: palette })}
+                aria-pressed={palette.colors.join() === params.colors.join()}
+                style={{ background: `linear-gradient(135deg, ${palette.colors[0]} 0 33%, ${palette.colors[1]} 33% 66%, ${palette.colors[2]} 66%)` }}
+                onClick={() => set({ colors: palette.colors, accents: palette.accents })}
               />
             ))}
           </div>
@@ -107,20 +175,30 @@ export function GeneratorScreen() {
               Au hasard
             </Button>
           </div>
-          {params.style === 'linear' && (
-            <label className="editor__slider">
-              <span>Angle</span>
-              <input className="slider" type="range" min={0} max={360} step={5} value={params.angle} aria-label="Angle" onChange={(e) => set({ angle: Number(e.target.value) })} />
-            </label>
-          )}
-          <label className="editor__slider">
-            <span>Grain</span>
-            <input className="slider" type="range" min={0} max={1} step={0.01} value={params.grain} aria-label="Grain" onChange={(e) => set({ grain: Number(e.target.value) })} />
-          </label>
+
+          <div className="generator__settings">
+            {hasControl('shape') && (
+              <div className="generator__field generator__field--wide">
+                <span className="generator__field-label">{labelOf('shape')}</span>
+                <SegmentedButtons options={GEOMETRIC_SHAPES} value={settings.shape} label="Forme des tuiles" onChange={(shape) => set({ shape })} />
+              </div>
+            )}
+            {hasControl('points') && (
+              <div className="generator__field generator__field--wide">
+                <span className="generator__field-label">{labelOf('points')}</span>
+                <SegmentedButtons options={POINT_OPTIONS} value={String(settings.points) as '4' | '5' | '6'} label="Nombre de points" onChange={(points) => set({ points: Number(points) })} />
+              </div>
+            )}
+            {sliderKeys.map(({ key, label }) => {
+              const range = sliderRange(key);
+              return <Slider key={key} label={label} value={sliderValue(key)} min={range.min} max={range.max} step={range.step} unit={range.unit} onChange={(v) => setSlider(key, v)} />;
+            })}
+            <Slider label="Grain" value={params.grain} onChange={(grain) => set({ grain })} />
+          </div>
         </div>
         <div className="editor__actions">
-          <Button variant="text" onClick={() => set({ seed: params.seed + 1 })}>
-            Autre composition
+          <Button variant="text" icon="refresh" onClick={() => set({ seed: nextSeed(params.seed) })}>
+            Varier
           </Button>
           <Button icon="wallpaper" disabled={busy} onClick={() => setApplyOpen(true)}>
             Appliquer

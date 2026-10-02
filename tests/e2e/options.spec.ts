@@ -179,7 +179,7 @@ test('générateur : style, palette Material You, enregistrement et application'
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Créer' })).toHaveCount(0);
   const settings = await openSettings(page);
-  await settings.getByRole('switch', { name: 'Générateur minimaliste' }).click();
+  await settings.getByRole('switch', { name: 'Générateur de fonds' }).click();
   await page.getByRole('button', { name: 'Explorer' }).click();
   await page.getByRole('button', { name: 'Créer' }).click();
 

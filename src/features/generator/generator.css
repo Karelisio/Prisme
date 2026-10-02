@@ -32,3 +32,85 @@
   border-radius: var(--md-shape-sm);
   background: none;
 }
+
+/* Panneau compact : défile de lui-même sur les petits écrans, les boutons d'action restent visibles. */
+.generator .editor__panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 62%;
+}
+
+.generator .editor__controls {
+  flex: 1 1 auto;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.generator__styles {
+  display: grid;
+  gap: 6px;
+}
+
+/* Un rang de puces par famille de styles ; il défile jusqu'au bord de l'écran. */
+.generator__group {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  margin-right: -20px;
+}
+
+.generator__group-label {
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 12px/16px var(--md-font);
+  letter-spacing: 0.4px;
+}
+
+.generator__chips {
+  display: flex;
+  gap: 8px;
+  padding-right: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.generator__chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* Réglages du style choisi : deux curseurs par ligne. */
+.generator__settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+}
+
+.generator__field {
+  display: grid;
+  gap: 4px;
+}
+
+.generator__field--wide {
+  grid-column: 1 / -1;
+}
+
+.generator__field-label,
+.generator__slider-head {
+  color: var(--md-sys-color-on-surface-variant);
+  font: 500 12px/16px var(--md-font);
+}
+
+.generator__slider {
+  display: grid;
+  gap: 2px;
+}
+
+.generator__slider-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.generator .segmented__item {
+  height: 36px;
+}
