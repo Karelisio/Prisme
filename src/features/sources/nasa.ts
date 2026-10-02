@@ -82,3 +82,22 @@ export async function nasaSearch(options: { query: string; page: number }): Prom
   const hasNext = links?.some((l) => l.rel === 'next') ?? false;
   return { items: items.map(mapNasa).filter((w): w is Wallpaper => w !== null), next: hasNext ? options.page + 1 : null };
 }
+
+/** Une image par son identifiant NASA (collection reçue) ; null si elle n'existe plus. */
+export async function nasaAsset(id: string): Promise<Wallpaper | null> {
+  const url = withParams(API, { nasa_id: id, media_type: 'image' });
+  let res;
+  try {
+    res = await getJson<SearchResponse>(url);
+  } catch (error) {
+    if (error instanceof NetworkError) throw new ApiError('nasa', 'network', 'NASA injoignable');
+    throw error;
+  }
+  if (res.status === 404) return null;
+  if (res.status === 429) throw new ApiError('nasa', 'rate_limit', 'Trop de requêtes à la NASA, réessaie plus tard');
+  if (res.status < 200 || res.status >= 300 || !Array.isArray(res.data?.collection?.items)) {
+    throw new ApiError('nasa', 'server', `Erreur NASA (${res.status})`);
+  }
+  const item = res.data.collection.items.find((i) => i.data?.[0]?.nasa_id === id);
+  return item ? mapNasa(item) : null;
+}

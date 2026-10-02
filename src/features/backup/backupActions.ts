@@ -30,7 +30,14 @@ export async function importBackup(): Promise<string | null> {
   if (result.cancelled) return null;
   const backup = parseBackup(result.data);
   const merged = mergeLibrary(useLibrary.getState(), backup.library);
-  useLibrary.setState({ items: merged.items, favorites: merged.favorites, collections: merged.collections, history: merged.history });
+  useLibrary.setState({
+    items: merged.items,
+    favorites: merged.favorites,
+    collections: merged.collections,
+    history: merged.history,
+    tags: merged.tags,
+    sort: merged.sort,
+  });
   useSettings.getState().update(backup.settings);
   useAutomationPrefs.setState((current) => ({
     ...current,

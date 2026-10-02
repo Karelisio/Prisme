@@ -5,6 +5,7 @@ import { useLibrary } from '@/features/library/store';
 import { useThumbSrc } from '@/features/library/useImageSrc';
 import { useSettings } from '@/features/settings/store';
 import type { Wallpaper } from '@/features/sources/types';
+import { useLongPress } from '@/shared/lib/useLongPress';
 import { Icon } from '@/shared/ui/components';
 
 const GAP = 8;
@@ -18,11 +19,13 @@ interface GridProps {
   loadingMore?: boolean;
   onEndReached?: () => void;
   onOpen?: (w: Wallpaper) => void;
+  /** Appui long sur un fond (ex. étiquettes des favoris). */
+  onLongPress?: (w: Wallpaper) => void;
   footer?: ReactNode;
 }
 
 /** Grille virtualisée : seules les lignes proches de l'écran existent dans le DOM. */
-export function WallpaperGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen, footer }: GridProps) {
+export function WallpaperGrid({ items, scrollRef, hasMore, loadingMore, onEndReached, onOpen, onLongPress, footer }: GridProps) {
   const columns = useSettings((s) => s.gridColumns);
   // Par défaut, l'aperçu reçoit toute la grille pour pouvoir passer d'un fond à l'autre.
   const itemsRef = useRef(items);
@@ -86,7 +89,7 @@ export function WallpaperGrid({ items, scrollRef, hasMore, loadingMore, onEndRea
               }}
             >
               {items.slice(row.index * columns, row.index * columns + columns).map((w) => (
-                <WallpaperCell key={w.id} wallpaper={w} onOpen={open} />
+                <WallpaperCell key={w.id} wallpaper={w} onOpen={open} onLongPress={onLongPress} />
               ))}
             </div>
           ))}
@@ -96,15 +99,25 @@ export function WallpaperGrid({ items, scrollRef, hasMore, loadingMore, onEndRea
   );
 }
 
-const WallpaperCell = memo(function WallpaperCell({ wallpaper, onOpen }: { wallpaper: Wallpaper; onOpen: (w: Wallpaper) => void }) {
+const WallpaperCell = memo(function WallpaperCell({
+  wallpaper,
+  onOpen,
+  onLongPress,
+}: {
+  wallpaper: Wallpaper;
+  onOpen: (w: Wallpaper) => void;
+  onLongPress?: (w: Wallpaper) => void;
+}) {
   const src = useThumbSrc(wallpaper);
   const favorite = useLibrary((s) => !!s.favorites[wallpaper.id]);
+  const press = useLongPress(onLongPress && (() => onLongPress(wallpaper)));
   return (
     <button
       type="button"
       className="wp-cell"
       style={{ backgroundColor: wallpaper.color }}
       onClick={() => onOpen(wallpaper)}
+      {...press}
       aria-label={wallpaper.author ? `${wallpaper.alt}, par ${wallpaper.author.name}` : wallpaper.alt}
     >
       <img

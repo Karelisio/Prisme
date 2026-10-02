@@ -17,6 +17,8 @@ ext {
     exifInterfaceVersion = '1.4.2'
     // Relief 3D : détourage du sujet (Google Play services, modèle téléchargé à la demande ; seule version publiée).
     mlkitSubjectSegmentationVersion = '16.0.0-beta1'
+    // Scanner de QR code (Google Play services, sans permission caméra) pour « Scanner un QR » dans la bibliothèque.
+    mlkitCodeScannerVersion = '16.1.0'
     orgJsonVersion = '20251224'
     workVersion = '2.11.2'
 }

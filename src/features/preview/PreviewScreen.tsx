@@ -2,6 +2,7 @@ import { SystemBars } from '@capacitor/core';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { goBack, useNavigation } from '@/app/navigation';
 import { CollectionsSheet } from '@/features/library/CollectionsSheet';
+import { TagsSheet } from '@/features/library/TagsSheet';
 import { useLibrary } from '@/features/library/store';
 import { usePreviewSrc, useThumbSrc } from '@/features/library/useImageSrc';
 import { useSettings } from '@/features/settings/store';
@@ -28,7 +29,7 @@ import { Simulation, type SimulationMode } from './Simulation';
 import { usePanZoom } from './usePanZoom';
 import './preview.css';
 
-type Sheet = 'apply' | 'info' | 'collections' | 'palette' | 'linked' | 'more' | 'hide' | null;
+type Sheet = 'apply' | 'info' | 'collections' | 'tags' | 'palette' | 'linked' | 'more' | 'hide' | null;
 
 /** Tâche en cours affichée en bas de l'aperçu (application, enregistrement, partage). */
 interface Task {
@@ -383,6 +384,9 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
             </li>
           )}
           <li>
+            <ListItem headline="Étiquettes" supporting="Pour retrouver ce fond dans tes favoris" leading={<Icon name="label" />} onClick={() => setSheet('tags')} />
+          </li>
+          <li>
             <ListItem headline="Informations" supporting="Auteur, source, dimensions" leading={<Icon name="info" />} onClick={() => setSheet('info')} />
           </li>
           {!isLocalWallpaper(wallpaper) && (
@@ -401,6 +405,7 @@ export function PreviewScreen({ wallpaper, list }: { wallpaper: Wallpaper; list?
       )}
       <InfoSheet wallpaper={wallpaper} open={sheet === 'info'} onClose={() => setSheet(null)} />
       <CollectionsSheet wallpaper={wallpaper} open={sheet === 'collections'} onClose={() => setSheet(null)} />
+      <TagsSheet wallpaper={wallpaper} open={sheet === 'tags'} onClose={() => setSheet(null)} />
       {features.palette && (
         <PaletteSheet
           wallpaper={wallpaper}

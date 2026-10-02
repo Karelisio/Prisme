@@ -1,7 +1,18 @@
 import { type AutomationPrefs, DEFAULT_AUTOMATION } from '@/features/automation/model';
 import type { Hidden, HiddenAuthor, HiddenWallpaper } from '@/features/discover/hidden';
 import type { Photographer } from '@/features/discover/store';
-import { type Collection, HISTORY_LIMIT, type HistoryEntry, type LibraryData, prune } from '@/features/library/model';
+import {
+  type Collection,
+  HISTORY_LIMIT,
+  type HistoryEntry,
+  LIBRARY_SORTS,
+  type LibraryData,
+  type LibrarySort,
+  MAX_TAGS_PER_WALLPAPER,
+  cleanTag,
+  prune,
+  sameTag,
+} from '@/features/library/model';
 import { DEFAULT_SETTINGS, type Settings } from '@/features/settings/store';
 import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
@@ -9,7 +20,11 @@ import type { Wallpaper } from '@/features/sources/types';
 export const BACKUP_FORMAT = 'prisme-backup';
 export const BACKUP_VERSION = 1;
 
-export type BackupLibrary = Pick<LibraryData, 'items' | 'favorites' | 'collections' | 'history'>;
+export type BackupLibrary = Pick<LibraryData, 'items' | 'favorites' | 'collections' | 'history'> & {
+  /** Étiquettes des favoris et tri choisi : absents des sauvegardes créées avant leur arrivée. */
+  tags?: Record<string, string[]>;
+  sort?: LibrarySort;
+};
 
 /** Découverte : photographes suivis et contenus masqués. */
 export interface BackupDiscover extends Hidden {
@@ -77,6 +92,8 @@ export function createBackup(
       collections: library.collections.map((c) => ({ ...c, itemIds: c.itemIds.filter(keep) })),
       // Les images préparées (éditeur, fonds liés) sont des fichiers locaux : on garde le fond source.
       history: library.history.filter((h) => keep(h.wallpaperId)).map(({ uri: _local, ...h }) => h),
+      tags: Object.fromEntries(Object.entries(library.tags).filter(([id]) => keep(id))),
+      sort: library.sort,
     },
     settings: pickLike(DEFAULT_SETTINGS as unknown as Plain, settings) as Partial<Settings>,
     automation: pickLike(DEFAULT_AUTOMATION as unknown as Plain, automation) as Partial<AutomationPrefs>,
@@ -133,6 +150,21 @@ const isCollection = (v: unknown): v is Collection =>
 const isHistoryEntry = (v: unknown): v is HistoryEntry =>
   isPlain(v) && typeof v.id === 'string' && typeof v.wallpaperId === 'string' && typeof v.at === 'number' && ['home', 'lock', 'both'].includes(v.target as string);
 
+/** Étiquettes valides des seuls favoris connus : nettoyées, sans doublon, en nombre limité. */
+function parseTags(value: unknown, favorites: Record<string, number>): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [id, list] of Object.entries(isPlain(value) ? value : {})) {
+    if (!favorites[id] || !Array.isArray(list)) continue;
+    const tags: string[] = [];
+    for (const raw of list) {
+      const tag = typeof raw === 'string' ? cleanTag(raw) : '';
+      if (tag && tags.length < MAX_TAGS_PER_WALLPAPER && !tags.some((t) => sameTag(t, tag))) tags.push(tag);
+    }
+    if (tags.length > 0) out[id] = tags;
+  }
+  return out;
+}
+
 /** Lit et valide un fichier de sauvegarde ; les entrées abîmées sont ignorées une à une. */
 export function parseBackup(text: string): Backup {
   let data: unknown;
@@ -157,19 +189,20 @@ export function parseBackup(text: string): Backup {
     .filter(isCollection)
     .map((c) => ({ ...c, createdAt: typeof c.createdAt === 'number' ? c.createdAt : 0, itemIds: c.itemIds.filter((id) => items[id]) }));
   const history = (Array.isArray(library.history) ? library.history : []).filter((h) => isHistoryEntry(h) && !!items[h.wallpaperId]) as HistoryEntry[];
+  const sort = LIBRARY_SORTS.find((candidate) => candidate === library.sort);
   return {
     format: BACKUP_FORMAT,
     version: data.version,
     exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt : '',
     appVersion: typeof data.appVersion === 'string' ? data.appVersion : '',
-    library: { items, favorites, collections, history },
+    library: { items, favorites, collections, history, tags: parseTags(library.tags, favorites), ...(sort && { sort }) },
     settings: pickLike(DEFAULT_SETTINGS as unknown as Plain, data.settings) as Partial<Settings>,
     automation: pickLike(DEFAULT_AUTOMATION as unknown as Plain, data.automation) as Partial<AutomationPrefs>,
     discover: parseDiscover(data.discover),
   };
 }
 
-/** Fusionne sans rien perdre : favoris et collections réunis, historique complété. */
+/** Fusionne sans rien perdre : favoris, collections et étiquettes réunis, historique complété. */
 export function mergeLibrary(current: LibraryData, incoming: BackupLibrary): LibraryData {
   const collections = current.collections.map((c) => {
     const other = incoming.collections.find((i) => i.id === c.id);
@@ -178,12 +211,21 @@ export function mergeLibrary(current: LibraryData, incoming: BackupLibrary): Lib
   for (const c of incoming.collections) if (!current.collections.some((existing) => existing.id === c.id)) collections.push(c);
   const known = new Set(current.history.map((h) => h.id));
   const history = [...current.history, ...incoming.history.filter((h) => !known.has(h.id))].sort((a, b) => b.at - a.at).slice(0, HISTORY_LIMIT);
+  const tags = { ...current.tags };
+  for (const [id, list] of Object.entries(incoming.tags ?? {})) {
+    const merged = [...(tags[id] ?? [])];
+    for (const tag of list) if (merged.length < MAX_TAGS_PER_WALLPAPER && !merged.some((t) => sameTag(t, tag))) merged.push(tag);
+    tags[id] = merged;
+  }
   return prune({
     ...current,
     items: { ...incoming.items, ...current.items },
     favorites: { ...incoming.favorites, ...current.favorites },
     collections,
     history,
+    tags,
+    // Comme les réglages, le tri choisi est celui de la sauvegarde restaurée.
+    sort: incoming.sort ?? current.sort,
   });
 }
 

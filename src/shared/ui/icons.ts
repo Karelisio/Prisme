@@ -113,6 +113,11 @@ import person from '@material-symbols/svg-400/rounded/person.svg?raw';
 import group from '@material-symbols/svg-400/rounded/group.svg?raw';
 import notifications from '@material-symbols/svg-400/rounded/notifications.svg?raw';
 import label from '@material-symbols/svg-400/rounded/label.svg?raw';
+import sort from '@material-symbols/svg-400/rounded/sort.svg?raw';
+import barChart from '@material-symbols/svg-400/rounded/bar_chart.svg?raw';
+import qrCode from '@material-symbols/svg-400/rounded/qr_code_2.svg?raw';
+import qrScanner from '@material-symbols/svg-400/rounded/qr_code_scanner.svg?raw';
+import contentPaste from '@material-symbols/svg-400/rounded/content_paste.svg?raw';
 import hideImage from '@material-symbols/svg-400/rounded/hide_image.svg?raw';
 import trendingUp from '@material-symbols/svg-400/rounded/trending_up.svg?raw';
 import touchApp from '@material-symbols/svg-400/rounded/touch_app.svg?raw';
@@ -236,6 +241,11 @@ export const ICONS = {
   group,
   notifications,
   label,
+  sort,
+  barChart,
+  qrCode,
+  qrScanner,
+  contentPaste,
   hideImage,
   trendingUp,
   touchApp,

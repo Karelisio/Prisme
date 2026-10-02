@@ -27,6 +27,8 @@ const library: LibraryData = {
     { id: 'h1', wallpaperId: 'b', target: 'both', at: 10, crop: { x: 0, y: 0, width: 0.5, height: 1 }, uri: '/data/creations/x.jpg' },
   ],
   offline: { a: { fullPath: '/data/offline/a' } },
+  tags: { a: ['plage', 'été'], d: ['galerie'] },
+  sort: 'color',
 };
 
 describe('sauvegarde', () => {
@@ -40,6 +42,11 @@ describe('sauvegarde', () => {
     expect(backup.library.history).toEqual([{ id: 'h1', wallpaperId: 'b', target: 'both', at: 10, crop: { x: 0, y: 0, width: 0.5, height: 1 } }]);
     expect(backup).not.toHaveProperty('library.offline');
     expect(backupFileName(backup.exportedAt)).toBe('prisme-sauvegarde-2026-10-02.json');
+  });
+
+  it('inclut les étiquettes des favoris (sans celles des images locales) et le tri choisi', () => {
+    expect(backup.library.tags).toEqual({ a: ['plage', 'été'] });
+    expect(backup.library.sort).toBe('color');
   });
 
   it('ne garde que les réglages connus (pas les fonctions du store)', () => {
@@ -78,6 +85,38 @@ describe('sauvegarde', () => {
     expect(parsed.settings).toEqual({ haptics: false, sources: { ...DEFAULT_SETTINGS.sources, pexels: false } });
   });
 
+  it('relit les étiquettes et le tri, et ignore ce qui est abîmé', () => {
+    const parsed = parseBackup(JSON.stringify(backup));
+    expect(parsed.library.tags).toEqual({ a: ['plage', 'été'] });
+    expect(parsed.library.sort).toBe('color');
+
+    const damaged = parseBackup(
+      JSON.stringify({
+        ...backup,
+        library: {
+          ...backup.library,
+          tags: {
+            a: ['  #Plage ', 'plage', 12, '', 'x'.repeat(60), ...Array.from({ length: 20 }, (_, i) => `t${i}`)],
+            b: ['pas un favori'],
+            inconnu: ['fantôme'],
+            zzz: 'pas une liste',
+          },
+          sort: 'au-hasard',
+        },
+      }),
+    );
+    expect(Object.keys(damaged.library.tags ?? {})).toEqual(['a']);
+    expect(damaged.library.tags?.a).toHaveLength(12);
+    expect(damaged.library.tags?.a?.slice(0, 2)).toEqual(['Plage', 'x'.repeat(24)]);
+    expect(damaged.library).not.toHaveProperty('sort');
+
+    // Sauvegarde antérieure : ni étiquettes ni tri.
+    const { tags: _t, sort: _s, ...older } = backup.library;
+    const old = parseBackup(JSON.stringify({ ...backup, library: older }));
+    expect(old.library.tags).toEqual({});
+    expect(old.library).not.toHaveProperty('sort');
+  });
+
   it('fusionne sans rien perdre', () => {
     const current: LibraryData = {
       ...EMPTY_LIBRARY,
@@ -93,6 +132,14 @@ describe('sauvegarde', () => {
     expect(merged.history.map((h) => h.id)).toEqual(['h9', 'h1']);
     expect(Object.keys(merged.items).sort()).toEqual(['a', 'b', 'e']);
     expect(merged.offline).toEqual(current.offline);
+    // Étiquettes réunies (celles du fond « e » sont conservées), tri de la sauvegarde.
+    expect(merged.tags).toEqual({ a: ['plage', 'été'] });
+    expect(merged.sort).toBe('color');
+    expect(mergeLibrary({ ...current, tags: { e: ['mer'] }, favorites: { e: 5, a: 4 } }, { ...backup.library, tags: { a: ['Plage', 'nuit'] } }).tags).toEqual({
+      e: ['mer'],
+      a: ['Plage', 'nuit'],
+    });
+    expect(mergeLibrary(current, { ...backup.library, sort: undefined }).sort).toBe('added');
     // Restaurer deux fois ne duplique rien.
     expect(mergeLibrary(merged, backup.library)).toEqual(merged);
   });
