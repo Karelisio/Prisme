@@ -19,6 +19,7 @@ export interface EffectParams {
 
 export const DEFAULT_EFFECT: EffectParams = { kind: 'none', amount: 0.5 };
 
+/** Libellés en français : traduits à l'affichage (`t`). */
 export const EFFECTS: readonly { kind: EffectKind; label: string; control: string }[] = [
   { kind: 'none', label: 'Aucun', control: '' },
   { kind: 'pixel', label: 'Pixel art', control: 'Taille des pixels' },

@@ -5,6 +5,7 @@ import { WallpaperPicker } from '@/features/automation/components';
 import { saveCreation } from '@/features/library/creations';
 import type { Wallpaper } from '@/features/sources/types';
 import { trackUnsplashDownload } from '@/features/sources/unsplash';
+import { t, tn } from '@/shared/i18n';
 import { screenRatio, useScreenInfo } from '@/shared/lib/screen';
 import { nativeErrorMessage } from '@/shared/native';
 import { useTheme } from '@/shared/theme/ThemeController';
@@ -38,6 +39,7 @@ import './collage.css';
 
 type Tool = 'layout' | 'adjust' | 'background';
 
+/** Libellés en français : traduits à l'affichage (`t`). */
 const TOOLS: { key: Tool; label: string; icon: IconName }[] = [
   { key: 'layout', label: 'Disposition', icon: 'collage' },
   { key: 'adjust', label: 'Réglages', icon: 'tune' },
@@ -45,6 +47,7 @@ const TOOLS: { key: Tool; label: string; icon: IconName }[] = [
 ];
 
 const SAVED_MESSAGE = 'Enregistré dans la collection « Créations »';
+const SAVED_ACTION = 'Voir';
 
 function useElementSize(ref: RefObject<HTMLElement | null>): Size | null {
   const [size, setSize] = useState<Size | null>(null);
@@ -116,7 +119,7 @@ function Stage({
     >
       {display && (
         <div className="collage__canvas" style={{ width: display.width, height: display.height }}>
-          <canvas ref={canvasRef} aria-label="Aperçu du collage" style={{ width: display.width, height: display.height }} />
+          <canvas ref={canvasRef} aria-label={t('Aperçu du collage')} style={{ width: display.width, height: display.height }} />
           <div className="collage__cells" style={{ '--collage-ink': ink } as CSSProperties}>
             {children(display)}
           </div>
@@ -284,9 +287,9 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
       // Laisse la barre de progression s'afficher avant l'encodage, qui occupe le fil principal.
       await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
       // Un bitmap remplacé entre-temps (photo rechargée plus nette) est libéré : mieux vaut refuser que d'exporter un collage troué.
-      if (drawn.some((photo) => !photo || photo.source.width === 0)) throw new Error('les photos viennent de changer, réessaie');
+      if (drawn.some((photo) => !photo || photo.source.width === 0)) throw new Error(t('les photos viennent de changer, réessaie'));
       const data = await exportCollage(layout, style, drawn, screen);
-      const creation = await saveCreation(data, style.background, `Collage de ${count} photos`);
+      const creation = await saveCreation(data, style.background, t('Collage de {count} photos', { count }));
       saved.current = { key: signature, creation };
       // Les photos Unsplash quittent l'app dans le collage : Unsplash doit en être informé (comme pour un fond appliqué).
       for (const { source, downloadLocation } of usedWallpapers(slots, count)) {
@@ -294,7 +297,7 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
       }
       return creation;
     } catch (e) {
-      showSnackbar(`Enregistrement impossible : ${nativeErrorMessage(e)}`);
+      showSnackbar(t('Enregistrement impossible : {message}', { message: nativeErrorMessage(e) }));
       return null;
     } finally {
       saving.current = false;
@@ -304,13 +307,13 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
 
   const onSave = async () => {
     const creation = await save();
-    if (creation) showSnackbar(SAVED_MESSAGE, { label: 'Voir', onAction: () => push({ type: 'preview', wallpaper: creation }) });
+    if (creation) showSnackbar(t(SAVED_MESSAGE), { label: t(SAVED_ACTION), onAction: () => push({ type: 'preview', wallpaper: creation }) });
   };
 
   const onApply = async () => {
     const creation = await save();
     if (!creation) return;
-    showSnackbar(SAVED_MESSAGE);
+    showSnackbar(t(SAVED_MESSAGE));
     // L'écran a pu être fermé pendant l'enregistrement : on ne rouvre pas l'aperçu dans ce cas.
     if (mounted.current) push({ type: 'preview', wallpaper: creation });
   };
@@ -321,26 +324,31 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
   const anyFailed = visible.some((slot) => slot && failed[slot.wallpaper.id]);
   const hint =
     filled < count
-      ? `${filled} case${filled > 1 ? 's' : ''} sur ${count} remplie${filled > 1 ? 's' : ''} : touche une case vide pour ajouter une photo.`
+      ? tn(
+          filled,
+          '{filled} case sur {total} remplie : touche une case vide pour ajouter une photo.',
+          '{filled} cases sur {total} remplies : touche une case vide pour ajouter une photo.',
+          { filled, total: count },
+        )
       : !ready
         ? anyFailed
-          ? 'Une photo est indisponible : touche sa case pour la remplacer.'
-          : 'Chargement des photos…'
-        : 'Touche une case pour la modifier. Glisse, pince ou utilise la molette pour cadrer sa photo.';
+          ? t('Une photo est indisponible : touche sa case pour la remplacer.')
+          : t('Chargement des photos…')
+        : t('Touche une case pour la modifier. Glisse, pince ou utilise la molette pour cadrer sa photo.');
 
   return (
-    <div className="collage" role="dialog" aria-label="Collage">
+    <div className="collage" role="dialog" aria-label={t('Collage')}>
       <header className="collage__top">
-        <IconButton icon="close" label="Fermer le collage" onClick={goBack} />
-        <h1 className="top-bar__title">Collage</h1>
+        <IconButton icon="close" label={t('Fermer le collage')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Collage')}</h1>
         <Button variant="text" disabled={!ready || busy} onClick={() => void onSave()}>
-          Enregistrer
+          {t('Enregistrer')}
         </Button>
       </header>
 
       {busy && (
         <div className="collage__progress">
-          <LinearProgress label="Enregistrement du collage" />
+          <LinearProgress label={t('Enregistrement du collage')} />
         </div>
       )}
 
@@ -358,7 +366,7 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
                   key={i}
                   cell={cell}
                   photo={slot ? { framing: slot.framing, size: loaded && loaded.bitmap.width > 0 ? loaded.size : null, failed: !!error } : null}
-                  label={slot ? `Case ${i + 1} : ${slot.wallpaper.alt}` : `Case ${i + 1} : vide, ajouter une photo`}
+                  label={slot ? t('Case {n} : {alt}', { n: i + 1, alt: slot.wallpaper.alt }) : t('Case {n} : vide, ajouter une photo', { n: i + 1 })}
                   selected={selected === i}
                   swapTarget={swapping && selected !== null && selected !== i}
                   onTap={() => tapCell(i)}
@@ -378,27 +386,27 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
         <div className="collage__cellbar">
           {swapping && selected !== null ? (
             <>
-              <p className="collage__hint">Touche la case à échanger avec la case {selected + 1}.</p>
+              <p className="collage__hint">{t('Touche la case à échanger avec la case {n}.', { n: selected + 1 })}</p>
               <Button variant="text" onClick={() => setSwapping(false)}>
-                Annuler
+                {t('Annuler')}
               </Button>
             </>
           ) : selected !== null && selectedSlot ? (
             <>
-              <span className="collage__cellname">Case {selected + 1}</span>
-              <IconButton icon="addPhoto" variant="tonal" label="Changer la photo" onClick={() => setPickIndex(selected)} />
-              <IconButton icon="swap" variant="tonal" label="Échanger avec une autre case" disabled={count < 2} onClick={() => setSwapping(true)} />
+              <span className="collage__cellname">{t('Case {n}', { n: selected + 1 })}</span>
+              <IconButton icon="addPhoto" variant="tonal" label={t('Changer la photo')} onClick={() => setPickIndex(selected)} />
+              <IconButton icon="swap" variant="tonal" label={t('Échanger avec une autre case')} disabled={count < 2} onClick={() => setSwapping(true)} />
               <IconButton
                 icon="focus"
                 variant="tonal"
-                label="Recentrer la photo"
+                label={t('Recentrer la photo')}
                 disabled={isDefaultFraming(selectedSlot.framing)}
                 onClick={() => setSlots((s) => setSlotFraming(s, selected, DEFAULT_FRAMING))}
               />
               <IconButton
                 icon="delete"
                 variant="tonal"
-                label="Retirer la photo"
+                label={t('Retirer la photo')}
                 onClick={() => {
                   setSlots((s) => clearPhoto(s, selected));
                   setSelected(null);
@@ -412,7 +420,7 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
 
         <div className="collage__controls">
           {tool === 'layout' && (
-            <div className="collage__layouts" role="radiogroup" aria-label="Disposition">
+            <div className="collage__layouts" role="radiogroup" aria-label={t('Disposition')}>
               {LAYOUTS.map((l, i) => (
                 <div key={l.id} className="collage__layout-item">
                   {i > 0 && LAYOUTS[i - 1]?.count !== l.count && <span className="collage__divider" aria-hidden="true" />}
@@ -421,14 +429,14 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
                     type="button"
                     role="radio"
                     aria-checked={layout === l.id}
-                    aria-label={l.description}
-                    title={l.description}
+                    aria-label={t(l.description)}
+                    title={t(l.description)}
                     className="layout-option state"
                     onClick={() => chooseLayout(l.id)}
                   >
                     <LayoutThumb id={l.id} ratio={ratio} />
                     <span className="layout-option__label" aria-hidden="true">
-                      {l.label}
+                      {t(l.label)}
                     </span>
                   </button>
                 </div>
@@ -437,12 +445,12 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
           )}
           {tool === 'adjust' && (
             <div className="collage__sliders">
-              <Range label="Espacement" value={style.spacing} max={SPACING_MAX} onChange={(spacing) => patchStyle({ spacing })} />
-              <Range label="Coins arrondis" value={style.corners} max={CORNERS_MAX} onChange={(corners) => patchStyle({ corners })} />
+              <Range label={t('Espacement')} value={style.spacing} max={SPACING_MAX} onChange={(spacing) => patchStyle({ spacing })} />
+              <Range label={t('Coins arrondis')} value={style.corners} max={CORNERS_MAX} onChange={(corners) => patchStyle({ corners })} />
             </div>
           )}
           {tool === 'background' && (
-            <div className="collage__swatches" role="radiogroup" aria-label="Couleur de fond">
+            <div className="collage__swatches" role="radiogroup" aria-label={t('Couleur de fond')}>
               {groups.map((group) => (
                 <div key={group.id} className="collage__swatch-group">
                   {group.choices.map((choice) => {
@@ -469,24 +477,24 @@ export function CollageScreen({ wallpapers }: { wallpapers?: Wallpaper[] }) {
           )}
         </div>
 
-        <div className="chip-row collage__tools" role="tablist" aria-label="Outils">
-          {TOOLS.map((t) => (
-            <Chip key={t.key} icon={t.icon} selected={tool === t.key} role="tab" aria-selected={tool === t.key} onClick={() => setTool(t.key)}>
-              {t.label}
+        <div className="chip-row collage__tools" role="tablist" aria-label={t('Outils')}>
+          {TOOLS.map((entry) => (
+            <Chip key={entry.key} icon={entry.icon} selected={tool === entry.key} role="tab" aria-selected={tool === entry.key} onClick={() => setTool(entry.key)}>
+              {t(entry.label)}
             </Chip>
           ))}
         </div>
         <div className="collage__actions">
           <Button variant="text" disabled={busy} onClick={reset}>
-            Réinitialiser
+            {t('Réinitialiser')}
           </Button>
           <Button icon="wallpaper" disabled={!ready || busy} onClick={() => void onApply()}>
-            Appliquer
+            {t('Appliquer')}
           </Button>
         </div>
       </div>
 
-      <WallpaperPicker open={pickIndex !== null} title="Choisir une photo" onClose={() => setPickIndex(null)} onPick={pick} />
+      <WallpaperPicker open={pickIndex !== null} title={t('Choisir une photo')} onClose={() => setPickIndex(null)} onPick={pick} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { fetchWallpaperById, splitId } from '@/features/sources/byId';
 import { ApiError, type Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 
 /** Où en est la récupération des fonds d'une collection reçue. */
 export interface ReceivedResult {
@@ -62,7 +63,7 @@ export async function loadReceived(ids: readonly string[], options: LoadOptions)
           if (wallpaper) result.found.set(id, wallpaper);
           else result.missing.add(id);
         } catch (error) {
-          const failure = error instanceof Error ? error : new Error('Fond non récupéré');
+          const failure = error instanceof Error ? error : new Error(t('Fond non récupéré'));
           result.failed.set(id, failure);
           if (blocking(error)) blocked.set(source, failure);
         }

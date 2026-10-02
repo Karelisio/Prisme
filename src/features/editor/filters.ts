@@ -22,6 +22,7 @@ export interface FilterParams {
   duotone: DuotoneColors;
 }
 
+/** Libellés en français : traduits à l'affichage (`t`), ainsi que ceux des préréglages duotone. */
 export const FILTERS: readonly { kind: FilterKind; label: string }[] = [
   { kind: 'none', label: 'Aucun' },
   { kind: 'mono', label: 'Noir et blanc' },

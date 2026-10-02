@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { drawGrain } from '@/shared/lib/noise';
 import type { NormalizedRect } from '@/shared/native';
 import { DEFAULT_EFFECT, type EffectParams, type Steps, UPSCALE_SMOOTH, drain, drainAsync, isEffectActive, runEffect } from './effects';
@@ -172,7 +173,7 @@ function createSurface(width: number, height: number, readback = false): Surface
   canvas.width = Math.max(1, Math.round(width));
   canvas.height = Math.max(1, Math.round(height));
   const ctx = canvas.getContext('2d', readback ? { willReadFrequently: true } : undefined);
-  if (!ctx) throw new Error('Canvas indisponible');
+  if (!ctx) throw new Error(t('Canvas indisponible'));
   return { canvas, ctx };
 }
 
@@ -439,9 +440,9 @@ export async function exportEdit(
   canvas.width = output.width;
   canvas.height = output.height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas indisponible');
+  if (!ctx) throw new Error(t('Canvas indisponible'));
   const done = await renderEditAsync(ctx, source, sourceSize, crop, params, output.width, output.height, { signal });
-  if (!done) throw new Error('Rendu annulé');
+  if (!done) throw new Error(t('Rendu annulé'));
   const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
   canvas.width = canvas.height = 0;
   return dataUrl;

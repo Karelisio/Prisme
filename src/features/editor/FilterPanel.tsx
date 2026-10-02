@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { t } from '@/shared/i18n';
 import type { ColorScheme } from '@/shared/theme/scheme';
 import { Slider } from './controls';
 import {
@@ -45,14 +46,14 @@ const sameDuotone = (a: DuotoneColors, b: DuotoneColors) => a.shadow.toLowerCase
 function DuotonePicker({ colors, presets, onChange }: { colors: DuotoneColors; presets: readonly DuotonePreset[]; onChange: (c: DuotoneColors) => void }) {
   return (
     <div className="editor__duotone">
-      <div className="editor__presets" role="group" aria-label="Préréglages duotone">
+      <div className="editor__presets" role="group" aria-label={t('Préréglages duotone')}>
         {presets.map((p) => (
           <button
             key={p.id}
             type="button"
             className="editor__preset"
-            aria-label={`Préréglage ${p.label}`}
-            title={p.label}
+            aria-label={t('Préréglage {name}', { name: t(p.label) })}
+            title={t(p.label)}
             aria-pressed={sameDuotone(colors, p)}
             style={{ background: `linear-gradient(135deg, ${p.shadow} 0 50%, ${p.highlight} 50% 100%)` }}
             onClick={() => onChange({ shadow: p.shadow, highlight: p.highlight })}
@@ -60,8 +61,8 @@ function DuotonePicker({ colors, presets, onChange }: { colors: DuotoneColors; p
         ))}
       </div>
       <div className="editor__color-pair">
-        <input type="color" className="editor__color" aria-label="Couleur des ombres" value={colors.shadow} onChange={(e) => onChange({ ...colors, shadow: e.target.value })} />
-        <input type="color" className="editor__color" aria-label="Couleur des lumières" value={colors.highlight} onChange={(e) => onChange({ ...colors, highlight: e.target.value })} />
+        <input type="color" className="editor__color" aria-label={t('Couleur des ombres')} value={colors.shadow} onChange={(e) => onChange({ ...colors, shadow: e.target.value })} />
+        <input type="color" className="editor__color" aria-label={t('Couleur des lumières')} value={colors.highlight} onChange={(e) => onChange({ ...colors, highlight: e.target.value })} />
       </div>
     </div>
   );
@@ -88,15 +89,15 @@ export function FilterPanel({
 
   return (
     <>
-      <div className="editor__filters" role="group" aria-label="Filtres photo">
+      <div className="editor__filters" role="group" aria-label={t('Filtres photo')}>
         {FILTERS.map(({ kind, label }) => (
           <button key={kind} type="button" className="filter-thumb" aria-pressed={filter.kind === kind} onClick={() => onChange({ ...filter, kind })}>
             {thumbs[kind] ? <img src={thumbs[kind]} alt="" draggable={false} /> : <span className="filter-thumb__empty" />}
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </button>
         ))}
       </div>
-      <Slider label="Intensité du filtre" value={filter.intensity} disabled={filter.kind === 'none'} onChange={(intensity) => onChange({ ...filter, intensity })} />
+      <Slider label={t('Intensité du filtre')} value={filter.intensity} disabled={filter.kind === 'none'} onChange={(intensity) => onChange({ ...filter, intensity })} />
       {filter.kind === 'duotone' && <DuotonePicker colors={filter.duotone} presets={presets} onChange={(duotone) => onChange({ ...filter, duotone })} />}
     </>
   );

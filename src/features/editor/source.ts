@@ -1,4 +1,5 @@
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import { withParams } from '@/shared/lib/http';
 import { type NormalizedRect, PrismeWallpaper, isNative, toWebUrl } from '@/shared/native';
 import { type Size, coverCrop } from './render';
@@ -38,7 +39,7 @@ export async function loadEditableImage(w: Wallpaper, crop: NormalizedRect | und
   }
 
   const response = await fetch(src);
-  if (!response.ok) throw new Error('Image indisponible');
+  if (!response.ok) throw new Error(t('Image indisponible'));
   const blob = await response.blob();
   const probe = await createImageBitmap(blob);
   if (probe.width <= neededWidth) return { bitmap: probe, size: { width: probe.width, height: probe.height } };

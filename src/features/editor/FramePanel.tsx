@@ -1,8 +1,9 @@
+import { locale, t } from '@/shared/i18n';
 import { Button, IconButton } from '@/shared/ui/components';
 import { Slider } from './controls';
 import { type Geometry, MAX_STRAIGHTEN, MAX_ZOOM, type Size, mirrorGeometry, rotateGeometry, straightenGeometry, zoomGeometry } from './geometry';
 
-const decimal = (value: number, digits: number) => value.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const decimal = (value: number, digits: number) => value.toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 /** « +3,5° », « −2° », « 0° » (jamais « −0° »). */
 function formatDegrees(degrees: number): string {
@@ -30,11 +31,11 @@ export function FramePanel({
   return (
     <>
       <div className="editor__row editor__row--tools">
-        <IconButton icon="rotateLeft" label="Pivoter à gauche" variant="tonal" onClick={() => onChange(rotateGeometry(geometry, -1, source, output))} />
-        <IconButton icon="rotateRight" label="Pivoter à droite" variant="tonal" onClick={() => onChange(rotateGeometry(geometry, 1, source, output))} />
+        <IconButton icon="rotateLeft" label={t('Pivoter à gauche')} variant="tonal" onClick={() => onChange(rotateGeometry(geometry, -1, source, output))} />
+        <IconButton icon="rotateRight" label={t('Pivoter à droite')} variant="tonal" onClick={() => onChange(rotateGeometry(geometry, 1, source, output))} />
         <IconButton
           icon="flip"
-          label="Miroir horizontal"
+          label={t('Miroir horizontal')}
           variant="tonal"
           className="editor__toggle"
           selected={geometry.mirror}
@@ -42,11 +43,11 @@ export function FramePanel({
         />
         <span className="editor__spacer" />
         <Button variant="text" onClick={onRestore}>
-          Rétablir le cadrage
+          {t('Rétablir le cadrage')}
         </Button>
       </div>
       <Slider
-        label="Redressement"
+        label={t('Redressement')}
         min={-MAX_STRAIGHTEN}
         max={MAX_STRAIGHTEN}
         step={0.5}
@@ -55,7 +56,7 @@ export function FramePanel({
         onChange={(degrees) => onChange(straightenGeometry(geometry, degrees, source, output))}
       />
       <Slider
-        label="Zoom"
+        label={t('Zoom')}
         min={1}
         max={MAX_ZOOM}
         step={0.05}
@@ -64,7 +65,9 @@ export function FramePanel({
         disabled={!fills}
         onChange={(zoom) => onChange(zoomGeometry(geometry, source, output, zoom / geometry.view.zoom))}
       />
-      <p className="editor__hint">{fills ? 'Glisse la photo pour la déplacer, pince ou utilise la molette pour zoomer.' : 'Le déplacement et le zoom ne servent qu’avec « Remplir (recadrer) ».'}</p>
+      <p className="editor__hint">
+        {fills ? t('Glisse la photo pour la déplacer, pince ou utilise la molette pour zoomer.') : t('Le déplacement et le zoom ne servent qu’avec « Remplir (recadrer) ».')}
+      </p>
     </>
   );
 }

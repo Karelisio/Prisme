@@ -4,14 +4,13 @@ import { WallpaperGrid } from '@/features/browse/WallpaperGrid';
 import { GRID_MARGIN, columnCount } from '@/features/browse/mosaic';
 import { thumbWidthFor } from '@/features/browse/useFeed';
 import { useSettings } from '@/features/settings/store';
+import { t, tn } from '@/shared/i18n';
 import { haptic } from '@/shared/lib/haptics';
 import { Button, EmptyState, IconButton, LinearProgress } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { type ReceivedResult, emptyResult, failureMessages, foundInOrder, loadReceived } from './received';
 import { useLibrary } from './store';
 import './library.css';
-
-const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 
 /**
  * Collection reçue (lien, QR code ou code collé) : les fonds sont retrouvés chez leurs sources à
@@ -52,35 +51,37 @@ export function ReceivedScreen({ name, ids }: { name: string; ids: string[] }) {
   const wallpapers = useMemo(() => foundInOrder(ids, result), [ids, result]);
   const handled = result.found.size + result.missing.size + result.failed.size;
   const problems = failureMessages(result);
+  // « 2 fonds retrouvés, 1 introuvable (retiré par leur source), 1 non récupéré. »
+  const summary = `${[
+    tn(wallpapers.length, '{count} fond retrouvé', '{count} fonds retrouvés'),
+    ...(result.missing.size > 0 ? [tn(result.missing.size, '{count} introuvable (retiré par leur source)', '{count} introuvables (retirés par leur source)')] : []),
+    ...(result.failed.size > 0 ? [tn(result.failed.size, '{count} non récupéré', '{count} non récupérés')] : []),
+  ].join(', ')}.`;
 
   const add = () => {
     const id = importCollection(name, wallpapers);
     haptic('confirm');
-    showSnackbar(`Collection « ${name} » ajoutée à ta bibliothèque`);
+    showSnackbar(t('Collection « {name} » ajoutée à ta bibliothèque', { name }));
     replace({ type: 'collection', collectionId: id });
   };
 
   return (
     <div ref={scrollRef} className="screen overlay-screen received">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
         <h1 className="top-bar__title">{name}</h1>
       </header>
       <div className="received__status" role="status">
-        <p className="received__title">Collection reçue · {plural(ids.length, 'fond')}</p>
+        <p className="received__title">{t('Collection reçue · {wallpapers}', { wallpapers: tn(ids.length, '{count} fond', '{count} fonds') })}</p>
         {loading ? (
           <>
             <p className="received__detail">
-              Récupération des fonds chez leurs sources… {handled} / {ids.length}
+              {t('Récupération des fonds chez leurs sources… {done} / {total}', { done: handled, total: ids.length })}
             </p>
-            <LinearProgress value={handled / Math.max(1, ids.length)} label="Récupération des fonds" />
+            <LinearProgress value={handled / Math.max(1, ids.length)} label={t('Récupération des fonds')} />
           </>
         ) : (
-          <p className="received__detail">
-            {plural(wallpapers.length, 'fond')} retrouvé{wallpapers.length > 1 ? 's' : ''}
-            {result.missing.size > 0 ? `, ${result.missing.size} introuvable${result.missing.size > 1 ? 's' : ''} (retiré${result.missing.size > 1 ? 's' : ''} par leur source)` : ''}
-            {result.failed.size > 0 ? `, ${result.failed.size} non récupéré${result.failed.size > 1 ? 's' : ''}` : ''}.
-          </p>
+          <p className="received__detail">{summary}</p>
         )}
         {!loading && problems.length > 0 && (
           <ul className="received__problems">
@@ -91,7 +92,7 @@ export function ReceivedScreen({ name, ids }: { name: string; ids: string[] }) {
         )}
         {!loading && result.failed.size > 0 && (
           <Button variant="text" icon="refresh" onClick={load}>
-            Réessayer
+            {t('Réessayer')}
           </Button>
         )}
       </div>
@@ -99,12 +100,18 @@ export function ReceivedScreen({ name, ids }: { name: string; ids: string[] }) {
         {wallpapers.length > 0 ? (
           <WallpaperGrid items={wallpapers} scrollRef={scrollRef} />
         ) : (
-          !loading && <EmptyState icon="collections" title="Aucun fond récupéré" text="Les sources n’ont renvoyé aucun de ces fonds. Vérifie ta connexion puis réessaie." />
+          !loading && (
+            <EmptyState
+              icon="collections"
+              title={t('Aucun fond récupéré')}
+              text={t('Les sources n’ont renvoyé aucun de ces fonds. Vérifie ta connexion puis réessaie.')}
+            />
+          )
         )}
       </div>
       <div className="received__bar">
         <Button large icon="libraryAdd" disabled={loading || wallpapers.length === 0 || !hydrated} onClick={add}>
-          Ajouter à ma bibliothèque
+          {t('Ajouter à ma bibliothèque')}
         </Button>
       </div>
     </div>

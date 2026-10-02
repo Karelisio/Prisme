@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Wallpaper } from '@/features/sources/types';
+import { t, tn } from '@/shared/i18n';
 import { Button, Icon, ListItem, TextField } from '@/shared/ui/components';
 import { BottomSheet, showSnackbar } from '@/shared/ui/overlays';
 import { useLibrary } from './store';
@@ -16,13 +17,13 @@ export function CollectionsSheet({ wallpaper, open, onClose }: { wallpaper: Wall
     const trimmed = name.trim();
     if (!trimmed) return;
     createCollection(trimmed, wallpaper);
-    showSnackbar(`Ajouté à « ${trimmed} »`);
+    showSnackbar(t('Ajouté à « {name} »', { name: trimmed }));
     setName('');
     setCreating(false);
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Ajouter à une collection">
+    <BottomSheet open={open} onClose={onClose} title={t('Ajouter à une collection')}>
       <ul className="list">
         {collections.map((c) => {
           const included = c.itemIds.includes(wallpaper.id);
@@ -30,7 +31,7 @@ export function CollectionsSheet({ wallpaper, open, onClose }: { wallpaper: Wall
             <li key={c.id}>
               <ListItem
                 headline={c.name}
-                supporting={`${c.itemIds.length} fond${c.itemIds.length > 1 ? 's' : ''}`}
+                supporting={tn(c.itemIds.length, '{count} fond', '{count} fonds')}
                 leading={<Icon name={included ? 'libraryAddCheck' : 'collections'} />}
                 trailing={included ? <Icon name="check" /> : undefined}
                 onClick={() => setInCollection(c.id, wallpaper, !included)}
@@ -40,7 +41,7 @@ export function CollectionsSheet({ wallpaper, open, onClose }: { wallpaper: Wall
         })}
         {!creating && (
           <li>
-            <ListItem headline="Nouvelle collection" leading={<Icon name="add" />} onClick={() => setCreating(true)} />
+            <ListItem headline={t('Nouvelle collection')} leading={<Icon name="add" />} onClick={() => setCreating(true)} />
           </li>
         )}
       </ul>
@@ -52,13 +53,13 @@ export function CollectionsSheet({ wallpaper, open, onClose }: { wallpaper: Wall
             create();
           }}
         >
-          <TextField label="Nom de la collection" value={name} onChange={(e) => setName(e.target.value)} autoFocus maxLength={40} />
+          <TextField label={t('Nom de la collection')} value={name} onChange={(e) => setName(e.target.value)} autoFocus maxLength={40} />
           <div className="sheet__actions">
             <Button variant="text" onClick={() => setCreating(false)}>
-              Annuler
+              {t('Annuler')}
             </Button>
             <Button type="submit" disabled={!name.trim()}>
-              Créer
+              {t('Créer')}
             </Button>
           </div>
         </form>

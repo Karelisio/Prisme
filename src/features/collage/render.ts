@@ -2,6 +2,7 @@
  * Dessin du collage sur un canevas. Même fonction pour l'aperçu (petit) et l'export (taille de
  * l'écran) : le rendu est identique, seule la résolution change.
  */
+import { t } from '@/shared/i18n';
 import { isLightColor } from './colors';
 import { type Framing, sourceRect } from './framing';
 import { type Cell, type LayoutId, type Size, layoutCells, photoWindow } from './layouts';
@@ -102,7 +103,7 @@ export async function exportCollage(
   canvas.width = screen.width;
   canvas.height = screen.height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas indisponible');
+  if (!ctx) throw new Error(t('Canvas indisponible'));
   renderCollage(ctx, layout, style, photos, screen.width, screen.height, screen.density);
   const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
   canvas.width = canvas.height = 0;

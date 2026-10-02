@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Wallpaper } from '@/features/sources/types';
+import { t, tn } from '@/shared/i18n';
 import { haptic } from '@/shared/lib/haptics';
 import { nativeErrorMessage } from '@/shared/native';
 import { PrismeSystem } from '@/shared/native/system';
@@ -34,52 +35,53 @@ export function ShareSheet({ name, wallpapers, open, onClose }: { name: string; 
 
   const share = async (build: ShareBuild) => {
     try {
-      await PrismeSystem.shareText({ text: shareMessage(name, build.count, build.code), title: `Collection Prisme : ${name}` });
+      await PrismeSystem.shareText({ text: shareMessage(name, build.count, build.code), title: t('Collection Prisme : {name}', { name }) });
     } catch (error) {
-      showSnackbar(`Partage impossible : ${nativeErrorMessage(error)}`);
+      showSnackbar(t('Partage impossible : {message}', { message: nativeErrorMessage(error) }));
     }
   };
 
   const copy = async (build: ShareBuild) => {
     const copied = await copyText(build.code);
     haptic(copied ? 'confirm' : 'reject');
-    showSnackbar(copied ? 'Code copié : colle-le dans « Coller un code »' : 'Copie impossible sur ce téléphone');
+    showSnackbar(copied ? t('Code copié : colle-le dans « Coller un code »') : t('Copie impossible sur ce téléphone'));
   };
 
   const excluded = state.status === 'ready' ? state.build.excluded : splitShareable(wallpapers).excluded;
   const why = exclusionMessage(excluded);
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={`Partager « ${name} »`}>
+    <BottomSheet open={open} onClose={onClose} title={t('Partager « {name} »', { name })}>
       <div className="share">
         {state.status === 'loading' && (
           <div className="share__loading">
-            <Spinner size={32} label="Préparation du partage" />
+            <Spinner size={32} label={t('Préparation du partage')} />
           </div>
         )}
         {state.status === 'error' && (
           <p className="share__note share__note--error" role="alert">
-            {state.message}
+            {t(state.message)}
           </p>
         )}
-        {state.status === 'empty' && <p className="share__note">Aucun fond de cette collection ne peut être partagé.</p>}
+        {state.status === 'empty' && <p className="share__note">{t('Aucun fond de cette collection ne peut être partagé.')}</p>}
         {state.status === 'ready' && (
           <>
             <p className="share__summary">
-              {state.build.count} fond{state.build.count > 1 ? 's' : ''} partagé{state.build.count > 1 ? 's' : ''}
-              {state.build.truncated ? ` (les ${MAX_SHARED_ITEMS} premiers)` : ''}. Pas de compte : le code ne contient que le nom et la liste des fonds, que ton ami retrouvera chez leurs sources.
+              {`${tn(state.build.count, '{count} fond partagé', '{count} fonds partagés')}${
+                state.build.truncated ? ` ${t('(les {max} premiers)', { max: MAX_SHARED_ITEMS })}` : ''
+              }. ${t('Pas de compte : le code ne contient que le nom et la liste des fonds, que ton ami retrouvera chez leurs sources.')}`}
             </p>
             {why && <p className="share__note">{why}</p>}
             <div className="share__actions">
               <Button icon="share" onClick={() => void share(state.build)}>
-                Partager le lien
+                {t('Partager le lien')}
               </Button>
               <Button variant="tonal" icon="contentCopy" onClick={() => void copy(state.build)}>
-                Copier le code
+                {t('Copier le code')}
               </Button>
             </div>
             <QrView text={state.build.link} />
-            <p className="share__caption">Ou fais-le scanner : Bibliothèque › Collections › Scanner un QR.</p>
+            <p className="share__caption">{t('Ou fais-le scanner : Bibliothèque › Collections › Scanner un QR.')}</p>
           </>
         )}
         {state.status !== 'ready' && why && <p className="share__note">{why}</p>}

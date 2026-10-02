@@ -1,4 +1,5 @@
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import type { NormalizedRect, WallpaperTarget } from '@/shared/native';
 
 export interface Collection {
@@ -79,7 +80,7 @@ export function toggleFavorite(state: LibraryData, w: Wallpaper, now: number): L
 }
 
 export function createCollection(state: LibraryData, id: string, name: string, now: number, first?: Wallpaper): LibraryData {
-  const collection: Collection = { id, name: name.trim() || 'Sans titre', createdAt: now, itemIds: first ? [first.id] : [] };
+  const collection: Collection = { id, name: name.trim() || t('Sans titre'), createdAt: now, itemIds: first ? [first.id] : [] };
   return {
     ...state,
     items: first ? remember(state, first) : state.items,
@@ -183,15 +184,15 @@ export function addTag(state: LibraryData, id: string, raw: string): LibraryData
   const tag = cleanTag(raw);
   if (!tag || !state.favorites[id]) return state;
   const current = state.tags[id] ?? [];
-  if (current.length >= MAX_TAGS_PER_WALLPAPER || current.some((t) => sameTag(t, tag))) return state;
-  const known = Object.values(state.tags).flat().find((t) => sameTag(t, tag)) ?? tag;
+  if (current.length >= MAX_TAGS_PER_WALLPAPER || current.some((existing) => sameTag(existing, tag))) return state;
+  const known = Object.values(state.tags).flat().find((existing) => sameTag(existing, tag)) ?? tag;
   return { ...state, tags: { ...state.tags, [id]: [...current, known] } };
 }
 
 export function removeTag(state: LibraryData, id: string, tag: string): LibraryData {
   const current = state.tags[id];
-  if (!current?.some((t) => sameTag(t, tag))) return state;
-  const left = current.filter((t) => !sameTag(t, tag));
+  if (!current?.some((existing) => sameTag(existing, tag))) return state;
+  const left = current.filter((existing) => !sameTag(existing, tag));
   const { [id]: _removed, ...others } = state.tags;
   return { ...state, tags: left.length > 0 ? { ...others, [id]: left } : others };
 }
@@ -215,7 +216,7 @@ export function tagCounts(state: Pick<LibraryData, 'tags' | 'favorites'>): TagCo
   return [...counts.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'fr', { sensitivity: 'base' }));
 }
 
-export const hasTag = (state: Pick<LibraryData, 'tags'>, id: string, tag: string): boolean => !!state.tags[id]?.some((t) => sameTag(t, tag));
+export const hasTag = (state: Pick<LibraryData, 'tags'>, id: string, tag: string): boolean => !!state.tags[id]?.some((existing) => sameTag(existing, tag));
 
 /** Nouvelle collection remplie avec des fonds reçus (collection partagée) ; les fonds déjà connus gardent leur fiche. */
 export function importCollection(state: LibraryData, id: string, name: string, wallpapers: Wallpaper[], now: number): LibraryData {
@@ -226,7 +227,7 @@ export function importCollection(state: LibraryData, id: string, name: string, w
     itemIds.push(w.id);
     items[w.id] ??= w;
   }
-  const collection: Collection = { id, name: name.trim() || 'Sans titre', createdAt: now, itemIds };
+  const collection: Collection = { id, name: name.trim() || t('Sans titre'), createdAt: now, itemIds };
   return { ...state, items, collections: [collection, ...state.collections] };
 }
 
