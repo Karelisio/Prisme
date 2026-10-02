@@ -37,19 +37,23 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
 - Journal d'erreurs (interface et natif) partageable depuis *Réglages → Diagnostic*.
 
 **Options** (désactivées par défaut, *Réglages → Options avancées*)
-- Fonds dynamiques : selon l'heure, la météo (Open-Meteo, sans clé), la saison ou la batterie.
+- Fonds dynamiques : selon l'heure (heures fixes ou lever/coucher du soleil de ta ville), la météo
+  (Open-Meteo, sans clé), la saison, la batterie ou le mode sombre du téléphone.
 - Fond animé avec parallaxe (capteur coupé quand le fond est masqué ou en économie d'énergie).
 - Rotation à intervalle (WorkManager, 15 min à 24 h) : fonds pris au hasard en ligne (thème, mot-clé
-  ou « Pour toi », sources activées, Wi-Fi seulement en option ; recherché par le natif, app fermée)
-  ou parmi les favoris et collections.
+  ou « Pour toi », sources activées, Wi-Fi seulement en option ; recherché par le natif, app fermée,
+  3 fonds préchargés pour changer hors ligne), parmi les favoris et collections, ou les photos d'un
+  dossier du téléphone ; rotation intelligente (pas de répétition, teintes variées, sombre la nuit).
+- Fêtes et dates perso : Noël, Halloween, Pâques, anniversaires… fond choisi ou thème trouvé en ligne.
+- Assombrir le soir : voile progressif après le coucher du soleil, effacé avant le lever.
 - Éditeur : flou, assombrissement, grain, dégradé, texte, noir et blanc.
 - Générateur de fonds minimalistes (uni, dégradés, aurore, vagues, formes).
 - Aperçu de la palette Material You que donnera un fond.
 - Fonds accueil/verrouillage liés (variante floue, sombre, gros plan…).
 - Mode focus : fond épuré pendant des plages horaires, puis retour au fond habituel.
 
-Les automatismes (fonds dynamiques, rotation, mode focus) tournent app fermée. Priorités :
-mode focus, puis fonds dynamiques, puis rotation.
+Les automatismes tournent app fermée. Priorités : mode focus, fête du jour, lieu, fonds
+dynamiques, puis rotation ; quand l'un se termine, le suivant reprend ou le fond choisi à la main revient.
 
 ## Installer l'APK
 
