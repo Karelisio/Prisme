@@ -73,6 +73,7 @@ export function startAutomationSync(): () => void {
         s.favorites !== prev.favorites ||
         s.collections !== prev.collections ||
         s.offline !== prev.offline ||
+        s.history !== prev.history ||
         s.hydrated !== prev.hydrated
       )
         schedule();

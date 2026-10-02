@@ -76,6 +76,8 @@ class PrismeAutomationPlugin : Plugin() {
                     .put("appliedHome", state.appliedHome)
                     .put("appliedLock", state.appliedLock)
                     .put("lastRotationAt", state.lastRotationAt)
+                    .put("lastRunAt", state.lastRunAt)
+                    .put("quickPoolSize", QuickPool(context).load().items.size)
             }
             call.resolve(status)
         }

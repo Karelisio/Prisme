@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigation } from '@/app/navigation';
 import { queryClient } from '@/app/queryClient';
+import { FAVORITES_SOURCE, INTERVALS } from '@/features/automation/model';
+import { useAutomationPrefs } from '@/features/automation/store';
 import { exportBackup, importBackup } from '@/features/backup/backupActions';
+import { useLibrary } from '@/features/library/store';
 import { UpdateSettings } from '@/features/updates/UpdateSettings';
 import { env } from '@/shared/config/env';
 import { useCapabilities } from '@/shared/lib/capabilities';
@@ -33,6 +36,11 @@ export function SettingsScreen() {
   const settings = useSettings();
   const capabilities = useCapabilities();
   const push = useNavigation((s) => s.push);
+  const rotation = useAutomationPrefs((s) => s.rotation);
+  const collections = useLibrary((s) => s.collections);
+  const rotationSource =
+    rotation.source === FAVORITES_SOURCE ? 'favoris' : `collection « ${collections.find((c) => c.id === rotation.source)?.name ?? '?'} »`;
+  const rotationInterval = INTERVALS.find((i) => i.minutes === rotation.intervalMinutes)?.label ?? `${rotation.intervalMinutes} min`;
   const [storage, setStorage] = useState<{ cacheBytes: number; offlineBytes: number } | null>(null);
   const dynamicSupported = capabilities?.dynamicColor ?? false;
 
@@ -181,8 +189,14 @@ export function SettingsScreen() {
           </div>
         </div>
         <ListItem
+          headline="Changement automatique"
+          supporting={settings.features.rotation ? `Toutes les ${rotationInterval} · ${rotationSource}` : 'Désactivé · de 15 min à 24 h, même app fermée'}
+          leading={<Icon name="autorenew" />}
+          onClick={() => push({ type: 'rotation' })}
+        />
+        <ListItem
           headline="Tuile « Fond suivant »"
-          supporting="Change de fond depuis les Réglages rapides ; appui long sur l’icône de Prisme pour d’autres raccourcis"
+          supporting="Réglages rapides : fond suivant de la rotation ou favori au hasard ; appui long sur l’icône pour d’autres raccourcis"
           leading={<Icon name="skipNext" />}
           onClick={() => void addTile()}
         />

@@ -123,17 +123,22 @@ export const INTERVALS: readonly { minutes: number; label: string }[] = [
 export const QUICK_POOL_LIMIT = 300;
 
 /**
- * Favoris envoyés au natif pour la tuile « Fond suivant » et les raccourcis de l'icône :
- * les plus récents d'abord, copie hors ligne quand elle existe (changement sans réseau).
+ * Fonds envoyés au natif pour la tuile « Fond suivant » et les raccourcis de l'icône : les favoris
+ * (les plus récents d'abord) ou, sans favori, les fonds déjà appliqués. Copie hors ligne quand elle
+ * existe, pour changer de fond sans réseau.
  */
-export function buildQuickPool(library: Pick<LibraryData, 'items' | 'favorites' | 'offline'>, defaultTarget: WallpaperTarget | 'ask'): QuickPool {
-  const items = Object.entries(library.favorites)
+export function buildQuickPool(
+  library: Pick<LibraryData, 'items' | 'favorites' | 'offline' | 'history'>,
+  defaultTarget: WallpaperTarget | 'ask',
+): QuickPool {
+  const favorites = Object.entries(library.favorites)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, QUICK_POOL_LIMIT)
-    .flatMap(([id]) => {
-      const w = library.items[id];
-      return w ? [{ id: w.id, uri: library.offline[id]?.fullPath ?? w.full }] : [];
-    });
+    .map(([id]) => id);
+  const ids = favorites.length > 0 ? favorites : [...new Set(library.history.map((h) => h.wallpaperId))];
+  const items = ids.slice(0, QUICK_POOL_LIMIT).flatMap((id) => {
+    const w = library.items[id];
+    return w ? [{ id: w.id, uri: library.offline[id]?.fullPath ?? w.full }] : [];
+  });
   return { target: defaultTarget === 'ask' ? 'both' : defaultTarget, items };
 }
 

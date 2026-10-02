@@ -11,6 +11,7 @@ import {
 } from '@/shared/native';
 import { goBack } from '@/app/navigation';
 import { formatBytes } from '@/shared/lib/format';
+import { type AutomationStatus, PrismeAutomation } from '@/shared/native/automation';
 import { type ErrorEntry, PrismeSystem } from '@/shared/native/system';
 import { Button, IconButton } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
@@ -85,6 +86,7 @@ export function DiagnosticsScreen() {
   const [log, setLog] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [lastImage, setLastImage] = useState<string>();
+  const [automation, setAutomation] = useState<AutomationStatus>();
 
   const append = (line: string) => setLog((lines) => [`${new Date().toLocaleTimeString('fr-FR')} · ${line}`, ...lines].slice(0, 30));
 
@@ -92,6 +94,7 @@ export function DiagnosticsScreen() {
     void PrismeWallpaper.getCapabilities().then(setCapabilities);
     void PrismeWallpaper.getScreenInfo().then(setScreen);
     void PrismeWallpaper.getSystemTheme().then(setTheme);
+    void PrismeAutomation.getStatus().then(setAutomation, () => undefined);
     const handles = [
       PrismeWallpaper.addListener('systemThemeChanged', (t) => {
         setTheme(t);
@@ -212,6 +215,20 @@ export function DiagnosticsScreen() {
         </div>
         {lastImage && <img className="diagnostics__preview" src={lastImage} alt="Dernière image appliquée" />}
       </section>
+
+      {automation && (
+        <section>
+          <h2>Automatismes</h2>
+          <dl>
+            <dt>Actifs</dt>
+            <dd>{automation.enabled ? 'Oui' : 'Non'}</dd>
+            <dt>Dernière vérification</dt>
+            <dd>{automation.lastRunAt ? new Date(automation.lastRunAt).toLocaleString('fr-FR') : 'Jamais'}</dd>
+            <dt>Fonds pour « Fond suivant »</dt>
+            <dd>{automation.quickPoolSize ?? 0}</dd>
+          </dl>
+        </section>
+      )}
 
       <ErrorLogSection capabilities={capabilities} />
 

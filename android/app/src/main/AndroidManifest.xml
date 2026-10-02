@@ -46,11 +46,12 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
-        <!-- Raccourcis de l'icône : action lancée sans ouvrir l'interface. -->
+        <!-- Raccourcis de l'icône : action lancée sans ouvrir l'interface. Exportée : certains
+             lanceurs démarrent la cible d'un raccourci comme une appli tierce. -->
         <activity
             android:name=".quick.QuickActionActivity"
             android:excludeFromRecents="true"
-            android:exported="false"
+            android:exported="true"
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />

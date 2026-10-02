@@ -14,6 +14,10 @@
     <string name="shortcut_search_short">Rechercher</string>
     <string name="shortcut_search_long">Rechercher un fond</string>
     <string name="quick_applied">Fond d\'écran changé</string>
-    <string name="quick_no_favorites">Ajoute des favoris dans Prisme pour utiliser « Fond suivant »</string>
+    <string name="quick_no_favorites">Ajoute des favoris dans Prisme (ou applique un fond) pour utiliser « Fond suivant »</string>
+    <string name="tile_working">Changement…</string>
+    <string name="tile_done">Fond changé</string>
+    <string name="tile_empty">Aucun favori</string>
+    <string name="tile_failed">Échec, voir Prisme</string>
     <string name="quick_failed">Prisme n\'a pas pu changer le fond : %1$s</string>
 </resources>

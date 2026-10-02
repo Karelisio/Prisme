@@ -27,6 +27,7 @@ internal class AutomationStore(context: Context) {
                 appliedLock = json.optString("appliedLock").ifBlank { null },
                 focusApplied = json.optBoolean("focusApplied"),
                 dynamicApplied = json.optBoolean("dynamicApplied"),
+                lastRunAt = json.optLong("lastRunAt"),
             )
         }.getOrDefault(AutomationState())
     }
@@ -39,6 +40,7 @@ internal class AutomationStore(context: Context) {
             .put("appliedLock", state.appliedLock ?: "")
             .put("focusApplied", state.focusApplied)
             .put("dynamicApplied", state.dynamicApplied)
+            .put("lastRunAt", state.lastRunAt)
         prefs.edit().putString(KEY_STATE, json.toString()).apply()
     }
 

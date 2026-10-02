@@ -41,6 +41,10 @@ export interface AutomationStatus {
   appliedHome?: string;
   appliedLock?: string;
   lastRotationAt: number;
+  /** Dernière évaluation des automatismes (0 : jamais). */
+  lastRunAt?: number;
+  /** Fonds disponibles pour la tuile « Fond suivant ». */
+  quickPoolSize?: number;
 }
 
 export interface PrismeAutomationPlugin {
@@ -77,7 +81,7 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
   }
 
   async getStatus(): Promise<AutomationStatus> {
-    return { enabled: !!this.config, focusActive: false, lastRotationAt: 0 };
+    return { enabled: !!this.config, focusActive: false, lastRotationAt: 0, lastRunAt: 0, quickPoolSize: this.quickPool?.items.length ?? 0 };
   }
 
   async drainLog() {

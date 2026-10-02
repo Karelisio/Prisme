@@ -22,6 +22,8 @@ data class AutomationState(
     val appliedLock: String? = null,
     val focusApplied: Boolean = false,
     val dynamicApplied: Boolean = false,
+    /** Dernière évaluation des automatismes (affichée dans Diagnostic). */
+    val lastRunAt: Long = 0,
 )
 
 /** Résultat d'un fond dynamique : un fond, rien à changer (donnée inconnue), ou aucun fond prévu. */

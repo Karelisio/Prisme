@@ -94,6 +94,7 @@ describe('configuration des automatismes', () => {
       items: { a: wp('a'), b: wp('b'), c: wp('c') },
       favorites: { a: 1, b: 3, c: 2, fantome: 9 },
       offline: { c: { fullPath: '/data/offline/c' } },
+      history: [],
     };
     expect(buildQuickPool(library, 'ask')).toEqual({
       target: 'both',
@@ -106,6 +107,16 @@ describe('configuration des automatismes', () => {
     expect(buildQuickPool(library, 'lock').target).toBe('lock');
     const many = Object.fromEntries(Array.from({ length: QUICK_POOL_LIMIT + 5 }, (_, i) => [`w${i}`, i]));
     const items = Object.fromEntries(Object.keys(many).map((id) => [id, wp(id)]));
-    expect(buildQuickPool({ items, favorites: many, offline: {} }, 'home').items).toHaveLength(QUICK_POOL_LIMIT);
+    expect(buildQuickPool({ items, favorites: many, offline: {}, history: [] }, 'home').items).toHaveLength(QUICK_POOL_LIMIT);
+  });
+
+  it('réserve de la tuile sans favori : fonds déjà appliqués, sans doublon', () => {
+    const history = [
+      { id: 'h3', wallpaperId: 'b', target: 'home' as const, at: 3 },
+      { id: 'h2', wallpaperId: 'a', target: 'both' as const, at: 2 },
+      { id: 'h1', wallpaperId: 'b', target: 'lock' as const, at: 1 },
+    ];
+    const pool = buildQuickPool({ items: { a: wp('a'), b: wp('b') }, favorites: {}, offline: {}, history }, 'ask');
+    expect(pool.items.map((i) => i.id)).toEqual(['b', 'a']);
   });
 });

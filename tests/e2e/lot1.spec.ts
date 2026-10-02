@@ -147,6 +147,27 @@ test.describe('raccourcis', () => {
     expect(await web(page, () => window.__prismeSystemWeb?.tileRequests)).toBe(1);
   });
 
+  test('changement automatique accessible depuis les réglages, état visible dans Diagnostic', async ({ page }) => {
+    await mockApis(page);
+    await page.goto('/');
+    await cells(page).first().click();
+    await preview(page).getByRole('button', { name: 'Ajouter aux favoris' }).click();
+    await page.keyboard.press('Escape');
+
+    const settings = await openSettings(page);
+    const entry = settings.getByRole('button', { name: /Changement automatique/ });
+    await expect(entry).toContainText('Désactivé');
+    await entry.click();
+    await page.getByRole('switch', { name: 'Activer la rotation' }).click();
+    await page.keyboard.press('Escape');
+    await expect(entry).toContainText('Toutes les 1 h · favoris');
+
+    await settings.getByRole('button', { name: /Diagnostic/ }).click();
+    const automation = page.locator('section', { has: page.getByRole('heading', { name: 'Automatismes' }) });
+    await expect(automation.getByText('Fonds pour « Fond suivant »')).toBeVisible();
+    await expect(automation.locator('dd').nth(2)).toHaveText('1');
+  });
+
   test('le raccourci « Rechercher » ouvre la recherche', async ({ page }) => {
     await mockApis(page);
     await page.goto('/');
