@@ -52,6 +52,8 @@ const screens = {
   similar: () => import('@/features/discover/SimilarScreen'),
   photographer: () => import('@/features/discover/PhotographerScreen'),
   hidden: () => import('@/features/discover/HiddenScreen'),
+  events: () => import('@/features/automation/EventsScreen'),
+  dim: () => import('@/features/automation/DimScreen'),
 };
 
 const LibraryScreen = lazy(() => screens.library().then((m) => ({ default: m.LibraryScreen })));
@@ -70,6 +72,8 @@ const FocusScreen = lazy(() => screens.focus().then((m) => ({ default: m.FocusSc
 const SimilarScreen = lazy(() => screens.similar().then((m) => ({ default: m.SimilarScreen })));
 const PhotographerScreen = lazy(() => screens.photographer().then((m) => ({ default: m.PhotographerScreen })));
 const HiddenScreen = lazy(() => screens.hidden().then((m) => ({ default: m.HiddenScreen })));
+const EventsScreen = lazy(() => screens.events().then((m) => ({ default: m.EventsScreen })));
+const DimScreen = lazy(() => screens.dim().then((m) => ({ default: m.DimScreen })));
 
 /** Précharge les écrans secondaires une fois l'app affichée, pendant que le processeur est libre. */
 function prefetchScreens() {
@@ -159,6 +163,10 @@ function OverlayView({ overlay }: { overlay: OverlayEntry }) {
       return <PhotographerScreen photographer={overlay.photographer} />;
     case 'hidden':
       return <HiddenScreen />;
+    case 'events':
+      return <EventsScreen />;
+    case 'dim':
+      return <DimScreen />;
   }
 }
 

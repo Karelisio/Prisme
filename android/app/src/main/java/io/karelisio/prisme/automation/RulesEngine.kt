@@ -5,13 +5,25 @@ import io.karelisio.prisme.wallpaper.WallpaperTarget
 import kotlin.random.Random
 
 /** Instant figé, découpé comme le moteur en a besoin (jour 1 = lundi). */
-data class Moment(val epochMillis: Long, val dayOfWeek: Int, val minuteOfDay: Int, val month: Int)
+data class Moment(
+    val epochMillis: Long,
+    val dayOfWeek: Int,
+    val minuteOfDay: Int,
+    val month: Int,
+    val dayOfMonth: Int = 1,
+    val year: Int = 2026,
+    val dayOfYear: Int = 1,
+    /** Décalage horaire local du jour, heure d'été comprise. */
+    val utcOffsetMinutes: Int = 0,
+)
 
 data class Environment(
     val moment: Moment,
     val batteryLevel: Int? = null,
     val charging: Boolean = false,
     val weather: WeatherCondition? = null,
+    /** Mode sombre du système en cours (null : inconnu). */
+    val darkMode: Boolean? = null,
 )
 
 /** État persistant entre deux exécutions. */
@@ -28,6 +40,8 @@ data class AutomationState(
     val onlineRef: WallpaperRef? = null,
     /** Écran(s) occupé(s) par un automatisme prioritaire (fête, lieu) ; null si aucun. */
     val overrideTarget: WallpaperTarget? = null,
+    /** Rotation intelligente : fonds déjà montrés dans le cycle en cours. */
+    val rotationSeen: List<String> = emptyList(),
 )
 
 /**
@@ -115,10 +129,16 @@ object RulesEngine {
             val intervalMillis = rotation.intervalMinutes * 60_000L
             val due = state.rotationIndex !in rotation.items.indices || env.moment.epochMillis - state.lastRotationAt >= intervalMillis
             if (due) {
-                next = next.copy(
-                    rotationIndex = nextRotationIndex(state.rotationIndex, rotation.items.size, rotation.shuffle, random),
-                    lastRotationAt = env.moment.epochMillis,
-                )
+                next = if (rotation.smart) {
+                    val night = SunTimes.isNight(config.sunPoint()?.let { SunTimes.compute(it, env.moment) }, env.moment.minuteOfDay)
+                    val (index, seen) = SmartRotation.next(rotation.items, state.rotationIndex, state.rotationSeen.toSet(), night, random)
+                    next.copy(rotationIndex = index, rotationSeen = seen, lastRotationAt = env.moment.epochMillis)
+                } else {
+                    next.copy(
+                        rotationIndex = nextRotationIndex(state.rotationIndex, rotation.items.size, rotation.shuffle, random),
+                        lastRotationAt = env.moment.epochMillis,
+                    )
+                }
             }
             return decision(rotation.items[next.rotationIndex], rotation.target, Reason.ROTATION, next.copy(focusApplied = false, dynamicApplied = false))
         }
@@ -161,11 +181,12 @@ object RulesEngine {
     fun dynamicChoice(mode: DynamicMode?, env: Environment): DynamicChoice {
         fun of(ref: WallpaperRef?) = ref?.let { DynamicChoice.Pick(it) } ?: DynamicChoice.Unset
         return when (mode) {
-            is DynamicMode.Time -> of(timeSlotRef(mode.slots, env.moment.minuteOfDay))
+            is DynamicMode.Time -> of(timeSlotRef(mode.resolved(env.moment).slots, env.moment.minuteOfDay))
             is DynamicMode.Seasons -> of(mode.items[season(env.moment.month, mode.southern)])
             is DynamicMode.Battery ->
                 if (env.batteryLevel == null && !env.charging) DynamicChoice.Keep else of(batteryRef(mode, env.batteryLevel, env.charging))
             is DynamicMode.Weather -> env.weather?.let { of(weatherRef(mode.items, it)) } ?: DynamicChoice.Keep
+            is DynamicMode.Theme -> env.darkMode?.let { of(if (it) mode.dark else mode.light) } ?: DynamicChoice.Keep
             null -> DynamicChoice.Unset
         }
     }
@@ -252,7 +273,7 @@ object RulesEngine {
         }
         val mode = config.dynamic.mode
         if (config.dynamic.enabled && mode is DynamicMode.Time) {
-            for (slot in mode.slots) candidates += untilDaily(slot.startMinute, m.minuteOfDay)
+            for (slot in mode.resolved(m).slots) candidates += untilDaily(slot.startMinute, m.minuteOfDay)
         }
         val rotation = config.rotation
         if (rotation.enabled && (rotation.online != null || rotation.items.size > 1) && state.lastRotationAt > 0) {

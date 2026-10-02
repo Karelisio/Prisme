@@ -3,8 +3,11 @@ package io.karelisio.prisme.wallpaper
 import android.content.Context
 import org.json.JSONObject
 
-/** Référence d'image applicable : URL distante ou fichier local, avec recadrage éventuel. */
-data class WallpaperRef(val id: String, val uri: String, val crop: NormalizedRect? = null) {
+/**
+ * Référence d'image applicable : URL distante ou fichier local, avec recadrage éventuel et couleur
+ * moyenne (« #rrggbb », pour la rotation intelligente).
+ */
+data class WallpaperRef(val id: String, val uri: String, val crop: NormalizedRect? = null, val color: String? = null) {
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -12,13 +15,19 @@ data class WallpaperRef(val id: String, val uri: String, val crop: NormalizedRec
         crop?.let {
             put("crop", JSONObject().put("x", it.x).put("y", it.y).put("width", it.width).put("height", it.height))
         }
+        color?.let { put("color", it) }
     }
 
     companion object {
         fun fromJson(json: JSONObject?): WallpaperRef? {
             if (json == null) return null
             val uri = json.optString("uri").takeIf { it.isNotBlank() } ?: return null
-            return WallpaperRef(json.optString("id").ifBlank { uri }, uri, cropFromJson(json.optJSONObject("crop")))
+            return WallpaperRef(
+                json.optString("id").ifBlank { uri },
+                uri,
+                cropFromJson(json.optJSONObject("crop")),
+                json.optString("color").takeIf { it.startsWith("#") },
+            )
         }
 
         fun cropFromJson(json: JSONObject?): NormalizedRect? {

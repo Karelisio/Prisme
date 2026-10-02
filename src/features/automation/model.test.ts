@@ -36,9 +36,10 @@ describe('configuration des automatismes', () => {
     expect(rotationItems('col', library).map((w) => w.id)).toEqual(['c', 'a']);
     const config = buildConfig({ ...DEFAULT_AUTOMATION, rotation: { ...DEFAULT_AUTOMATION.rotation, source: 'col' } }, { ...off, rotation: true }, library);
     expect(config.rotation.items).toEqual([
-      { id: 'c', uri: '/data/creations/c.jpg' },
-      { id: 'a', uri: 'https://images.unsplash.com/a?fm=jpg' },
+      { id: 'c', uri: '/data/creations/c.jpg', color: '#000' },
+      { id: 'a', uri: 'https://images.unsplash.com/a?fm=jpg', color: '#000' },
     ]);
+    expect(config.rotation.smart).toBe(true);
   });
 
   it('créneaux horaires : seuls ceux qui ont un fond sont envoyés', () => {

@@ -453,9 +453,9 @@ internal object OnlineSources {
     }
 
     /** Unsplash : signale l'utilisation de la photo (obligatoire), sans conséquence en cas d'échec. */
-    fun trackDownload(candidate: OnlineCandidate, config: OnlineConfig) {
+    fun trackDownload(candidate: OnlineCandidate, queries: List<OnlineQuery>) {
         val location = candidate.downloadLocation ?: return
-        val auth = config.queries.firstOrNull { it.provider == "unsplash" && it.auth.isNotBlank() }?.auth ?: return
+        val auth = queries.firstOrNull { it.provider == "unsplash" && it.auth.isNotBlank() }?.auth ?: return
         runCatching { get(Request(location, mapOf("Authorization" to auth, "Accept-Version" to "v1"))) }
     }
 
@@ -477,16 +477,45 @@ internal object OnlineSources {
 }
 
 /**
+ * Derniers fonds trouvés en ligne (rotation, fêtes) : leur description complète accompagne le journal
+ * pour l'historique de l'app, et sert au suivi des téléchargements Unsplash.
+ */
+internal class OnlineCatalog(context: Context) {
+    private val prefs = context.getSharedPreferences("prisme_online_catalog", Context.MODE_PRIVATE)
+
+    fun remember(candidate: OnlineCandidate) = synchronized(LOCK) {
+        val all = runCatching { JSONObject(prefs.getString(KEY, "{}") ?: "{}") }.getOrDefault(JSONObject())
+        all.put(candidate.id, candidate.toJson())
+        // Les plus anciens partent d'abord (l'ordre d'insertion est conservé).
+        while (all.length() > MAX) all.remove(all.keys().next())
+        prefs.edit { putString(KEY, all.toString()) }
+    }
+
+    fun find(id: String): OnlineCandidate? = synchronized(LOCK) {
+        val all = runCatching { JSONObject(prefs.getString(KEY, "{}") ?: "{}") }.getOrNull() ?: return null
+        OnlineCandidate.fromJson(all.optJSONObject(id))
+    }
+
+    private companion object {
+        val LOCK = Any()
+        const val KEY = "items"
+        const val MAX = 20
+    }
+}
+
+/**
  * File de fonds en ligne à venir (SharedPreferences) : remplie par lots auprès des sources, chacune
  * à son tour, sans reprendre un fond récent ni un contenu masqué.
  */
 internal class OnlineQueue(context: Context) {
     private val prefs = context.getSharedPreferences("prisme_online", Context.MODE_PRIVATE)
+    private val catalog = OnlineCatalog(context)
 
     fun next(
         config: OnlineConfig,
         random: Random,
         fetch: (OnlineQuery) -> List<OnlineCandidate>,
+        preferDark: Boolean = false,
     ): OnlineCandidate? = synchronized(LOCK) {
         if (prefs.getString(KEY_CONFIG, null) != config.key) {
             prefs.edit {
@@ -501,14 +530,14 @@ internal class OnlineQueue(context: Context) {
         val fresh = { c: OnlineCandidate -> c.id !in recent && !config.exclusions.excludes(c) }
         // Petit catalogue déjà parcouru : les fonds récents reviennent, sauf l'actuel.
         val allowed = { c: OnlineCandidate -> c.id != lastId && !config.exclusions.excludes(c) }
-        var pick = pickFrom(queue, fresh)
+        var pick = pickFrom(queue, fresh, preferDark)
         if (pick == null) {
             val refill = refill(config.queries, prefs.getInt(KEY_CURSOR, 0), random, fetch, fresh, allowed)
             if (refill != null) {
                 queue.clear()
                 queue += refill.first
                 prefs.edit { putInt(KEY_CURSOR, refill.second) }
-                pick = pickFrom(queue, allowed)
+                pick = pickFrom(queue, allowed, preferDark)
             }
         }
         val chosen = pick ?: return null
@@ -516,26 +545,24 @@ internal class OnlineQueue(context: Context) {
         prefs.edit {
             putString(KEY_QUEUE, JSONArray(queue.map { it.toJson() }).toString())
             putString(KEY_RECENT, JSONArray(recent.takeLast(MAX_RECENT)).toString())
-            putString(KEY_CURRENT, chosen.toJson().toString())
         }
+        catalog.remember(chosen)
         chosen
     }
 
-    /** Dernier fond choisi (pour l'historique de l'app et le suivi Unsplash). */
-    fun current(id: String): OnlineCandidate? =
-        OnlineCandidate.fromJson(prefs.getString(KEY_CURRENT, null)?.let { runCatching { JSONObject(it) }.getOrNull() })?.takeIf { it.id == id }
+    /** Prochains fonds de la file (préchargés pour pouvoir changer hors ligne). */
+    fun upcoming(count: Int): List<OnlineCandidate> = synchronized(LOCK) { candidates(KEY_QUEUE).take(count) }
 
     fun clear() = prefs.edit {
         remove(KEY_QUEUE)
         remove(KEY_CONFIG)
     }
 
-    private fun pickFrom(queue: MutableList<OnlineCandidate>, usable: (OnlineCandidate) -> Boolean): OnlineCandidate? {
-        while (queue.isNotEmpty()) {
-            val candidate = queue.removeAt(0)
-            if (usable(candidate)) return candidate
-        }
-        return null
+    /** Premier fond utilisable de la file ; la nuit (rotation intelligente), un fond sombre s'il y en a. */
+    private fun pickFrom(queue: MutableList<OnlineCandidate>, usable: (OnlineCandidate) -> Boolean, preferDark: Boolean): OnlineCandidate? {
+        queue.retainAll(usable)
+        val index = if (preferDark) queue.indexOfFirst { SmartRotation.isDark(it.color) }.takeIf { it >= 0 } ?: 0 else 0
+        return if (queue.isEmpty()) null else queue.removeAt(index)
     }
 
     private fun strings(key: String): List<String> {
@@ -575,7 +602,6 @@ internal class OnlineQueue(context: Context) {
         private const val KEY_CONFIG = "config"
         private const val KEY_QUEUE = "queue"
         private const val KEY_RECENT = "recent"
-        private const val KEY_CURRENT = "current"
         private const val KEY_CURSOR = "cursor"
         /** Fonds gardés par lot : les sources alternent souvent, le quota d'API reste modeste. */
         private const val BATCH = 10

@@ -6,6 +6,8 @@ interface AutomationActions {
   updateRotation: (patch: Partial<AutomationPrefs['rotation']>) => void;
   updateDynamic: (patch: Partial<AutomationPrefs['dynamic']>) => void;
   updateFocus: (patch: Partial<AutomationPrefs['focus']>) => void;
+  updateEvents: (patch: Partial<AutomationPrefs['events']>) => void;
+  updateDim: (patch: Partial<AutomationPrefs['dim']>) => void;
 }
 
 export const useAutomationPrefs = create<AutomationPrefs & AutomationActions>()(
@@ -15,6 +17,8 @@ export const useAutomationPrefs = create<AutomationPrefs & AutomationActions>()(
       updateRotation: (patch) => set((s) => ({ rotation: { ...s.rotation, ...patch } })),
       updateDynamic: (patch) => set((s) => ({ dynamic: { ...s.dynamic, ...patch } })),
       updateFocus: (patch) => set((s) => ({ focus: { ...s.focus, ...patch } })),
+      updateEvents: (patch) => set((s) => ({ events: { ...s.events, ...patch } })),
+      updateDim: (patch) => set((s) => ({ dim: { ...s.dim, ...patch } })),
     }),
     {
       name: 'prisme-automation',
@@ -26,6 +30,8 @@ export const useAutomationPrefs = create<AutomationPrefs & AutomationActions>()(
           rotation: { ...current.rotation, ...saved.rotation },
           dynamic: { ...current.dynamic, ...saved.dynamic },
           focus: { ...current.focus, ...saved.focus },
+          events: { ...current.events, ...saved.events },
+          dim: { ...current.dim, ...saved.dim },
         };
       },
     },

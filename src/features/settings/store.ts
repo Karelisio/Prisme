@@ -16,6 +16,10 @@ export interface FeatureFlags {
   palette: boolean;
   linked: boolean;
   focus: boolean;
+  /** Fêtes et dates perso. */
+  events: boolean;
+  /** Assombrir le soir. */
+  dim: boolean;
 }
 
 export type FeatureKey = keyof FeatureFlags;
@@ -66,6 +70,8 @@ export const DEFAULT_SETTINGS: Settings = {
     palette: false,
     linked: false,
     focus: false,
+    events: false,
+    dim: false,
   },
 };
 

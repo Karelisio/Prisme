@@ -32,6 +32,7 @@ internal class AutomationStore(context: Context) {
                 lastRunAt = json.optLong("lastRunAt"),
                 onlineRef = WallpaperRef.fromJson(json.optJSONObject("onlineRef")),
                 overrideTarget = WallpaperTarget.fromKey(json.optString("overrideTarget")),
+                rotationSeen = json.optJSONArray("rotationSeen")?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).ifBlank { null } } }.orEmpty(),
             )
         }.getOrDefault(AutomationState())
     }
@@ -47,6 +48,7 @@ internal class AutomationStore(context: Context) {
             .put("lastRunAt", state.lastRunAt)
         state.onlineRef?.let { json.put("onlineRef", it.toJson()) }
         state.overrideTarget?.let { json.put("overrideTarget", it.key) }
+        if (state.rotationSeen.isNotEmpty()) json.put("rotationSeen", JSONArray(state.rotationSeen))
         prefs.edit().putString(KEY_STATE, json.toString()).apply()
     }
 
@@ -98,6 +100,10 @@ internal class AutomationStore(context: Context) {
             dayOfWeek = (calendar.get(Calendar.DAY_OF_WEEK) + 5) % 7 + 1,
             minuteOfDay = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE),
             month = calendar.get(Calendar.MONTH) + 1,
+            dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH),
+            year = calendar.get(Calendar.YEAR),
+            dayOfYear = calendar.get(Calendar.DAY_OF_YEAR),
+            utcOffsetMinutes = (calendar.get(Calendar.ZONE_OFFSET) + calendar.get(Calendar.DST_OFFSET)) / 60_000,
         )
     }
 }

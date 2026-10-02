@@ -8,6 +8,6 @@ import android.content.Context
  */
 internal object Overrides {
     fun compute(context: Context, config: AutomationConfig, moment: Moment): List<Override> = listOfNotNull(
-        // Fêtes et dates perso, puis lieux : ajoutés par leurs règles respectives.
+        EventsRule.pick(context, config.events, moment),
     )
 }

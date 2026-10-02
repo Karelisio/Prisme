@@ -4,9 +4,11 @@ import type { Wallpaper } from '@/features/sources/types';
 import type { WallpaperTarget } from '@/shared/native';
 import type { AutomationRef, NativeAutomationConfig, QuickPool } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
-import { DEFAULT_ONLINE, ONLINE_SOURCE, type OnlineContext, type OnlineRotationPrefs, onlineConfig } from './online';
+import { searchFeed } from '@/features/browse/categories';
+import { type CustomDate, HOLIDAYS, type HolidayKey, eventDates } from './events';
+import { DEFAULT_ONLINE, ONLINE_SOURCE, type OnlineContext, type OnlineRotationPrefs, onlineConfig, onlineQueries } from './online';
 
-export type DynamicModeKey = 'time' | 'weather' | 'season' | 'battery';
+export type DynamicModeKey = 'time' | 'weather' | 'season' | 'battery' | 'theme';
 export type SlotKey = 'morning' | 'day' | 'evening' | 'night';
 export type WeatherKey = 'clear' | 'cloudy' | 'rain' | 'snow' | 'storm' | 'fog' | 'night';
 export type SeasonKey = 'spring' | 'summer' | 'autumn' | 'winter';
@@ -29,7 +31,15 @@ export interface FocusScheduleDraft {
 /** Choix de l'utilisateur ; la configuration native en est dérivée avec les fonds de la bibliothèque. */
 export interface AutomationPrefs {
   /** `source` : « online » (au hasard en ligne), « favorites » ou l'identifiant d'une collection. */
-  rotation: { intervalMinutes: number; target: WallpaperTarget; shuffle: boolean; source: string; online: OnlineRotationPrefs };
+  rotation: {
+    intervalMinutes: number;
+    target: WallpaperTarget;
+    shuffle: boolean;
+    /** Rotation intelligente : pas de répétition, teintes variées, fonds sombres la nuit. */
+    smart: boolean;
+    source: string;
+    online: OnlineRotationPrefs;
+  };
   dynamic: {
     mode: DynamicModeKey;
     target: WallpaperTarget;
@@ -40,14 +50,26 @@ export interface AutomationPrefs {
     hemisphere: 'north' | 'south';
     seasons: Partial<Record<SeasonKey, string>>;
     battery: Partial<Record<BatteryKey, string>>;
+    /** Créneaux horaires calés sur le lever et le coucher du soleil du lieu choisi. */
+    followSun: boolean;
+    /** Mode sombre du système : un fond clair, un fond sombre. */
+    theme: { light?: string; dark?: string };
   };
   focus: { target: WallpaperTarget; wallpaperId: string | null; schedules: FocusScheduleDraft[] };
+  /** « Assombrir le soir » : intensité maximale, lieu dont le soleil cale l'assombrissement. */
+  dim: { strength: DimStrength; place: Place | null };
+  /** Fêtes (activées par défaut) et dates perso ; sans fond choisi, un fond du thème est pris en ligne. */
+  events: {
+    target: WallpaperTarget;
+    holidays: Partial<Record<HolidayKey, { enabled: boolean; wallpaperId?: string }>>;
+    custom: CustomDate[];
+  };
 }
 
 export const FAVORITES_SOURCE = 'favorites';
 
 export const DEFAULT_AUTOMATION: AutomationPrefs = {
-  rotation: { intervalMinutes: 60, target: 'both', shuffle: true, source: ONLINE_SOURCE, online: DEFAULT_ONLINE },
+  rotation: { intervalMinutes: 60, target: 'both', shuffle: true, smart: true, source: ONLINE_SOURCE, online: DEFAULT_ONLINE },
   dynamic: {
     mode: 'time',
     target: 'both',
@@ -58,12 +80,32 @@ export const DEFAULT_AUTOMATION: AutomationPrefs = {
     hemisphere: 'north',
     seasons: {},
     battery: {},
+    followSun: false,
+    theme: {},
   },
+  events: { target: 'both', holidays: {}, custom: [] },
+  dim: { strength: 'medium', place: null },
   focus: {
     target: 'both',
     wallpaperId: null,
     schedules: [{ id: 'travail', days: [1, 2, 3, 4, 5], start: '09:00', end: '12:00' }],
   },
+};
+
+export type DimStrength = 'light' | 'medium' | 'strong';
+
+export const DIM_STRENGTHS: readonly { value: DimStrength; label: string; max: number }[] = [
+  { value: 'light', label: 'Léger', max: 0.25 },
+  { value: 'medium', label: 'Moyen', max: 0.4 },
+  { value: 'strong', label: 'Fort', max: 0.55 },
+];
+
+/** « Suivre le soleil » : début de chaque créneau par rapport au lever ou au coucher. */
+export const SUN_ANCHORS: Record<SlotKey, { anchor: 'sunrise' | 'sunset'; offset: number; label: string }> = {
+  morning: { anchor: 'sunrise', offset: -30, label: '30 min avant le lever du soleil' },
+  day: { anchor: 'sunrise', offset: 90, label: '1 h 30 après le lever du soleil' },
+  evening: { anchor: 'sunset', offset: -60, label: '1 h avant le coucher du soleil' },
+  night: { anchor: 'sunset', offset: 40, label: '40 min après le coucher du soleil' },
 };
 
 export const TIME_SLOTS: readonly { key: SlotKey; label: string; icon: IconName }[] = [
@@ -174,22 +216,34 @@ function refMap<K extends string>(ids: Partial<Record<K, string>>, items: Record
  */
 export function buildConfig(
   prefs: AutomationPrefs,
-  flags: Pick<FeatureFlags, 'rotation' | 'dynamic' | 'focus'>,
+  flags: Pick<FeatureFlags, 'rotation' | 'dynamic' | 'focus'> & Partial<Pick<FeatureFlags, 'events' | 'dim'>>,
   library: Pick<LibraryData, 'items' | 'favorites' | 'collections'>,
   online?: OnlineContext,
+  now = new Date(),
 ): NativeAutomationConfig {
   const { items } = library;
-  const d = prefs.dynamic;
+  const d = { ...DEFAULT_AUTOMATION.dynamic, ...prefs.dynamic };
   const dynamic: NativeAutomationConfig['dynamic'] = { enabled: flags.dynamic, target: d.target, mode: d.mode };
   switch (d.mode) {
-    case 'time':
+    case 'time': {
+      const sun = d.followSun && d.place ? { latitude: d.place.latitude, longitude: d.place.longitude } : undefined;
       dynamic.time = {
         slots: TIME_SLOTS.flatMap(({ key }) => {
           const w = d.slots[key] ? items[d.slots[key] as string] : undefined;
-          return w ? [{ start: d.slotStarts[key], item: toRef(w) }] : [];
+          if (!w) return [];
+          const anchor = sun ? { anchor: SUN_ANCHORS[key].anchor, offset: SUN_ANCHORS[key].offset } : {};
+          return [{ start: d.slotStarts[key], item: toRef(w), ...anchor }];
         }),
+        ...(sun && { sun }),
       };
       break;
+    }
+    case 'theme': {
+      const light = d.theme.light ? items[d.theme.light] : undefined;
+      const dark = d.theme.dark ? items[d.theme.dark] : undefined;
+      dynamic.theme = { ...(light && { light: toRef(light) }), ...(dark && { dark: toRef(dark) }) };
+      break;
+    }
     case 'weather':
       if (d.place) dynamic.weather = { latitude: d.place.latitude, longitude: d.place.longitude, items: refMap(d.weather, items) };
       break;
@@ -210,6 +264,9 @@ export function buildConfig(
   }
 
   const focusWallpaper = prefs.focus.wallpaperId ? items[prefs.focus.wallpaperId] : undefined;
+  const events = buildEvents({ ...DEFAULT_AUTOMATION.events, ...prefs.events }, !!flags.events, items, online, now);
+  const dimPrefs = { ...DEFAULT_AUTOMATION.dim, ...prefs.dim };
+  const dimPlace = dimPrefs.place ?? d.place;
   const isOnline = prefs.rotation.source === ONLINE_SOURCE;
   const onlineRotation = isOnline && online ? onlineConfig({ ...DEFAULT_ONLINE, ...prefs.rotation.online }, online) : undefined;
   return {
@@ -218,8 +275,9 @@ export function buildConfig(
       intervalMinutes: prefs.rotation.intervalMinutes,
       target: prefs.rotation.target,
       shuffle: prefs.rotation.shuffle,
-      items: isOnline ? [] : rotationItems(prefs.rotation.source, library).map(toRef),
+      items: isOnline ? [] : rotationItems(prefs.rotation.source, library).map((w) => ({ ...toRef(w), color: w.color })),
       ...(onlineRotation && { online: onlineRotation }),
+      smart: prefs.rotation.smart !== false,
     },
     dynamic,
     focus: {
@@ -230,5 +288,35 @@ export function buildConfig(
         .filter((s) => s.days.length > 0 && s.start !== s.end)
         .map(({ days, start, end }) => ({ days: [...days].sort(), start, end })),
     },
+    events,
+    dim: {
+      enabled: !!flags.dim,
+      max: DIM_STRENGTHS.find((s) => s.value === dimPrefs.strength)?.max ?? 0.4,
+      ...(dimPlace && { sun: { latitude: dimPlace.latitude, longitude: dimPlace.longitude } }),
+    },
   };
+}
+
+/** Fêtes et dates perso : dates de cette année et de la suivante, fond choisi ou thème en ligne. */
+function buildEvents(
+  prefs: AutomationPrefs['events'],
+  enabled: boolean,
+  items: Record<string, Wallpaper>,
+  online: OnlineContext | undefined,
+  now: Date,
+): NativeAutomationConfig['events'] {
+  const themed = (query: string) => (online && query.trim() ? onlineQueries(searchFeed(query.trim()), online) : []);
+  const entry = (id: string, name: string, dates: string[], wallpaperId: string | undefined, query: string) => {
+    const w = wallpaperId ? items[wallpaperId] : undefined;
+    const queries = w ? [] : themed(query);
+    return w || queries.length > 0 ? [{ id, name, dates, ...(w ? { item: toRef(w) } : { queries }) }] : [];
+  };
+  // Dates perso d'abord : un anniversaire passe avant une fête le même jour.
+  const custom = prefs.custom.flatMap((c) =>
+    entry(`custom:${c.id}`, c.name, eventDates(() => [[c.month, c.day]], now), c.wallpaperId, c.keyword || 'celebration'),
+  );
+  const holidays = HOLIDAYS.filter((h) => prefs.holidays[h.key]?.enabled !== false).flatMap((h) =>
+    entry(h.key, h.label, eventDates(h.days, now), prefs.holidays[h.key]?.wallpaperId, h.query),
+  );
+  return { enabled, target: prefs.target, items: [...custom, ...holidays] };
 }

@@ -30,7 +30,18 @@ enum class Season(val key: String) {
     }
 }
 
-data class TimeSlot(val startMinute: Int, val ref: WallpaperRef)
+/** Repère solaire d'un créneau « suivre le soleil ». */
+enum class SunAnchor(val key: String) {
+    SUNRISE("sunrise"),
+    SUNSET("sunset");
+
+    companion object {
+        fun fromKey(key: String) = entries.firstOrNull { it.key == key }
+    }
+}
+
+/** Créneau horaire ; avec [anchor], il commence à [offsetMinutes] du lever ou du coucher du soleil. */
+data class TimeSlot(val startMinute: Int, val ref: WallpaperRef, val anchor: SunAnchor? = null, val offsetMinutes: Int = 0)
 
 /** Plage de batterie [min, max[ en pourcentage. */
 data class BatteryLevel(val min: Int, val max: Int, val ref: WallpaperRef)
@@ -39,10 +50,29 @@ data class BatteryLevel(val min: Int, val max: Int, val ref: WallpaperRef)
 data class FocusSchedule(val days: Set<Int>, val startMinute: Int, val endMinute: Int)
 
 sealed interface DynamicMode {
-    data class Time(val slots: List<TimeSlot>) : DynamicMode
+    /** [sun] : lieu dont le soleil cale les créneaux ancrés (sinon heures fixes). */
+    data class Time(val slots: List<TimeSlot>, val sun: GeoPoint? = null) : DynamicMode {
+        /** Créneaux du jour : heures fixes, ou recalculées d'après le soleil de [moment]. */
+        fun resolved(moment: Moment): Time {
+            val point = sun ?: return this
+            val times = SunTimes.compute(point, moment) ?: return this
+            return copy(
+                slots = slots.map { slot ->
+                    when (slot.anchor) {
+                        SunAnchor.SUNRISE -> slot.copy(startMinute = (times.sunrise + slot.offsetMinutes).mod(24 * 60))
+                        SunAnchor.SUNSET -> slot.copy(startMinute = (times.sunset + slot.offsetMinutes).mod(24 * 60))
+                        null -> slot
+                    }
+                },
+            )
+        }
+    }
     data class Weather(val latitude: Double, val longitude: Double, val items: Map<WeatherCondition, WallpaperRef>) : DynamicMode
     data class Seasons(val southern: Boolean, val items: Map<Season, WallpaperRef>) : DynamicMode
     data class Battery(val levels: List<BatteryLevel>, val charging: WallpaperRef?) : DynamicMode
+
+    /** Suit le mode sombre du système : un fond clair, un fond sombre. */
+    data class Theme(val light: WallpaperRef?, val dark: WallpaperRef?) : DynamicMode
 }
 
 data class RotationConfig(
@@ -53,6 +83,8 @@ data class RotationConfig(
     val items: List<WallpaperRef> = emptyList(),
     /** Fonds pris au hasard en ligne (remplace [items]). */
     val online: OnlineConfig? = null,
+    /** Pas de répétition avant d'avoir tout vu, teintes variées, fonds sombres la nuit. */
+    val smart: Boolean = false,
 ) {
     val active: Boolean
         get() = enabled && (online != null || items.isNotEmpty())
@@ -76,9 +108,13 @@ data class AutomationConfig(
     val rotation: RotationConfig = RotationConfig(),
     val dynamic: DynamicConfig = DynamicConfig(),
     val focus: FocusConfig = FocusConfig(),
+    val events: EventsConfig = EventsConfig(),
+    val dim: DimConfig = DimConfig(),
 ) {
     val anyEnabled: Boolean
         get() = rotation.active ||
+            (events.enabled && events.items.isNotEmpty()) ||
+            dim.enabled ||
             (dynamic.enabled && dynamic.mode != null) ||
             (focus.enabled && focus.ref != null && focus.schedules.isNotEmpty())
 
@@ -87,7 +123,7 @@ data class AutomationConfig(
      * Un simple changement d'images est géré par le moteur, qui compare les identifiants.
      */
     fun signature(): String = listOf(
-        rotation.enabled, rotation.target, rotation.online?.key,
+        rotation.enabled, rotation.target, rotation.online?.key, events.enabled, events.target, dim.enabled,
         dynamic.enabled, dynamic.target, dynamic.mode?.javaClass?.simpleName,
         focus.enabled, focus.target,
     ).joinToString("|")
@@ -104,11 +140,21 @@ data class AutomationConfig(
                 out += mode.levels.map { it.ref }
                 mode.charging?.let { out += it }
             }
+            is DynamicMode.Theme -> out += listOfNotNull(mode.light, mode.dark)
             null -> Unit
         }
         focus.ref?.let { out += it }
+        out += events.items.mapNotNull { it.ref }
         return out
     }
+
+    /** Lieu connu pour situer le soleil (assombrissement, créneaux, météo), sinon null. */
+    fun sunPoint(): GeoPoint? = dim.sun
+        ?: (dynamic.mode as? DynamicMode.Time)?.sun
+        ?: (dynamic.mode as? DynamicMode.Weather)?.let { GeoPoint(it.latitude, it.longitude) }
+
+    /** Requêtes en ligne (rotation, fêtes) : clé Unsplash pour le suivi des téléchargements. */
+    fun onlineQueries(): List<OnlineQuery> = rotation.online?.queries.orEmpty() + events.items.flatMap { it.queries }
 
     companion object {
         fun parse(raw: String?): AutomationConfig {
@@ -120,6 +166,8 @@ data class AutomationConfig(
             rotation = json.optJSONObject("rotation")?.let(::rotation) ?: RotationConfig(),
             dynamic = json.optJSONObject("dynamic")?.let(::dynamic) ?: DynamicConfig(),
             focus = json.optJSONObject("focus")?.let(::focus) ?: FocusConfig(),
+            events = EventsConfig.fromJson(json.optJSONObject("events")),
+            dim = DimConfig.fromJson(json.optJSONObject("dim")),
         )
 
         private fun target(json: JSONObject) = WallpaperTarget.fromKey(json.optString("target")) ?: WallpaperTarget.BOTH
@@ -131,6 +179,7 @@ data class AutomationConfig(
             shuffle = json.optBoolean("shuffle", true),
             items = refs(json.optJSONArray("items")),
             online = OnlineConfig.fromJson(json.optJSONObject("online")),
+            smart = json.optBoolean("smart"),
         )
 
         private fun dynamic(json: JSONObject) = DynamicConfig(
@@ -141,8 +190,11 @@ data class AutomationConfig(
                     DynamicMode.Time(
                         objects(t.optJSONArray("slots")).mapNotNull { slot ->
                             val ref = WallpaperRef.fromJson(slot.optJSONObject("item")) ?: return@mapNotNull null
-                            parseMinute(slot.optString("start"))?.let { TimeSlot(it, ref) }
+                            parseMinute(slot.optString("start"))?.let {
+                                TimeSlot(it, ref, SunAnchor.fromKey(slot.optString("anchor")), slot.optInt("offset"))
+                            }
                         },
+                        sun = t.optJSONObject("sun")?.let(::point),
                     ).takeIf { it.slots.isNotEmpty() }
                 }
                 "weather" -> json.optJSONObject("weather")?.let { w ->
@@ -153,6 +205,11 @@ data class AutomationConfig(
                 "season" -> json.optJSONObject("season")?.let { s ->
                     val items = refMap(s.optJSONObject("items")) { Season.fromKey(it) }
                     if (items.isEmpty()) null else DynamicMode.Seasons(s.optString("hemisphere") == "south", items)
+                }
+                "theme" -> json.optJSONObject("theme")?.let { t ->
+                    val light = WallpaperRef.fromJson(t.optJSONObject("light"))
+                    val dark = WallpaperRef.fromJson(t.optJSONObject("dark"))
+                    if (light == null && dark == null) null else DynamicMode.Theme(light, dark)
                 }
                 "battery" -> json.optJSONObject("battery")?.let { b ->
                     val levels = objects(b.optJSONArray("levels")).mapNotNull { level ->
@@ -178,6 +235,11 @@ data class AutomationConfig(
                 if (days.isEmpty()) null else FocusSchedule(days, start, end)
             },
         )
+
+        private fun point(json: JSONObject): GeoPoint? {
+            if (!json.has("latitude") || !json.has("longitude")) return null
+            return GeoPoint(json.optDouble("latitude"), json.optDouble("longitude"))
+        }
 
         /** "HH:mm" → minutes depuis minuit. */
         fun parseMinute(value: String): Int? {

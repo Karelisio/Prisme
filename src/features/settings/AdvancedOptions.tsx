@@ -21,6 +21,8 @@ export const OPTIONS: readonly OptionDef[] = [
   { key: 'palette', title: 'Palette Material You', description: 'Couleurs que donnera le fond : bouton palette de l’aperçu', icon: 'palette' },
   { key: 'linked', title: 'Fonds accueil et verrouillage liés', description: 'Variante assortie pour l’autre écran, au moment d’appliquer', icon: 'link' },
   { key: 'focus', title: 'Mode focus', description: 'Fond épuré pendant des plages horaires choisies', icon: 'focus', screen: 'focus' },
+  { key: 'events', title: 'Fêtes et dates perso', description: 'Noël, Halloween, ton anniversaire… automatiquement', icon: 'calendar', screen: 'events' },
+  { key: 'dim', title: 'Assombrir le soir', description: 'Le fond s’assombrit doucement après le coucher du soleil', icon: 'night', screen: 'dim' },
 ];
 
 /** Options désactivées par défaut : chacune s'active ici, puis se règle dans son écran. */

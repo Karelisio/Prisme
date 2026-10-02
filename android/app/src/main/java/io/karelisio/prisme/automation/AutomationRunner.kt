@@ -1,7 +1,10 @@
 package io.karelisio.prisme.automation
 
 import android.content.Context
+import android.content.res.Configuration
+import io.karelisio.prisme.system.ErrorLog
 import io.karelisio.prisme.wallpaper.AppliedWallpapers
+import io.karelisio.prisme.wallpaper.CurrentWallpapers
 import io.karelisio.prisme.wallpaper.ScreenInfo
 import io.karelisio.prisme.wallpaper.WallpaperApplier
 import io.karelisio.prisme.wallpaper.WallpaperException
@@ -36,7 +39,7 @@ internal object AutomationRunner {
 
         val moment = AutomationStore.now()
         val battery = BatteryReader.read(context)
-        val env = Environment(moment, battery?.level, battery?.charging == true, weather(store, config, moment.epochMillis))
+        val env = Environment(moment, battery?.level, battery?.charging == true, weather(store, config, moment.epochMillis), darkMode(context))
         val stored = store.state()
         val previous = if (force) stored.copy(appliedHome = null, appliedLock = null) else stored
         val decision = RulesEngine.decide(
@@ -57,6 +60,9 @@ internal object AutomationRunner {
             )
             Outcome.RETRY
         }
+        // Assombrissement du soir : les fonds en place suivent le palier du moment.
+        runCatching { CurrentWallpapers(context).refreshDim(EveningDim.level(config.dim, moment)) }
+            .onFailure { ErrorLog.record(context, "Assombrir le soir", it) }
         AutomationScheduler.scheduleNext(context, config, store.state(), moment)
         outcome
     }
@@ -70,6 +76,10 @@ internal object AutomationRunner {
             .getOrNull()
     }
 
+    /** Mode sombre du système en cours. */
+    fun darkMode(context: Context): Boolean =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
     /** Nouveau fond en ligne (rotation « au hasard »), sauf sur connexion limitée avec « Wi-Fi seulement ». */
     private fun pickOnline(context: Context, config: AutomationConfig): OnlinePick {
         val online = config.rotation.online ?: return OnlinePick.Failed
@@ -77,7 +87,9 @@ internal object AutomationRunner {
         val size = ScreenInfo.read(context, null)
         val screen = OnlineSources.Screen(size.width, size.height)
         val random = Random.Default
-        val candidate = OnlineQueue(context).next(online, random) { OnlineSources.fetch(it, random, screen) }
+        val moment = AutomationStore.now()
+        val night = config.rotation.smart && SunTimes.isNight(config.sunPoint()?.let { SunTimes.compute(it, moment) }, moment.minuteOfDay)
+        val candidate = OnlineQueue(context).next(online, random, { OnlineSources.fetch(it, random, screen) }, preferDark = night)
         return candidate?.let { OnlinePick.Ready(it.ref()) } ?: OnlinePick.Failed
     }
 
@@ -90,16 +102,19 @@ internal object AutomationRunner {
         val screen = ScreenInfo.read(context, null)
         val applier = WallpaperApplier(context)
         val log = mutableListOf<JSONObject>()
-        val online = state.onlineRef?.let { OnlineQueue(context).current(it.id) }
+        val catalog = OnlineCatalog(context)
+        val found = mutableListOf<OnlineCandidate>()
         fun applyRef(ref: WallpaperRef, target: WallpaperTarget) {
             applier.apply(files.resolve(ref), target, ref.crop, screen)
+            val online = catalog.find(ref.id)?.takeIf { it.applyUrl == ref.uri }
+            online?.let(found::add)
             log += JSONObject()
                 .put("id", ref.id)
                 .put("target", target.key)
                 .put("at", System.currentTimeMillis())
                 .put("reason", decision.reason.name.lowercase())
                 // Fond trouvé en ligne : l'app l'ajoute à l'historique avec sa description complète.
-                .apply { if (online != null && online.id == ref.id) put("wallpaper", online.toWallpaperJson()) }
+                .apply { online?.let { put("wallpaper", it.toWallpaperJson()) } }
         }
 
         if (home != null && lock != null && home.id == lock.id) {
@@ -116,12 +131,16 @@ internal object AutomationRunner {
             }
         }
         store.appendLog(log)
-        val onlineConfig = config.rotation.online
-        if (online != null && onlineConfig != null && (home?.id == online.id || lock?.id == online.id)) {
-            OnlineSources.trackDownload(online, onlineConfig)
-            // Les fonds en ligne précédents ne servent plus : seule l'image actuelle est gardée.
-            files.cleanup(config, state.onlineRef)
+        if (found.isNotEmpty()) {
+            val queries = config.onlineQueries()
+            found.distinctBy { it.id }.forEach { OnlineSources.trackDownload(it, queries) }
+            // Les fonds en ligne précédents ne servent plus : seules les images actuelles sont gardées.
+            files.cleanup(config, keptOnline(context, state))
         }
         return state
     }
+
+    /** Images en ligne à conserver : fond de la rotation en cours et fond de la fête du jour. */
+    fun keptOnline(context: Context, state: AutomationState): List<WallpaperRef> =
+        listOfNotNull(state.onlineRef, EventsRule.cachedRef(context, AutomationStore.now()))
 }

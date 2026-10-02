@@ -5,18 +5,30 @@ import { useSettings } from '@/features/settings/store';
 import { getJson, withParams } from '@/shared/lib/http';
 import { nativeErrorMessage } from '@/shared/native';
 import { PrismeAutomation } from '@/shared/native/automation';
-import { Button, Icon, IconButton, ListItem, SegmentedButtons, Switch, TextField } from '@/shared/ui/components';
+import { Button, Chip, Icon, IconButton, ListItem, SegmentedButtons, Switch, TextField } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { RefRow, TargetChips, WallpaperPicker } from './components';
 import { searchPlaces } from './geocoding';
-import { BATTERY_LEVELS, type DynamicModeKey, type Place, SEASONS, TIME_SLOTS, WEATHER_KINDS, type WeatherKey } from './model';
+import {
+  BATTERY_LEVELS,
+  DEFAULT_AUTOMATION,
+  type DynamicModeKey,
+  type Place,
+  SEASONS,
+  SUN_ANCHORS,
+  TIME_SLOTS,
+  WEATHER_KINDS,
+  type WeatherKey,
+} from './model';
 import { useAutomationPrefs } from './store';
+import { formatMinutes, sunTimesOn } from './sun';
 
 const MODES = [
   { value: 'time', label: 'Heure' },
   { value: 'weather', label: 'Météo' },
   { value: 'season', label: 'Saison' },
   { value: 'battery', label: 'Batterie' },
+  { value: 'theme', label: 'Mode sombre' },
 ] as const satisfies readonly { value: DynamicModeKey; label: string }[];
 
 interface Picking {
@@ -25,18 +37,21 @@ interface Picking {
 }
 
 export function DynamicScreen() {
-  const prefs = useAutomationPrefs((s) => s.dynamic);
+  const stored = useAutomationPrefs((s) => s.dynamic);
+  const prefs = { ...DEFAULT_AUTOMATION.dynamic, ...stored };
   const update = useAutomationPrefs((s) => s.updateDynamic);
   const enabled = useSettings((s) => s.features.dynamic);
   const setFeature = useSettings((s) => s.setFeature);
   const [picking, setPicking] = useState<Picking | null>(null);
 
   const configuredCount = {
-    time: Object.values(prefs.slots).filter(Boolean).length,
+    time: prefs.followSun && !prefs.place ? 0 : Object.values(prefs.slots).filter(Boolean).length,
     weather: prefs.place ? Object.values(prefs.weather).filter(Boolean).length : 0,
     season: Object.values(prefs.seasons).filter(Boolean).length,
     battery: Object.values(prefs.battery).filter(Boolean).length,
+    theme: [prefs.theme.light, prefs.theme.dark].filter(Boolean).length,
   }[prefs.mode];
+  const sun = prefs.followSun && prefs.place ? sunTimesOn(new Date(), prefs.place.latitude, prefs.place.longitude) : null;
 
   const runNow = async () => {
     try {
@@ -60,35 +75,91 @@ export function DynamicScreen() {
       </p>
 
       <div className="option-block">
-        <SegmentedButtons label="Déclencheur" options={MODES} value={prefs.mode} onChange={(mode) => update({ mode })} />
+        <div className="chip-wrap" role="radiogroup" aria-label="Déclencheur">
+          {MODES.map((m) => (
+            <Chip key={m.value} role="radio" aria-checked={prefs.mode === m.value} selected={prefs.mode === m.value} onClick={() => update({ mode: m.value })}>
+              {m.label}
+            </Chip>
+          ))}
+        </div>
       </div>
 
       {enabled && configuredCount === 0 && (
         <div className="option-status" role="status">
           <Icon name="info" />
-          {prefs.mode === 'weather' && !prefs.place ? 'Choisis un lieu puis des fonds.' : 'Choisis au moins un fond pour démarrer.'}
+          {(prefs.mode === 'weather' || (prefs.mode === 'time' && prefs.followSun)) && !prefs.place
+            ? 'Choisis un lieu puis des fonds.'
+            : 'Choisis au moins un fond pour démarrer.'}
         </div>
       )}
 
-      {prefs.mode === 'time' &&
-        TIME_SLOTS.map((slot) => (
-          <RefRow
-            key={slot.key}
-            icon={slot.icon}
-            label={slot.label}
-            wallpaperId={prefs.slots[slot.key]}
-            onChoose={() => setPicking({ label: slot.label, assign: (id) => update({ slots: { ...prefs.slots, [slot.key]: id } }) })}
-            onClear={() => update({ slots: { ...prefs.slots, [slot.key]: undefined } })}
-          >
-            <input
-              type="time"
-              className="time-input"
-              aria-label={`Début : ${slot.label}`}
-              value={prefs.slotStarts[slot.key]}
-              onChange={(e) => e.target.value && update({ slotStarts: { ...prefs.slotStarts, [slot.key]: e.target.value } })}
+      {prefs.mode === 'time' && (
+        <>
+          <ListItem
+            headline="Suivre le soleil"
+            supporting="Les créneaux suivent le lever et le coucher du soleil de ta ville, toute l’année"
+            leading={<Icon name="twilight" />}
+            trailing={<Switch label="Suivre le soleil" checked={prefs.followSun} onChange={(followSun) => update({ followSun })} />}
+          />
+          {prefs.followSun && <PlacePicker place={prefs.place} weather={false} onChange={(place) => update({ place })} />}
+          {sun && (
+            <p className="option-hint option-hint--padded">
+              Aujourd’hui : lever {formatMinutes(sun.sunrise)}, coucher {formatMinutes(sun.sunset)}.
+            </p>
+          )}
+          {TIME_SLOTS.map((slot) => {
+            const anchor = SUN_ANCHORS[slot.key];
+            const start = sun ? formatMinutes((anchor.anchor === 'sunrise' ? sun.sunrise : sun.sunset) + anchor.offset) : null;
+            return (
+              <RefRow
+                key={slot.key}
+                icon={slot.icon}
+                label={slot.label}
+                wallpaperId={prefs.slots[slot.key]}
+                onChoose={() => setPicking({ label: slot.label, assign: (id) => update({ slots: { ...prefs.slots, [slot.key]: id } }) })}
+                onClear={() => update({ slots: { ...prefs.slots, [slot.key]: undefined } })}
+              >
+                {prefs.followSun ? (
+                  <span className="time-sun" title={anchor.label} aria-label={`Début : ${slot.label}, ${anchor.label}`}>
+                    {start ?? '—'}
+                  </span>
+                ) : (
+                  <input
+                    type="time"
+                    className="time-input"
+                    aria-label={`Début : ${slot.label}`}
+                    value={prefs.slotStarts[slot.key]}
+                    onChange={(e) => e.target.value && update({ slotStarts: { ...prefs.slotStarts, [slot.key]: e.target.value } })}
+                  />
+                )}
+              </RefRow>
+            );
+          })}
+        </>
+      )}
+
+      {prefs.mode === 'theme' && (
+        <>
+          <p className="option-hint option-hint--padded">
+            Le fond suit le thème clair ou sombre du téléphone, y compris quand il bascule tout seul le soir.
+          </p>
+          {(
+            [
+              ['light', 'Thème clair', 'lightMode'],
+              ['dark', 'Thème sombre', 'darkMode'],
+            ] as const
+          ).map(([key, label, icon]) => (
+            <RefRow
+              key={key}
+              icon={icon}
+              label={label}
+              wallpaperId={prefs.theme[key]}
+              onChoose={() => setPicking({ label, assign: (id) => update({ theme: { ...prefs.theme, [key]: id } }) })}
+              onClear={() => update({ theme: { ...prefs.theme, [key]: undefined } })}
             />
-          </RefRow>
-        ))}
+          ))}
+        </>
+      )}
 
       {prefs.mode === 'weather' && (
         <>
@@ -166,14 +237,14 @@ export function DynamicScreen() {
 
 const WEATHER_LABELS = Object.fromEntries(WEATHER_KINDS.map((k) => [k.key, k.label])) as Record<WeatherKey, string>;
 
-/** Lieu de la météo : recherche de ville ou position approximative de l'appareil. */
-function PlacePicker({ place, onChange }: { place: Place | null; onChange: (place: Place) => void }) {
+/** Lieu de la météo ou du soleil : recherche de ville ou position approximative de l'appareil. */
+export function PlacePicker({ place, onChange, weather = true }: { place: Place | null; onChange: (place: Place) => void; weather?: boolean }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [searching, setSearching] = useState(false);
   const current = useQuery({
     queryKey: ['weather-now', place?.latitude, place?.longitude],
-    enabled: !!place,
+    enabled: !!place && weather,
     staleTime: 15 * 60_000,
     queryFn: async () => {
       const res = await getJson<{ current: { weather_code: number; is_day: number } }>(
@@ -213,7 +284,7 @@ function PlacePicker({ place, onChange }: { place: Place | null; onChange: (plac
       {place && (
         <ListItem
           headline={place.name}
-          supporting={current.data ? `Actuellement : ${WEATHER_LABELS[current.data]}` : 'Météo Open-Meteo'}
+          supporting={!weather ? 'Lieu choisi' : current.data ? `Actuellement : ${WEATHER_LABELS[current.data]}` : 'Météo Open-Meteo'}
           leading={<Icon name="partlyCloudy" />}
         />
       )}

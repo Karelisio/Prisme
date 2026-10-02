@@ -23,7 +23,9 @@ export type Overlay =
   | { type: 'similar'; wallpaper: Wallpaper }
   | { type: 'photographer'; photographer: Photographer }
   /** Réglages › Contenus masqués. */
-  | { type: 'hidden' };
+  | { type: 'hidden' }
+  | { type: 'events' }
+  | { type: 'dim' };
 
 export type OverlayEntry = Overlay & { key: number };
 

@@ -39,9 +39,9 @@ internal class AutomationFiles(context: Context) {
         for (ref in config.refs()) runCatching { resolve(ref) }
     }
 
-    /** Supprime les copies qui ne servent plus à aucun automatisme ([current] : fond en ligne actuel). */
-    fun cleanup(config: AutomationConfig, current: WallpaperRef? = null) {
-        val keep = (config.refs() + listOfNotNull(current)).map { CacheKeys.of(it.uri) }.toSet()
+    /** Supprime les copies qui ne servent plus à aucun automatisme ([extra] : fonds en ligne actuels). */
+    fun cleanup(config: AutomationConfig, extra: List<WallpaperRef> = emptyList()) {
+        val keep = (config.refs() + extra).map { CacheKeys.of(it.uri) }.toSet()
         dir.listFiles()?.forEach { if (it.name !in keep) it.delete() }
     }
 }

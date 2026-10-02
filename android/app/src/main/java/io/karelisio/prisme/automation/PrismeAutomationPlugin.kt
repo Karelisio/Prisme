@@ -18,6 +18,7 @@ import com.getcapacitor.annotation.CapacitorPlugin
 import com.getcapacitor.annotation.Permission
 import com.getcapacitor.annotation.PermissionCallback
 import io.karelisio.prisme.quick.QuickPool
+import io.karelisio.prisme.wallpaper.CurrentWallpapers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,7 +60,12 @@ class PrismeAutomationPlugin : Plugin() {
                     store.saveState(store.state().copy(onlineRef = null, lastRotationAt = 0))
                     OnlineQueue(context).clear()
                 }
-                AutomationFiles(context).cleanup(config, store.state().onlineRef)
+                AutomationFiles(context).cleanup(config, AutomationRunner.keptOnline(context, store.state()))
+                // « Assombrir le soir » coupé : les fonds retrouvent tout de suite leur luminosité.
+                if (previous.dim.enabled && !config.dim.enabled) {
+                    runCatching { CurrentWallpapers(context).refreshDim(0f) }
+                    CurrentWallpapers(context).clear()
+                }
                 // Activation, changement de mode ou d'écran : on réapplique tout de suite.
                 previous.signature() != config.signature()
             }

@@ -6,6 +6,8 @@ export interface AutomationRef {
   id: string;
   uri: string;
   crop?: NormalizedRect;
+  /** Couleur moyenne « #rrggbb » (rotation intelligente). */
+  color?: string;
 }
 
 /** Requête d'une source pour la rotation en ligne (le natif tire les fonds au hasard). */
@@ -38,12 +40,19 @@ export interface NativeAutomationConfig {
     items: AutomationRef[];
     /** Fonds pris au hasard en ligne (remplace `items`). */
     online?: NativeOnlineConfig;
+    /** Pas de répétition avant d'avoir tout vu, teintes variées, fonds sombres la nuit. */
+    smart?: boolean;
   };
   dynamic: {
     enabled: boolean;
     target: WallpaperTarget;
-    mode: 'time' | 'weather' | 'season' | 'battery';
-    time?: { slots: { start: string; item: AutomationRef }[] };
+    mode: 'time' | 'weather' | 'season' | 'battery' | 'theme';
+    /** Avec `sun`, les créneaux ancrés commencent à `offset` minutes du lever ou du coucher du soleil. */
+    time?: {
+      slots: { start: string; item: AutomationRef; anchor?: 'sunrise' | 'sunset'; offset?: number }[];
+      sun?: { latitude: number; longitude: number };
+    };
+    theme?: { light?: AutomationRef; dark?: AutomationRef };
     weather?: { latitude: number; longitude: number; items: Partial<Record<string, AutomationRef>> };
     season?: { hemisphere: 'north' | 'south'; items: Partial<Record<string, AutomationRef>> };
     battery?: { levels: { min: number; max: number; item: AutomationRef }[]; charging?: AutomationRef };
@@ -53,6 +62,14 @@ export interface NativeAutomationConfig {
     target: WallpaperTarget;
     item?: AutomationRef;
     schedules: { days: number[]; start: string; end: string }[];
+  };
+  /** « Assombrir le soir » : voile progressif (jusqu'à `max`) calé sur le soleil de `sun`. */
+  dim?: { enabled: boolean; max: number; sun?: { latitude: number; longitude: number } };
+  /** Fêtes et dates perso : jours « AAAA-MM-JJ », fond choisi ou requêtes en ligne. */
+  events?: {
+    enabled: boolean;
+    target: WallpaperTarget;
+    items: { id: string; name: string; dates: string[]; item?: AutomationRef; queries?: NativeOnlineQuery[] }[];
   };
 }
 
@@ -109,7 +126,8 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
     this.config = options.config;
     const c = options.config;
     const rotation = c.rotation.enabled && (c.rotation.items.length > 0 || !!c.rotation.online);
-    return { enabled: rotation || c.dynamic.enabled || (c.focus.enabled && !!c.focus.item) };
+    const events = !!c.events?.enabled && c.events.items.length > 0;
+    return { enabled: rotation || events || !!c.dim?.enabled || c.dynamic.enabled || (c.focus.enabled && !!c.focus.item) };
   }
 
   async getStatus(): Promise<AutomationStatus> {

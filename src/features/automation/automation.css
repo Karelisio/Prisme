@@ -28,6 +28,17 @@
   font: 400 13px/18px var(--md-font);
 }
 
+.option-hint--padded {
+  margin: 0 16px 8px;
+}
+
+.time-sun {
+  min-width: 56px;
+  color: var(--md-sys-color-primary);
+  font: 500 14px/20px var(--md-font);
+  text-align: right;
+}
+
 .option-status {
   display: flex;
   align-items: center;
@@ -249,4 +260,23 @@
   margin: 8px 0 0;
   color: var(--md-sys-color-on-surface-variant);
   font: 400 12px/16px var(--md-font);
+}
+
+.ref-row__remove {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-error);
+  font: 500 13px/18px var(--md-font);
+}
+
+.event-form {
+  display: grid;
+  gap: 12px;
+}
+
+.event-form .option-actions {
+  padding: 0;
 }

@@ -167,6 +167,16 @@ export function RotationScreen() {
           trailing={<Switch label="Ordre aléatoire" checked={prefs.shuffle} onChange={(shuffle) => update({ shuffle })} />}
         />
       )}
+      {(online || prefs.shuffle) && (
+        <ListItem
+          headline="Rotation intelligente"
+          supporting={
+            online ? 'Fonds sombres la nuit, quand la source en propose' : 'Pas de répétition avant d’avoir tout vu, teintes variées, fonds sombres la nuit'
+          }
+          leading={<Icon name="wandStars" />}
+          trailing={<Switch label="Rotation intelligente" checked={prefs.smart !== false} onChange={(smart) => update({ smart })} />}
+        />
+      )}
 
       <div className="option-block">
         <h2 className="option-block__title">Écran</h2>
