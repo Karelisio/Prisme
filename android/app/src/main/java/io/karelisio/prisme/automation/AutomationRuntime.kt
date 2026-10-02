@@ -2,6 +2,7 @@ package io.karelisio.prisme.automation
 
 import android.content.Context
 import android.os.BatteryManager
+import androidx.core.net.toUri
 import io.karelisio.prisme.wallpaper.CacheKeys
 import io.karelisio.prisme.wallpaper.Downloader
 import io.karelisio.prisme.wallpaper.LocalUrls
@@ -15,12 +16,22 @@ import java.net.URL
 import java.util.Locale
 
 /** Images des automatismes : copies locales dédiées, indépendantes du cache et des favoris. */
-internal class AutomationFiles(context: Context) {
+internal class AutomationFiles(private val context: Context) {
     private val dir = File(context.filesDir, "automation")
 
     fun resolve(ref: WallpaperRef): File {
         val uri = ref.uri
-        val file = if (uri.startsWith("https://") || uri.startsWith("http://")) {
+        val file = if (uri.startsWith("content://")) {
+            // Photo d'un dossier du téléphone : copiée le temps de l'appliquer.
+            File(dir, CacheKeys.of(uri)).also {
+                if (!it.isFile) {
+                    dir.mkdirs()
+                    val input = runCatching { context.contentResolver.openInputStream(uri.toUri()) }.getOrNull()
+                        ?: throw WallpaperException("NOT_FOUND", "Photo du dossier illisible")
+                    input.use { stream -> it.outputStream().use { out -> stream.copyTo(out) } }
+                }
+            }
+        } else if (uri.startsWith("https://") || uri.startsWith("http://")) {
             LocalUrls.toFilePath(uri)?.let(::File) ?: File(dir, CacheKeys.of(uri)).also {
                 if (!it.isFile) {
                     dir.mkdirs()

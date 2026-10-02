@@ -39,6 +39,8 @@ export interface AutomationPrefs {
     smart: boolean;
     source: string;
     online: OnlineRotationPrefs;
+    /** Source « dossier » : dossier du téléphone choisi avec le sélecteur du système. */
+    folder?: { uri: string; name: string };
   };
   dynamic: {
     mode: DynamicModeKey;
@@ -67,6 +69,7 @@ export interface AutomationPrefs {
 }
 
 export const FAVORITES_SOURCE = 'favorites';
+export const FOLDER_SOURCE = 'folder';
 
 export const DEFAULT_AUTOMATION: AutomationPrefs = {
   rotation: { intervalMinutes: 60, target: 'both', shuffle: true, smart: true, source: ONLINE_SOURCE, online: DEFAULT_ONLINE },
@@ -268,6 +271,7 @@ export function buildConfig(
   const dimPrefs = { ...DEFAULT_AUTOMATION.dim, ...prefs.dim };
   const dimPlace = dimPrefs.place ?? d.place;
   const isOnline = prefs.rotation.source === ONLINE_SOURCE;
+  const folder = prefs.rotation.source === FOLDER_SOURCE ? prefs.rotation.folder?.uri : undefined;
   const onlineRotation = isOnline && online ? onlineConfig({ ...DEFAULT_ONLINE, ...prefs.rotation.online }, online) : undefined;
   return {
     rotation: {
@@ -275,8 +279,9 @@ export function buildConfig(
       intervalMinutes: prefs.rotation.intervalMinutes,
       target: prefs.rotation.target,
       shuffle: prefs.rotation.shuffle,
-      items: isOnline ? [] : rotationItems(prefs.rotation.source, library).map((w) => ({ ...toRef(w), color: w.color })),
+      items: isOnline || folder ? [] : rotationItems(prefs.rotation.source, library).map((w) => ({ ...toRef(w), color: w.color })),
       ...(onlineRotation && { online: onlineRotation }),
+      ...(folder && { folder }),
       smart: prefs.rotation.smart !== false,
     },
     dynamic,

@@ -272,6 +272,10 @@
   font: 500 13px/18px var(--md-font);
 }
 
+.option-actions--flush {
+  padding: 12px 0 0;
+}
+
 .event-form {
   display: grid;
   gap: 12px;

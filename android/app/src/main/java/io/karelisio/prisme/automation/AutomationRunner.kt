@@ -31,8 +31,10 @@ internal object AutomationRunner {
 
     fun run(context: Context, prefetch: Boolean, force: Boolean): Outcome = synchronized(lock) {
         val store = AutomationStore(context)
-        val config = store.config()
-        if (!config.anyEnabled) return Outcome.DONE
+        val stored = store.config()
+        if (!stored.anyEnabled) return Outcome.DONE
+        // Rotation depuis un dossier : la liste des photos est relue à chaque passage.
+        val config = stored.rotation.folder?.let { stored.copy(rotation = stored.rotation.copy(items = FolderSource.list(context, it))) } ?: stored
 
         val files = AutomationFiles(context)
         if (prefetch) files.prefetch(config)
@@ -40,8 +42,8 @@ internal object AutomationRunner {
         val moment = AutomationStore.now()
         val battery = BatteryReader.read(context)
         val env = Environment(moment, battery?.level, battery?.charging == true, weather(store, config, moment.epochMillis), darkMode(context))
-        val stored = store.state()
-        val previous = if (force) stored.copy(appliedHome = null, appliedLock = null) else stored
+        val saved = store.state()
+        val previous = if (force) saved.copy(appliedHome = null, appliedLock = null) else saved
         val decision = RulesEngine.decide(
             config,
             env,
@@ -136,11 +138,18 @@ internal object AutomationRunner {
             found.distinctBy { it.id }.forEach { OnlineSources.trackDownload(it, queries) }
             // Les fonds en ligne précédents ne servent plus : seules les images actuelles sont gardées.
             files.cleanup(config, keptOnline(context, state))
+            // Préchargement (hors connexion limitée) : les prochains fonds sont prêts, même sans réseau.
+            if (config.rotation.online != null && !OnlineQueue.metered(context)) {
+                OnlineQueue(context).upcoming(PREFETCH).forEach { runCatching { files.resolve(it.ref()) } }
+            }
         }
         return state
     }
 
-    /** Images en ligne à conserver : fond de la rotation en cours et fond de la fête du jour. */
+    /** Images en ligne à conserver : fond de la rotation en cours, prochains fonds préchargés, fête du jour. */
     fun keptOnline(context: Context, state: AutomationState): List<WallpaperRef> =
-        listOfNotNull(state.onlineRef, EventsRule.cachedRef(context, AutomationStore.now()))
+        listOfNotNull(state.onlineRef, EventsRule.cachedRef(context, AutomationStore.now())) +
+            OnlineQueue(context).upcoming(PREFETCH).map { it.ref() }
+
+    private const val PREFETCH = 3
 }

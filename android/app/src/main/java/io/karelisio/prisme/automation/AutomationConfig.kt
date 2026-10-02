@@ -85,9 +85,11 @@ data class RotationConfig(
     val online: OnlineConfig? = null,
     /** Pas de répétition avant d'avoir tout vu, teintes variées, fonds sombres la nuit. */
     val smart: Boolean = false,
+    /** Dossier du téléphone (URI d'arborescence) : ses photos remplacent [items], relues à chaque passage. */
+    val folder: String? = null,
 ) {
     val active: Boolean
-        get() = enabled && (online != null || items.isNotEmpty())
+        get() = enabled && (online != null || folder != null || items.isNotEmpty())
 }
 
 data class DynamicConfig(
@@ -180,6 +182,7 @@ data class AutomationConfig(
             items = refs(json.optJSONArray("items")),
             online = OnlineConfig.fromJson(json.optJSONObject("online")),
             smart = json.optBoolean("smart"),
+            folder = json.optString("folder").takeIf { it.startsWith("content://") },
         )
 
         private fun dynamic(json: JSONObject) = DynamicConfig(

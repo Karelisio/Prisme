@@ -42,6 +42,8 @@ export interface NativeAutomationConfig {
     online?: NativeOnlineConfig;
     /** Pas de répétition avant d'avoir tout vu, teintes variées, fonds sombres la nuit. */
     smart?: boolean;
+    /** Dossier du téléphone (URI d'arborescence) : ses photos, relues à chaque passage, remplacent `items`. */
+    folder?: string;
   };
   dynamic: {
     enabled: boolean;
@@ -105,6 +107,9 @@ export interface PrismeAutomationPlugin {
   getApproximateLocation(): Promise<{ latitude: number; longitude: number }>;
   /** Favoris utilisables par la tuile et les raccourcis « Fond suivant » / « Favori au hasard ». */
   setQuickPool(pool: QuickPool): Promise<void>;
+  /** Sélecteur de dossier du système (accès en lecture conservé). */
+  pickFolder(): Promise<{ cancelled: true } | { cancelled: false; uri: string; name: string; count: number }>;
+  getFolderInfo(options: { uri: string }): Promise<{ accessible: boolean; name: string; count: number }>;
 }
 
 export interface QuickPool {
@@ -125,7 +130,7 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
   async configure(options: { config: NativeAutomationConfig }) {
     this.config = options.config;
     const c = options.config;
-    const rotation = c.rotation.enabled && (c.rotation.items.length > 0 || !!c.rotation.online);
+    const rotation = c.rotation.enabled && (c.rotation.items.length > 0 || !!c.rotation.online || !!c.rotation.folder);
     const events = !!c.events?.enabled && c.events.items.length > 0;
     return { enabled: rotation || events || !!c.dim?.enabled || c.dynamic.enabled || (c.focus.enabled && !!c.focus.item) };
   }
@@ -157,6 +162,19 @@ export class PrismeAutomationWeb extends WebPlugin implements PrismeAutomationPl
 
   async setQuickPool(pool: QuickPool) {
     this.quickPool = pool;
+  }
+
+  /** Tests : dossier renvoyé par le prochain `pickFolder` (null = annulé). */
+  nextFolder: { uri: string; name: string; count: number } | null = { uri: 'content://test/tree/Camera', name: 'Camera', count: 12 };
+
+  async pickFolder() {
+    const folder = this.nextFolder;
+    return folder ? { cancelled: false as const, ...folder } : { cancelled: true as const };
+  }
+
+  async getFolderInfo(options: { uri: string }) {
+    const folder = this.nextFolder;
+    return folder && folder.uri === options.uri ? { accessible: true, name: folder.name, count: folder.count } : { accessible: false, name: '', count: 0 };
   }
 
   getApproximateLocation(): Promise<{ latitude: number; longitude: number }> {

@@ -9,7 +9,7 @@ import { PrismeAutomation } from '@/shared/native/automation';
 import { Button, Chip, Icon, IconButton, ListItem, Switch, TextField } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { TargetChips } from './components';
-import { FAVORITES_SOURCE, INTERVALS, rotationItems } from './model';
+import { FAVORITES_SOURCE, FOLDER_SOURCE, INTERVALS, rotationItems } from './model';
 import { DEFAULT_ONLINE, ONLINE_SOURCE, ONLINE_THEMES, onlineThemeLabel } from './online';
 import { useAutomationPrefs } from './store';
 
@@ -26,11 +26,19 @@ export function RotationScreen() {
   const items = useLibrary((s) => s.items);
   const collections = useLibrary((s) => s.collections);
   const online = prefs.source === ONLINE_SOURCE;
+  const folderSource = prefs.source === FOLDER_SOURCE;
   const onlinePrefs = { ...DEFAULT_ONLINE, ...prefs.online };
-  const count = useMemo(
-    () => (online ? 0 : rotationItems(prefs.source, { favorites, items, collections }).length),
-    [online, prefs.source, favorites, items, collections],
-  );
+  const folderUri = prefs.folder?.uri;
+  const folderInfo = useQuery({
+    queryKey: ['rotation-folder', folderUri],
+    enabled: !!folderUri,
+    queryFn: () => PrismeAutomation.getFolderInfo({ uri: folderUri as string }),
+  });
+  const count = useMemo(() => {
+    if (online) return 0;
+    if (folderSource) return folderInfo.data?.accessible ? folderInfo.data.count : 0;
+    return rotationItems(prefs.source, { favorites, items, collections }).length;
+  }, [online, folderSource, folderInfo.data, prefs.source, favorites, items, collections]);
   const providers = useMemo(() => {
     const usable = usableSources(sourceToggles);
     return ONLINE_PROVIDERS.filter((s) => usable[s]).map((s) => SOURCE_INFO[s].name);
@@ -52,6 +60,18 @@ export function RotationScreen() {
     if (keyword.trim() !== onlinePrefs.keyword.trim()) updateOnline({ keyword: keyword.trim() });
   };
 
+  const chooseFolder = async () => {
+    try {
+      const result = await PrismeAutomation.pickFolder();
+      if (result.cancelled) return;
+      update({ source: FOLDER_SOURCE, folder: { uri: result.uri, name: result.name } });
+      void folderInfo.refetch();
+      showSnackbar(`Dossier « ${result.name} » : ${result.count} photo${result.count > 1 ? 's' : ''}`);
+    } catch (error) {
+      showSnackbar(nativeErrorMessage(error));
+    }
+  };
+
   const next = async () => {
     try {
       await PrismeAutomation.nextRotation();
@@ -68,9 +88,11 @@ export function RotationScreen() {
       : missingKeyword
         ? 'Saisis un mot-clé pour la rotation en ligne.'
         : `Fonds au hasard en ligne : ${onlineThemeLabel(onlinePrefs)}${nextChange ? ` · prochain changement vers ${nextChange}` : ''}`
-    : count > 1
-      ? `${count} fonds en rotation${nextChange ? ` · prochain changement vers ${nextChange}` : ''}`
-      : 'Il faut au moins deux fonds dans la source choisie.';
+    : folderSource && folderInfo.data && !folderInfo.data.accessible
+      ? 'Dossier inaccessible : choisis-le à nouveau.'
+      : count > 1
+        ? `${count} ${folderSource ? 'photos du dossier' : 'fonds'} en rotation${nextChange ? ` · prochain changement vers ${nextChange}` : ''}`
+        : 'Il faut au moins deux fonds dans la source choisie.';
 
   return (
     <div className="screen overlay-screen option-screen">
@@ -105,7 +127,21 @@ export function RotationScreen() {
               {c.name} ({c.itemIds.length})
             </Chip>
           ))}
+          <Chip
+            icon="folderOpen"
+            selected={folderSource}
+            onClick={() => (prefs.folder ? update({ source: FOLDER_SOURCE }) : void chooseFolder())}
+          >
+            {prefs.folder ? `Dossier « ${prefs.folder.name} »` : 'Dossier du téléphone…'}
+          </Chip>
         </div>
+        {folderSource && (
+          <div className="option-actions option-actions--flush">
+            <Button variant="outlined" icon="folderOpen" onClick={() => void chooseFolder()}>
+              Changer de dossier
+            </Button>
+          </div>
+        )}
       </div>
 
       {online && (
