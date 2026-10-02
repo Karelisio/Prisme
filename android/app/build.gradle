@@ -73,6 +73,7 @@ dependencies {
     implementation "androidx.exifinterface:exifinterface:$exifInterfaceVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
     implementation "androidx.work:work-runtime-ktx:$workVersion"
+    implementation "com.google.android.gms:play-services-mlkit-subject-segmentation:$mlkitSubjectSegmentationVersion"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     testImplementation "org.json:json:$orgJsonVersion"

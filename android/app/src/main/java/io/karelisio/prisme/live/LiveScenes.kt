@@ -11,7 +11,7 @@ internal object LiveScenes {
         LiveMode.GIF -> ImageScene(context)
         LiveMode.GRADIENT -> ImageScene(context)
         LiveMode.PARTICLES -> ImageScene(context)
-        LiveMode.RELIEF -> ImageScene(context)
+        LiveMode.RELIEF -> ReliefScene(context)
     }
 
     /** Couche dessinée par-dessus la scène du genre [mode] (météo animée), ou null. */

@@ -1,4 +1,4 @@
-import { WebPlugin, registerPlugin } from '@capacitor/core';
+import { type PluginListenerHandle, WebPlugin, registerPlugin } from '@capacitor/core';
 import type { NormalizedRect, WallpaperTarget } from './definitions';
 
 /** Image d'un automatisme : URL distante ou chemin local, recadrage facultatif. */
@@ -308,6 +308,25 @@ export interface LiveConfiguration {
   settings?: Record<string, unknown>;
 }
 
+/** Relief 3D : préparation faite sur l'appareil (sujet détouré, arrière-plan comblé derrière lui). */
+export interface ReliefInfo {
+  /** Le relief est prêt : la scène peut l'afficher. */
+  ready: boolean;
+  /** Image d'origine de la dernière préparation réussie. */
+  source?: string;
+  /** Petite vignette du sujet détouré (data URL). */
+  preview?: string;
+  /** Part de l'image occupée par le sujet (0..1). */
+  coverage?: number;
+}
+
+/** Étape de la préparation du relief, avec sa progression (0..1) quand elle est connue. */
+export interface ReliefProgress {
+  /** Photo, téléchargement du module de détourage (première fois), détourage, comblement et enregistrement. */
+  stage: 'image' | 'module' | 'segment' | 'compose';
+  progress?: number;
+}
+
 export interface PrismeLivePlugin {
   setLiveWallpaper(options: { uri: string; intensity: number; crop?: NormalizedRect }): Promise<{ status: 'launched' | 'updated' }>;
   /**
@@ -320,6 +339,13 @@ export interface PrismeLivePlugin {
   /** Ouvre l'écran d'Android qui active le fond animé Prisme (« active » : il l'est déjà). */
   activate(): Promise<{ status: 'active' | 'launched' }>;
   getStatus(): Promise<LiveStatus>;
+  /**
+   * Relief 3D : détoure le sujet de la photo et comble l'arrière-plan derrière lui (hors du fil principal),
+   * étapes annoncées par `reliefProgress`. En cas d'échec, le relief précédent reste en place.
+   */
+  prepareRelief(options: { uri: string; crop?: NormalizedRect }): Promise<ReliefInfo>;
+  getRelief(): Promise<ReliefInfo>;
+  addListener(event: 'reliefProgress', listener: (e: ReliefProgress) => void): Promise<PluginListenerHandle>;
 }
 
 export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
@@ -379,7 +405,40 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
       },
     };
   }
+
+  /** Tests : appels à `prepareRelief`, dans l'ordre. */
+  reliefCalls: { uri: string; crop?: NormalizedRect }[] = [];
+  /** Tests : la prochaine préparation du relief échoue avec cette erreur du natif. */
+  reliefError: { code: string; message: string } | null = null;
+  /** Tests : durée simulée de chaque étape de la préparation (ms). */
+  reliefStepMs = 150;
+  private relief: ReliefInfo = { ready: false };
+
+  async prepareRelief(options: { uri: string; crop?: NormalizedRect }): Promise<ReliefInfo> {
+    this.reliefCalls.push(options);
+    const steps: ReliefProgress[] = [{ stage: 'image' }, { stage: 'module', progress: 0.5 }, { stage: 'segment' }, { stage: 'compose' }];
+    for (const step of steps) {
+      this.notifyListeners('reliefProgress', step);
+      await new Promise((resolve) => setTimeout(resolve, this.reliefStepMs));
+      const error = this.reliefError;
+      if (error && step.stage === 'module') {
+        this.reliefError = null;
+        throw Object.assign(new Error(error.message), { code: error.code });
+      }
+    }
+    this.relief = { ready: true, source: options.uri, preview: RELIEF_PREVIEW, coverage: 0.3 };
+    return { ...this.relief };
+  }
+
+  async getRelief(): Promise<ReliefInfo> {
+    return { ...this.relief };
+  }
 }
+
+/** Simulation web : silhouette en guise de sujet détouré. */
+const RELIEF_PREVIEW = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 160"><circle cx="45" cy="50" r="22" fill="#d9a066"/><path d="M8 160c0-42 16-74 37-74s37 32 37 74z" fill="#5b6ee1"/></svg>',
+)}`;
 
 export const PrismeLive = registerPlugin<PrismeLivePlugin>('PrismeLive', {
   web: () => (liveWeb ??= new PrismeLiveWeb()),
