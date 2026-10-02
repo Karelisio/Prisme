@@ -114,6 +114,8 @@ import touchApp from '@material-symbols/svg-400/rounded/touch_app.svg?raw';
 import widgets from '@material-symbols/svg-400/rounded/widgets.svg?raw';
 import movie from '@material-symbols/svg-400/rounded/movie.svg?raw';
 import gif from '@material-symbols/svg-400/rounded/gif.svg?raw';
+import bubble from '@material-symbols/svg-400/rounded/bubble.svg?raw';
+import flare from '@material-symbols/svg-400/rounded/flare.svg?raw';
 
 export const ICONS = {
   search,
@@ -230,6 +232,8 @@ export const ICONS = {
   widgets,
   movie,
   gif,
+  bubble,
+  flare,
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -52,6 +52,9 @@ internal interface SceneOverlay {
     /** Vrai tant que la couche bouge : la scène continue alors à demander des images. */
     fun isAnimating(): Boolean
 
+    /** Images par seconde au plus quand seule la couche bouge (la scène dessous est immobile). */
+    val maxFps: Int get() = 30
+
     fun draw(canvas: Canvas, frameTimeNanos: Long)
 
     fun release()
@@ -148,7 +151,7 @@ internal abstract class CanvasScene(protected val context: Context) : LiveScene,
     override fun doFrame(frameTimeNanos: Long) {
         frameScheduled = false
         if (!running) return
-        val interval = 1_000_000_000L / maxFps.coerceIn(1, 120)
+        val interval = 1_000_000_000L / frameRate().coerceIn(1, 120)
         val elapsed = frameTimeNanos - lastFrameNanos
         if (lastFrameNanos != 0L && elapsed < interval - FRAME_SLACK_NANOS) {
             // Trop tôt pour la cadence voulue : on attend sans dessiner.
@@ -161,6 +164,12 @@ internal abstract class CanvasScene(protected val context: Context) : LiveScene,
         val overlayMoving = overlay?.isAnimating() == true
         if (changed || overlayMoving) render(frameTimeNanos)
         if (isAnimating() || overlayMoving) requestFrame()
+    }
+
+    /** Cadence de la scène quand elle bouge ; sinon celle de la couche par-dessus, souvent plus basse (météo). */
+    private fun frameRate(): Int {
+        val layer = overlay
+        return if (layer != null && !isAnimating() && layer.isAnimating()) layer.maxFps else maxFps
     }
 
     /**

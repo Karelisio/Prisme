@@ -2,7 +2,9 @@ import type { ComponentType } from 'react';
 import type { LiveMode, LiveStatus } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
 import { GifSection } from './GifSection';
+import { GradientSection } from './GradientSection';
 import { ImageSection } from './ImageSection';
+import { ParticlesSection } from './ParticlesSection';
 import { ReliefSection } from './ReliefSection';
 import { VideoSection } from './VideoSection';
 
@@ -30,5 +32,7 @@ export const LIVE_MODES: readonly LiveModeDef[] = [
   PHOTO_MODE,
   { key: 'video', label: 'Vidéo', icon: 'movie', Section: VideoSection },
   { key: 'gif', label: 'GIF', icon: 'gif', Section: GifSection },
+  { key: 'gradient', label: 'Dégradé', icon: 'gradient', Section: GradientSection },
+  { key: 'particles', label: 'Particules', icon: 'bubble', Section: ParticlesSection },
   { key: 'relief', label: 'Relief 3D', icon: 'layers', Section: ReliefSection },
 ];
