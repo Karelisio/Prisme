@@ -20,8 +20,8 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
   résolution).
 - Partage (avec le crédit du photographe), enregistrement dans la galerie, passage au fond voisin
   d'un glissement, « Annuler » après une application et « Revenir au fond précédent ».
-- Tuile « Fond suivant » (Réglages rapides) et raccourcis de l'icône : suivant, favori au hasard,
-  rechercher.
+- Tuile « Fond suivant » (Réglages rapides), raccourcis de l'icône (suivant, favori au hasard,
+  rechercher) et widget d'accueil (aperçu du fond actuel, bouton « Fond suivant »).
 
 **Découverte**
 - Sources : Wallhaven (tout public, sans clé), Pixabay (clé facultative, 1280 px au plus, désactivée
@@ -39,9 +39,12 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
 **Options** (désactivées par défaut, *Réglages → Options avancées*)
 - Fonds dynamiques : selon l'heure (heures fixes ou lever/coucher du soleil de ta ville), la météo
   (Open-Meteo, sans clé), la saison, la batterie ou le mode sombre du téléphone.
-- Fond animé avec parallaxe (capteur coupé quand le fond est masqué ou en économie d'énergie) ;
-  option « à chaque déverrouillage » : nouvelle image d'une liste (favoris, collection) tous les N
-  déverrouillages, avec un fondu.
+- Fonds animés : photo avec parallaxe (et météo animée réelle par-dessus : pluie, neige, brouillard,
+  orage), vidéo de la galerie en boucle sans le son, GIF animé, dégradés qui ondulent façon aurore,
+  particules qui réagissent au toucher et à l'inclinaison, relief 3D (le sujet se détache du fond,
+  détourage ML Kit via les services Google Play). Double-tap sur l'écran d'accueil (image suivante ou
+  variante), changement d'image tous les N déverrouillages, pause automatique en économie d'énergie
+  ou sous 15 % de batterie ; animation et capteurs coupés quand le fond n'est pas visible.
 - Rotation à intervalle (WorkManager, 15 min à 24 h) : fonds pris au hasard en ligne (thème, mot-clé
   ou « Pour toi », sources activées, Wi-Fi seulement en option ; recherché par le natif, app fermée,
   3 fonds préchargés pour changer hors ligne), parmi les favoris et collections, ou les photos d'un
@@ -117,6 +120,9 @@ installable par-dessus l'app existante.
 L'import passe par le sélecteur de photos du système : aucune permission de lecture du stockage.
 « Pochette de la musique » demande l'accès aux notifications dans les réglages Android : il sert
 seulement à voir le morceau en cours (aucune notification n'est lue).
+Le relief 3D détoure le sujet sur l'appareil avec ML Kit (services Google Play, modèle téléchargé à
+la première utilisation) ; ML Kit envoie à Google des statistiques d'usage anonymes, seulement quand
+un relief est préparé.
 
 ## Publier une version
 
@@ -152,7 +158,7 @@ src/
     library/              favoris, collections, historique, hors ligne, créations
     settings/             réglages et options avancées
     automation/           fonds dynamiques, rotation, mode focus, fêtes, soir, lieux (configuration)
-    live/                 fond animé, liste « à chaque déverrouillage »
+    live/                 fonds animés (genres, réglages, liste « à chaque déverrouillage »)
     music/                pochette de la musique
     editor/               éditeur
     generator/            générateur
@@ -165,7 +171,9 @@ src/
 android/app/src/main/java/io/karelisio/prisme/
   wallpaper/              application des fonds, cache d'images, import, thème système
   automation/             moteur de règles, WorkManager, météo, soleil, fêtes, lieux, dossier
-  live/                   service de fond animé (parallaxe, déverrouillage)
+  live/                   fonds animés : moteur à scènes (photo, GIF, dégradés, particules, relief,
+                          météo), service vidéo à part, double-tap, déverrouillage, pause éco
+  widget/                 widget d'accueil
   music/                  écoute des sessions média, composition de la pochette
   quick/                  tuile « Fond suivant », raccourcis de l'icône
   system/                 version, mises à jour, réseau, fichiers, vibrations, journal d'erreurs,

@@ -18,7 +18,7 @@ export function ImageSection({ optionOn, status, refresh }: ModeSectionProps) {
 
   return (
     <>
-      <p className="option-hint">
+      <p className="option-hint option-hint--padded">
         L’image glisse légèrement quand tu inclines le téléphone, comme si elle était derrière l’écran.
       </p>
       <div className="option-block live-choice">
