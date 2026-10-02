@@ -2,6 +2,17 @@ import { type AutomationPrefs, DEFAULT_AUTOMATION } from '@/features/automation/
 import type { Hidden, HiddenAuthor, HiddenWallpaper } from '@/features/discover/hidden';
 import type { Photographer } from '@/features/discover/store';
 import { type Collection, HISTORY_LIMIT, type HistoryEntry, type LibraryData, prune } from '@/features/library/model';
+import {
+  COLOR_CHOICES,
+  type CustomQuote,
+  FONT_CHOICES,
+  MAX_CUSTOM_QUOTES,
+  POSITION_CHOICES,
+  type QuotePrefs,
+  SIZE_CHOICES,
+  SOURCE_CHOICES,
+  cleanQuote,
+} from '@/features/quote/model';
 import { DEFAULT_SETTINGS, type Settings } from '@/features/settings/store';
 import { isLocalWallpaper } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
@@ -16,6 +27,9 @@ export interface BackupDiscover extends Hidden {
   following: Photographer[];
 }
 
+/** Citation du jour : réglages et citations perso (le cran de « Une autre » ne voyage pas). */
+export type BackupQuotes = Partial<Omit<QuotePrefs, 'custom' | 'shift'>> & { custom: CustomQuote[] };
+
 /** Fichier de sauvegarde : bibliothèque, réglages et automatismes (sans images locales). */
 export interface Backup {
   format: typeof BACKUP_FORMAT;
@@ -27,6 +41,8 @@ export interface Backup {
   automation: Partial<AutomationPrefs>;
   /** Absent des sauvegardes créées avant la version 0.3. */
   discover?: BackupDiscover;
+  /** Absent des sauvegardes créées avant la citation du jour. */
+  quotes?: BackupQuotes;
 }
 
 export class BackupError extends Error {
@@ -63,6 +79,7 @@ export function createBackup(
   now: Date,
   appVersion: string,
   discover?: BackupDiscover,
+  quotes?: QuotePrefs,
 ): Backup {
   const local = new Set(Object.values(library.items).filter(isLocalWallpaper).map((w) => w.id));
   const keep = (id: string) => !local.has(id);
@@ -86,6 +103,17 @@ export function createBackup(
         hiddenWords: discover.hiddenWords,
         hiddenAuthors: discover.hiddenAuthors,
         hiddenIds: discover.hiddenIds,
+      },
+    }),
+    ...(quotes && {
+      quotes: {
+        target: quotes.target,
+        source: quotes.source,
+        font: quotes.font,
+        position: quotes.position,
+        size: quotes.size,
+        color: quotes.color,
+        custom: quotes.custom.map(({ id, text, author }) => ({ id, text, ...(author ? { author } : {}) })),
       },
     }),
   };
@@ -122,6 +150,34 @@ export function mergeDiscover(current: BackupDiscover, incoming: BackupDiscover)
     hiddenAuthors: { ...incoming.hiddenAuthors, ...current.hiddenAuthors },
     hiddenIds: { ...incoming.hiddenIds, ...current.hiddenIds },
   };
+}
+
+const isCustomQuote = (v: unknown): v is CustomQuote =>
+  isPlain(v) && typeof v.id === 'string' && v.id !== '' && typeof v.text === 'string' && (v.author === undefined || typeof v.author === 'string');
+
+/** `value` s'il fait partie des choix permis, sinon rien : un réglage inconnu retombe sur sa valeur par défaut. */
+const choice = <T extends string>(value: unknown, choices: readonly { value: T }[]): T | undefined => choices.find((c) => c.value === value)?.value;
+
+const QUOTE_TARGETS: readonly { value: QuotePrefs['target'] }[] = [{ value: 'home' }, { value: 'lock' }, { value: 'both' }];
+
+function parseQuotes(value: unknown): BackupQuotes | undefined {
+  if (!isPlain(value)) return undefined;
+  const custom = (Array.isArray(value.custom) ? value.custom : [])
+    .filter(isCustomQuote)
+    .flatMap((q) => {
+      const cleaned = cleanQuote(q.text, q.author);
+      return cleaned ? [{ id: q.id, ...cleaned }] : [];
+    })
+    .slice(0, MAX_CUSTOM_QUOTES);
+  const settings = {
+    target: choice(value.target, QUOTE_TARGETS),
+    source: choice(value.source, SOURCE_CHOICES),
+    font: choice(value.font, FONT_CHOICES),
+    position: choice(value.position, POSITION_CHOICES),
+    size: choice(value.size, SIZE_CHOICES),
+    color: choice(value.color, COLOR_CHOICES),
+  };
+  return { ...Object.fromEntries(Object.entries(settings).filter(([, v]) => v !== undefined)), custom };
 }
 
 const isWallpaper = (v: unknown): v is Wallpaper =>
@@ -166,6 +222,7 @@ export function parseBackup(text: string): Backup {
     settings: pickLike(DEFAULT_SETTINGS as unknown as Plain, data.settings) as Partial<Settings>,
     automation: pickLike(DEFAULT_AUTOMATION as unknown as Plain, data.automation) as Partial<AutomationPrefs>,
     discover: parseDiscover(data.discover),
+    quotes: parseQuotes(data.quotes),
   };
 }
 

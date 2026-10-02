@@ -61,7 +61,8 @@ internal object MusicArtwork {
             if (!wasShowing) state.showing = true
             var applied = false
             try {
-                WallpaperApplier(context).apply(file, target, null, screen)
+                // La phrase du jour ne se pose pas sur une pochette.
+                WallpaperApplier(context).apply(file, target, null, screen, withQuote = false)
                 applied = true
             } finally {
                 if (!applied && !wasShowing) state.showing = false

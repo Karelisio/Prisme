@@ -25,6 +25,7 @@ export const OPTIONS: readonly OptionDef[] = [
   { key: 'focus', title: 'Mode focus', description: 'Fond épuré pendant des plages horaires choisies', icon: 'focus', screen: 'focus' },
   { key: 'events', title: 'Fêtes et dates perso', description: 'Noël, Halloween, ton anniversaire… automatiquement', icon: 'calendar', screen: 'events' },
   { key: 'dim', title: 'Assombrir le soir', description: 'Le fond s’assombrit doucement après le coucher du soleil', icon: 'night', screen: 'dim' },
+  { key: 'quote', title: 'Citation du jour', description: 'Une phrase sur ton fond d’écran, renouvelée chaque matin', icon: 'formatQuote', screen: 'quote' },
 ];
 
 /** Options désactivées par défaut : chacune s'active ici, puis se règle dans son écran. */

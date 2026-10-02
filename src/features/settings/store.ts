@@ -22,6 +22,8 @@ export interface FeatureFlags {
   events: boolean;
   /** Assombrir le soir. */
   dim: boolean;
+  /** Citation du jour sur le fond d'écran. */
+  quote: boolean;
 }
 
 export type FeatureKey = keyof FeatureFlags;
@@ -76,6 +78,7 @@ export const DEFAULT_SETTINGS: Settings = {
     focus: false,
     events: false,
     dim: false,
+    quote: false,
   },
 };
 

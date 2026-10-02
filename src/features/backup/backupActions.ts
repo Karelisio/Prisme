@@ -1,6 +1,7 @@
 import { useAutomationPrefs } from '@/features/automation/store';
 import { useDiscover } from '@/features/discover/store';
 import { useLibrary } from '@/features/library/store';
+import { useQuotePrefs } from '@/features/quote/store';
 import { useSettings } from '@/features/settings/store';
 import { PrismeSystem } from '@/shared/native/system';
 import { BackupError, backupFileName, createBackup, mergeDiscover, mergeLibrary, parseBackup } from './backup';
@@ -11,7 +12,15 @@ const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 export async function exportBackup(): Promise<string | null> {
   const library = useLibrary.getState();
   if (!library.hydrated) throw new BackupError('Bibliothèque en cours de chargement, réessaie dans un instant');
-  const backup = createBackup(library, useSettings.getState(), useAutomationPrefs.getState(), new Date(), __APP_VERSION__, useDiscover.getState());
+  const backup = createBackup(
+    library,
+    useSettings.getState(),
+    useAutomationPrefs.getState(),
+    new Date(),
+    __APP_VERSION__,
+    useDiscover.getState(),
+    useQuotePrefs.getState(),
+  );
   const { saved } = await PrismeSystem.exportFile({
     fileName: backupFileName(backup.exportedAt),
     mimeType: 'application/json',
@@ -40,6 +49,11 @@ export async function importBackup(): Promise<string | null> {
     focus: { ...current.focus, ...backup.automation.focus },
   }));
   if (backup.discover) useDiscover.setState(mergeDiscover(useDiscover.getState(), backup.discover));
+  if (backup.quotes) {
+    const { custom, ...settings } = backup.quotes;
+    useQuotePrefs.getState().update(settings);
+    useQuotePrefs.getState().mergeCustom(custom);
+  }
   const { favorites, collections } = backup.library;
   return `Sauvegarde restaurée : ${plural(Object.keys(favorites).length, 'favori')}, ${plural(collections.length, 'collection')}`;
 }
