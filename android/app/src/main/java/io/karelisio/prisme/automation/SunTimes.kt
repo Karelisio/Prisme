@@ -7,7 +7,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.tan
 
-/** Point géographique (lieu choisi pour la météo ou le soleil). */
+/** Point géographique en degrés (lieu choisi pour la météo, le soleil ou « Selon le lieu »). */
 data class GeoPoint(val latitude: Double, val longitude: Double)
 
 /** Lever et coucher du soleil, algorithme simplifié de la NOAA (précision de l'ordre de 2 min). */

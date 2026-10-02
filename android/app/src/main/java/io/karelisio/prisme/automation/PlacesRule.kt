@@ -9,9 +9,6 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/** Point de la Terre, en degrés. */
-data class GeoPoint(val latitude: Double, val longitude: Double)
-
 /** Dernier lieu retenu ([PlaceConfig.key]) et l'instant où une position l'a confirmé. */
 data class PlaceMemory(val key: String? = null, val at: Long = 0)
 
