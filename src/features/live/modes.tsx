@@ -1,7 +1,9 @@
 import type { ComponentType } from 'react';
 import type { LiveMode, LiveStatus } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
+import { GifSection } from './GifSection';
 import { ImageSection } from './ImageSection';
+import { VideoSection } from './VideoSection';
 
 export interface ModeSectionProps {
   /** Option « Fonds animés » activée dans les réglages. */
@@ -25,4 +27,6 @@ export const PHOTO_MODE: LiveModeDef = { key: 'image', label: 'Photo', icon: 'im
 /** Genres proposés, dans l'ordre des puces. */
 export const LIVE_MODES: readonly LiveModeDef[] = [
   PHOTO_MODE,
+  { key: 'video', label: 'Vidéo', icon: 'movie', Section: VideoSection },
+  { key: 'gif', label: 'GIF', icon: 'gif', Section: GifSection },
 ];

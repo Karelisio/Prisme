@@ -1,12 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { goBack } from '@/app/navigation';
 import { useSettings } from '@/features/settings/store';
-import { PrismeLive } from '@/shared/native/automation';
+import { type LiveStatus, PrismeLive } from '@/shared/native/automation';
 import { Chip, Icon, IconButton, ListItem, Switch } from '@/shared/ui/components';
 import { useLive } from './live';
 import { LIVE_MODES, PHOTO_MODE } from './modes';
 import '@/features/automation/automation.css';
 import './live.css';
+
+/** Le fond Prisme qu'Android affiche : celui de la vidéo a son propre nom, tous les autres sont « animés ». */
+const activeName = (component: LiveStatus['component']) =>
+  component === 'video' ? 'Le fond vidéo Prisme' : 'Le fond animé Prisme';
 
 export function LiveScreen() {
   const enabled = useSettings((s) => s.features.live);
@@ -36,9 +40,7 @@ export function LiveScreen() {
       {status.data?.active && (
         <div className="option-status" role="status">
           <Icon name={status.data.paused ? 'eco' : 'checkCircle'} />
-          {status.data.paused
-            ? 'Le fond animé Prisme est actif, figé pour économiser la batterie.'
-            : 'Le fond animé Prisme est actif.'}
+          {`${activeName(status.data.component)} est actif${status.data.paused ? ', figé pour économiser la batterie.' : '.'}`}
         </div>
       )}
 

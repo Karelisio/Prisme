@@ -272,8 +272,31 @@ declare global {
   }
 }
 
-/** Genre de fond animé : une scène par genre dans le service Prisme. */
+/** Genre de fond animé : une scène par genre dans le service Prisme (la vidéo a son propre service). */
 export type LiveMode = 'image' | 'video' | 'gif' | 'gradient' | 'particles' | 'relief';
+
+/**
+ * Fond animé Prisme déclaré dans Android : « scenes » (photo, GIF, dégradés… dessinés au canevas) ou « video »
+ * (service à part : une surface qui a servi au canevas ne peut plus recevoir de vidéo, et inversement).
+ */
+export type LiveComponent = 'scenes' | 'video';
+
+/** Genre de média choisi dans la galerie : une vidéo ou un GIF (WebP animé compris). */
+export type LiveMediaKind = 'video' | 'gif';
+
+/** Vidéo ou GIF copié dans l'app. */
+export interface LiveMedia {
+  /** Nom d'origine, tel que la galerie l'affichait. */
+  name: string;
+  sizeBytes: number;
+  /** Vidéo seulement. */
+  durationMs?: number;
+  width: number;
+  height: number;
+}
+
+/** Résultat de `pickMedia` : `cancelled` si rien n'a été choisi. */
+export type PickedMedia = { cancelled: true } | ({ cancelled: false } & LiveMedia);
 
 /**
  * Liste d'images du fond animé (genre « photo ») : images (id + URI d'application), fréquence en
@@ -287,7 +310,12 @@ export interface LivePlaylist {
 }
 
 export interface LiveStatus {
+  /** L'un des deux fonds animés Prisme est actif sur Android. */
   active: boolean;
+  /** Lequel (null : aucun). Absent d'un état gardé en cache par une version précédente. */
+  component?: LiveComponent | null;
+  /** Vidéo et GIF prêts, copiés dans l'app. Absent d'un état gardé en cache par une version précédente. */
+  media?: Partial<Record<LiveMediaKind, LiveMedia>>;
   intensity: number;
   configured: boolean;
   mode: LiveMode;
@@ -317,8 +345,21 @@ export interface PrismeLivePlugin {
   setPlaylist(options: LivePlaylist): Promise<{ enabled: boolean; count: number }>;
   /** Enregistre le genre et ses réglages ; le service suit aussitôt s'il est actif. */
   configure(options: LiveConfiguration): Promise<{ active: boolean }>;
-  /** Ouvre l'écran d'Android qui active le fond animé Prisme (« active » : il l'est déjà). */
+  /**
+   * Ouvre l'écran d'Android qui active le fond animé des scènes (photo, GIF, dégradés…) ; « active » : il l'est
+   * déjà. Avec le fond vidéo actif, l'écran s'ouvre quand même : c'est un autre service.
+   */
   activate(): Promise<{ status: 'active' | 'launched' }>;
+  /**
+   * Ouvre l'écran d'Android qui active le fond vidéo Prisme ; « updated » : il l'est déjà et suit la vidéo
+   * choisie. Refusé tant qu'aucune vidéo n'est prête (code `NO_MEDIA`).
+   */
+  activateVideo(): Promise<{ status: 'launched' | 'updated' }>;
+  /**
+   * Sélecteur de fichiers du système : le fichier choisi est copié dans l'app (le précédent du même genre est
+   * remplacé). Refusé s'il est trop lourd (vidéo : 300 Mo, GIF : 50 Mo) ou illisible, avec un message lisible.
+   */
+  pickMedia(options: { kind: LiveMediaKind }): Promise<PickedMedia>;
   getStatus(): Promise<LiveStatus>;
 }
 
@@ -328,19 +369,38 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
   playlistCalls: LivePlaylist[] = [];
   /** Tests : appels à `configure`, dans l'ordre. */
   configureCalls: LiveConfiguration[] = [];
-  activated = false;
+  /** Tests : fond Prisme actif côté Android (l'écran de confirmation du système est simulé comme accepté). */
+  component: LiveComponent | null = null;
   /** Tests : fond figé (économie d'énergie). */
   paused = false;
+  /** Tests : appels à `activate` et à `activateVideo`. */
+  activateCalls = 0;
+  videoCalls = 0;
+  /** Tests : genres demandés à `pickMedia`, dans l'ordre. */
+  mediaCalls: LiveMediaKind[] = [];
+  /** Tests : vidéo et GIF prêts (copiés dans l'app). */
+  media: Partial<Record<LiveMediaKind, LiveMedia>> = {};
+  /** Tests : fichier que choisira le prochain `pickMedia` de chaque genre (null : annulé). */
+  nextMedia: Record<LiveMediaKind, LiveMedia | null> = {
+    video: { name: 'Vacances.mp4', sizeBytes: 48_600_000, durationMs: 15_000, width: 1080, height: 1920 },
+    gif: { name: 'Chat.gif', sizeBytes: 3_200_000, width: 480, height: 480 },
+  };
+  /** Tests : erreur du prochain `pickMedia` (fichier trop lourd…), une seule fois. */
+  mediaError: string | null = null;
 
   constructor() {
     super();
     window.__prismeLiveWeb = this;
   }
 
+  get activated() {
+    return this.component !== null;
+  }
+
   async setLiveWallpaper(options: { uri: string; intensity: number; crop?: NormalizedRect }) {
     this.calls.push(options);
-    const status = this.activated ? ('updated' as const) : ('launched' as const);
-    this.activated = true;
+    const status = this.component === 'scenes' ? ('updated' as const) : ('launched' as const);
+    this.component = 'scenes';
     return { status };
   }
 
@@ -351,20 +411,44 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
 
   async configure(options: LiveConfiguration) {
     this.configureCalls.push(options);
-    return { active: this.activated };
+    return { active: this.component === (options.mode === 'video' ? 'video' : 'scenes') };
   }
 
   async activate() {
-    const status = this.activated ? ('active' as const) : ('launched' as const);
-    this.activated = true;
+    this.activateCalls++;
+    const status = this.component === 'scenes' ? ('active' as const) : ('launched' as const);
+    this.component = 'scenes';
     return { status };
+  }
+
+  async activateVideo() {
+    this.videoCalls++;
+    if (!this.media.video) throw Object.assign(new Error('Choisis d’abord une vidéo'), { code: 'NO_MEDIA' });
+    const status = this.component === 'video' ? ('updated' as const) : ('launched' as const);
+    this.component = 'video';
+    return { status };
+  }
+
+  async pickMedia(options: { kind: LiveMediaKind }): Promise<PickedMedia> {
+    this.mediaCalls.push(options.kind);
+    if (this.mediaError) {
+      const message = this.mediaError;
+      this.mediaError = null;
+      throw Object.assign(new Error(message), { code: 'TOO_LARGE' });
+    }
+    const picked = this.nextMedia[options.kind];
+    if (!picked) return { cancelled: true };
+    this.media[options.kind] = picked;
+    return { cancelled: false, ...picked };
   }
 
   async getStatus(): Promise<LiveStatus> {
     const playlist = this.playlistCalls.at(-1);
     const config = this.configureCalls.at(-1);
     return {
-      active: this.activated,
+      active: this.component !== null,
+      component: this.component,
+      media: { ...this.media },
       intensity: this.calls.at(-1)?.intensity ?? 0.5,
       configured: this.calls.length > 0,
       mode: config?.mode ?? 'image',

@@ -9,9 +9,9 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /**
- * Réglages du fond animé, partagés entre l'app et le service : genre ([LiveMode]) et réglages de chaque
+ * Réglages du fond animé, partagés entre l'app et les services : genre ([LiveMode]) et réglages de chaque
  * scène, image et intensité de la parallaxe, liste « changer à chaque déverrouillage », pause en économie
- * de batterie et double-tap.
+ * de batterie, double-tap, et vidéo et GIF choisis dans la galerie.
  */
 object LiveWallpaperStore {
     const val DEFAULT_INTENSITY = 0.5f
@@ -36,6 +36,13 @@ object LiveWallpaperStore {
 
     /** Change à chaque déverrouillage : le service l'ignore, il n'y a rien à recharger. */
     const val KEY_COUNTER = "playlist_counter"
+
+    /**
+     * Vidéo et GIF choisis dans la galerie ([MediaInfo] en JSON), écrits une fois le fichier en place : les fonds
+     * rechargent dessus. Clés à part des réglages de scène (`scene_*`), que l'app réécrit en entier.
+     */
+    const val KEY_MEDIA_VIDEO = "media_video"
+    const val KEY_MEDIA_GIF = "media_gif"
 
     /**
      * Changement à chaque déverrouillage : images déjà préparées (chemins), fréquence, image affichée
@@ -109,6 +116,18 @@ object LiveWallpaperStore {
     /** Clé de préférences des réglages de la scène [mode] (le service ne prévient que la scène concernée). */
     fun sceneKey(mode: LiveMode) = SCENE_PREFIX + mode.key
 
+    fun mediaKey(kind: MediaKind): String = when (kind) {
+        MediaKind.VIDEO -> KEY_MEDIA_VIDEO
+        MediaKind.GIF -> KEY_MEDIA_GIF
+    }
+
+    /** Média choisi de ce genre (sans vérifier que son fichier existe : voir [LiveMedia.ready]). */
+    fun media(context: Context, kind: MediaKind): MediaInfo? = MediaInfo.fromJson(prefs(context).getString(mediaKey(kind), null))
+
+    fun saveMedia(context: Context, kind: MediaKind, info: MediaInfo) {
+        prefs(context).edit { putString(mediaKey(kind), info.toJson()) }
+    }
+
     private fun readPlaylist(prefs: SharedPreferences) = Playlist(
         enabled = prefs.getBoolean(KEY_PLAYLIST_ENABLED, false),
         paths = UnlockPlaylist.decodePaths(prefs.getString(KEY_PLAYLIST, null)),
@@ -157,8 +176,25 @@ object LiveWallpaperStore {
         }
     }
 
-    fun component(context: Context) = ComponentName(context, ParallaxWallpaperService::class.java)
+    /** Service des scènes (photo, GIF, dégradés…). */
+    fun component(context: Context): ComponentName = ComponentName(context, ParallaxWallpaperService::class.java)
 
-    fun isActive(context: Context): Boolean =
-        WallpaperManager.getInstance(context).wallpaperInfo?.component == component(context)
+    /** Service de la vidéo. */
+    fun videoComponent(context: Context): ComponentName = ComponentName(context, VideoWallpaperService::class.java)
+
+    fun component(context: Context, which: LiveComponent): ComponentName = when (which) {
+        LiveComponent.SCENES -> component(context)
+        LiveComponent.VIDEO -> videoComponent(context)
+    }
+
+    /** Fond animé Prisme actif sur Android en ce moment (celui des scènes ou celui de la vidéo), ou null. */
+    fun activeComponent(context: Context): LiveComponent? {
+        val active = WallpaperManager.getInstance(context).wallpaperInfo?.component ?: return null
+        return if (active.packageName == context.packageName) LiveComponent.ofService(active.className) else null
+    }
+
+    /** L'un des deux fonds animés Prisme est actif. */
+    fun isActive(context: Context): Boolean = activeComponent(context) != null
+
+    fun isActive(context: Context, which: LiveComponent): Boolean = activeComponent(context) == which
 }
