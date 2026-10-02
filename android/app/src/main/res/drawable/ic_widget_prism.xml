@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Prisme facetté de l'icône de l'app, recadré : repère du widget tant qu'aucun fond n'a été posé. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="45dp"
+    android:viewportWidth="60"
+    android:viewportHeight="56">
+    <group
+        android:translateX="-24"
+        android:translateY="-24">
+        <path android:fillColor="#8B6CFF" android:pathData="M54,28 L54,60 L29,75 Z" />
+        <path android:fillColor="#FF7AA8" android:pathData="M54,28 L79,75 L54,60 Z" />
+        <path android:fillColor="#4CC9F0" android:pathData="M29,75 L54,60 L79,75 Z" />
+        <path
+            android:strokeColor="#B3FFFFFF"
+            android:strokeWidth="1.5"
+            android:strokeLineJoin="round"
+            android:pathData="M54,28 L54,60 M29,75 L54,60 L79,75" />
+    </group>
+</vector>

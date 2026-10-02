@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget d'accueil : aperçu du fond actuel (ou, à défaut, l'icône de Prisme sur fond neutre) et bouton « Fond suivant ».
+     Le fond arrondi découpe le contenu (clipToOutline : Android 12+) ; son rayon est celui du système (voir dimens).
+     Toucher le widget, hors du bouton, ouvre l'app : voir WidgetViews. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:clipToOutline="true"
+    tools:targetApi="31">
+
+    <ImageView
+        android:id="@+id/widget_preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/widget_preview_description"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+    <!-- Sans miniature : le repère de Prisme, centré au-dessus de la place du bouton. -->
+    <LinearLayout
+        android:id="@+id/widget_placeholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="56dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <!-- scaleType explicite : sans lui, lint propose un TextView avec drawableTop, qui ne centrerait pas le groupe. -->
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_widget_prism" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/app_name"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <include layout="@layout/widget_next_button" />
+</FrameLayout>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Faux fond d'écran des aperçus du widget dans la liste des widgets : dégradé aux couleurs du prisme. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+    <path android:pathData="M0,0h160v160h-160z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:endX="160"
+                android:endY="160"
+                android:startX="0"
+                android:startY="0"
+                android:type="linear">
+                <item android:color="#8B6CFF" android:offset="0" />
+                <item android:color="#FF7AA8" android:offset="0.55" />
+                <item android:color="#4CC9F0" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#33FFFFFF" android:pathData="M80,18 L132,112 L28,112 Z" />
+    <path android:fillColor="#26FFFFFF" android:pathData="M80,18 L80,78 L28,112 Z" />
+    <path android:fillColor="#1AFFFFFF" android:pathData="M0,160 L0,122 L44,160 Z" />
+</vector>

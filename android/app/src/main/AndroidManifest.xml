@@ -73,6 +73,21 @@
             </intent-filter>
         </service>
 
+        <!-- Widget d'écran d'accueil : aperçu du fond actuel et bouton « Fond suivant ». Exporté : le système lui envoie
+             APPWIDGET_UPDATE. L'action du bouton n'est pas dans le filtre : il envoie une diffusion explicite. Si une autre
+             appli en fait autant, l'effet est seulement un changement de fond, comme avec les raccourcis de l'icône (exportés aussi). -->
+        <receiver
+            android:name=".widget.PrismeWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/prisme_widget_info" />
+        </receiver>
+
         <!-- Pochette de la musique : écoute les sessions média des applis de musique (accès aux notifications
              accordé dans les réglages Android ; aucune notification n'est lue). Inactif tant que l'option est coupée. -->
         <service

@@ -33,6 +33,9 @@ export type AppAction = 'SEARCH' | 'DAILY';
 
 export type NotificationPermission = 'granted' | 'denied';
 
+/** `requested` : la demande est partie (le lanceur affiche sa confirmation) ; `unsupported` : à faire depuis la liste des widgets. */
+export type PinWidgetResult = 'requested' | 'unsupported';
+
 export interface PrismeSystemPlugin {
   getAppInfo(): Promise<AppInfo>;
   getNetworkStatus(): Promise<NetworkStatus>;
@@ -50,6 +53,8 @@ export interface PrismeSystemPlugin {
   getPendingAction(): Promise<{ action: AppAction | null }>;
   /** Android 13+ : demande d'ajouter la tuile « Fond suivant » aux Réglages rapides. */
   requestAddTile(): Promise<{ result: 'added' | 'already' | 'declined' | 'unsupported' | 'error' }>;
+  /** Android 8+ : demande au lanceur de poser le widget d'accueil (aperçu du fond actuel et bouton « Fond suivant »). */
+  requestPinWidget(): Promise<{ result: PinWidgetResult }>;
   /**
    * Notification quotidienne « Fond du jour » à `hour` h. Avec `prompt`, demande l'autorisation
    * d'afficher des notifications (Android 13+) si elle manque.
@@ -179,6 +184,14 @@ export class PrismeSystemWeb extends WebPlugin implements PrismeSystemPlugin {
   async requestAddTile() {
     this.tileRequests++;
     return { result: this.tileResult };
+  }
+
+  widgetRequests = 0;
+  widgetResult: PinWidgetResult = 'requested';
+
+  async requestPinWidget() {
+    this.widgetRequests++;
+    return { result: this.widgetResult };
   }
 
   async getPendingAction() {

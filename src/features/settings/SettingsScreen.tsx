@@ -87,6 +87,13 @@ export function SettingsScreen() {
       return 'Ouvre les Réglages rapides, touche le crayon puis fais glisser « Fond suivant »';
     });
 
+  const addWidget = () =>
+    report(async () => {
+      const { result } = await PrismeSystem.requestPinWidget();
+      // Le lanceur affiche lui-même sa confirmation ; sinon, on indique où trouver le widget.
+      return result === 'requested' ? null : "Appui long sur l'écran d'accueil › Widgets › Prisme";
+    });
+
   const clearCache = async () => {
     await PrismeWallpaper.clearCache({ includeOffline: false });
     queryClient.clear();
@@ -262,6 +269,12 @@ export function SettingsScreen() {
           supporting="Réglages rapides : fond suivant de la rotation ou favori au hasard ; appui long sur l’icône pour d’autres raccourcis"
           leading={<Icon name="skipNext" />}
           onClick={() => void addTile()}
+        />
+        <ListItem
+          headline="Widget d'accueil"
+          supporting="Aperçu du fond actuel et bouton « Fond suivant » à poser sur l'accueil"
+          leading={<Icon name="widgets" />}
+          onClick={() => void addWidget()}
         />
       </section>
 

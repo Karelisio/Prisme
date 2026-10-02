@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aperçu du widget dans la liste des widgets avant Android 12 (ensuite : layout/widget_prisme_preview). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/widget_preview_art" />
+    <item
+        android:bottom="10dp"
+        android:gravity="bottom|center_horizontal">
+        <shape android:shape="rectangle">
+            <size
+                android:width="112dp"
+                android:height="36dp" />
+            <solid android:color="@color/widget_button" />
+            <corners android:radius="18dp" />
+        </shape>
+    </item>
+</layer-list>

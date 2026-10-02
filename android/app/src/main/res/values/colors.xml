@@ -3,4 +3,11 @@
     <!-- Raccourcis de l'icône : glyphe sombre sur fond clair, lisible sur tous les lanceurs. -->
     <color name="shortcut_background">#ECE9F7</color>
     <color name="shortcut_glyph">#1B1530</color>
+
+    <!-- Widget d'accueil, thème clair : tons de la palette Material 3 de base. Sur Android 12+, ils sont
+         remplacés par les couleurs Material You du système (values-v31 et values-night-v31). -->
+    <color name="widget_surface">#ECE6F0</color>
+    <color name="widget_on_surface">#1D1B20</color>
+    <color name="widget_button">#EADDFF</color>
+    <color name="widget_on_button">#21005D</color>
 </resources>
