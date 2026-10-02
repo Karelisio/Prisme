@@ -2,7 +2,8 @@
 
 Application Android de fonds d'écran : Unsplash (thème *Wallpapers* en priorité), Pexels, Wallhaven,
 Pixabay, peintures du Cleveland Museum of Art, images de la NASA, packs curés et galerie du téléphone.
-Interface Material You (Material 3, couleurs dynamiques, clair/sombre auto).
+Interface Material You (Material 3, couleurs dynamiques, clair, sombre ou noir AMOLED), en français ou
+en anglais (langue du téléphone par défaut).
 
 React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs Kotlin
 (WallpaperManager, WorkManager, WallpaperService).
@@ -18,6 +19,13 @@ React + Vite + TypeScript, empaquetée avec Capacitor 8, avec des plugins natifs
 - Application sur l'accueil, le verrouillage ou les deux.
 - Favoris, collections, historique, cache hors ligne (flux déjà vus, miniatures, favoris en pleine
   résolution).
+- Étiquettes sur les favoris, tri (date, couleur, source, nom), collections automatiques (par couleur,
+  par source, jamais appliqués, récemment appliqués) et statistiques (fonds les plus appliqués, temps
+  passé sur chacun).
+- Partager une collection sans compte : lien `prisme://`, code à coller ou QR code (scanné dans
+  Prisme par le scanner des services Google Play, sans permission caméra).
+- Grille en 2, 3 ou 4 colonnes ou en mosaïque ; transitions animées de la miniature à l'aperçu ;
+  introduction en 3 écrans au premier lancement.
 - Partage (avec le crédit du photographe), enregistrement dans la galerie, passage au fond voisin
   d'un glissement, « Annuler » après une application et « Revenir au fond précédent ».
 - Tuile « Fond suivant » (Réglages rapides), raccourcis de l'icône (suivant, favori au hasard,
@@ -171,12 +179,13 @@ src/
     generator/            générateur (dégradés, mesh, motifs)
     collage/              collage de photos
     quote/                citation du jour (proverbes, mes citations, aperçu)
+    onboarding/           introduction du premier lancement
     palette/              palette Material You
     linked/               fonds liés
     diagnostics/          journal d'erreurs, test du plugin natif sur l'appareil
     updates/              mises à jour intégrées (releases GitHub)
     backup/               sauvegarde et restauration
-  shared/                 thème Material 3, composants, ponts natifs, utilitaires
+  shared/                 thème Material 3, composants, ponts natifs, traductions (i18n), utilitaires
 android/app/src/main/java/io/karelisio/prisme/
   wallpaper/              application des fonds, cache d'images, import, thème système
   automation/             moteur de règles, WorkManager, météo, soleil, fêtes, lieux, dossier
@@ -185,6 +194,7 @@ android/app/src/main/java/io/karelisio/prisme/
   widget/                 widget d'accueil
   music/                  écoute des sessions média, composition de la pochette
   quote/                  citation du jour : choix du jour, rendu sur le fond, renouvellement à 6 h
+  library/                liens `prisme://collection`, scanner de QR code
   quick/                  tuile « Fond suivant », raccourcis de l'icône
   system/                 version, mises à jour, réseau, fichiers, vibrations, journal d'erreurs,
                           notification « Fond du jour »
