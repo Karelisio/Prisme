@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { t } from '@/shared/i18n';
 import type { NativeQuote } from '@/shared/native/quote';
 import type { QuoteScreen, QuoteStyle } from './layout';
 import { type PreviewBackground, drawQuotePreview } from './render';
@@ -32,7 +33,12 @@ export function QuotePreview({
 
   return (
     <div className="quote-preview" style={{ aspectRatio: `1 / ${aspect}` }} data-screen={screen}>
-      <canvas ref={canvas} className="quote-preview__canvas" role="img" aria-label={`Aperçu de la phrase sur l’écran ${screen === 'lock' ? 'de verrouillage' : 'd’accueil'}`} />
+      <canvas
+        ref={canvas}
+        className="quote-preview__canvas"
+        role="img"
+        aria-label={screen === 'lock' ? t('Aperçu de la phrase sur l’écran de verrouillage') : t('Aperçu de la phrase sur l’écran d’accueil')}
+      />
       {screen === 'lock' ? (
         <div className="quote-preview__clock" aria-hidden="true">
           09:41

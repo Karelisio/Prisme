@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { applyUri } from '@/features/library/useImageSrc';
 import type { Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import type { NormalizedRect } from '@/shared/native';
 import { type LiveMode, PrismeLive } from '@/shared/native/automation';
 import { DEFAULT_UNLOCK, type UnlockPrefs } from './playlist';
@@ -72,7 +73,7 @@ export function liveConfiguration(mode: LiveMode = useLive.getState().mode) {
 }
 
 const activatedMessage = (status: string) =>
-  status === 'launched' ? 'Confirme dans l’écran Android pour activer le fond animé' : 'Fond animé mis à jour';
+  status === 'launched' ? t('Confirme dans l’écran Android pour activer le fond animé') : t('Fond animé mis à jour');
 
 /**
  * Photo avec parallaxe : prépare l'image côté natif ; la première fois, Android affiche son écran de

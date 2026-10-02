@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
+import { collectionLabel } from '@/features/automation/components';
 import { FAVORITES_SOURCE, rotationItems } from '@/features/automation/model';
 import { useLibrary } from '@/features/library/store';
+import { t, tn } from '@/shared/i18n';
 import type { LiveStatus } from '@/shared/native/automation';
 import { Chip, Icon, ListItem, Switch } from '@/shared/ui/components';
 import { useLive } from './live';
 import { PLAYLIST_LIMIT, UNLOCK_FREQUENCIES, type UnlockPrefs } from './playlist';
-
-const fonds = (n: number) => `${n} fond${n > 1 ? 's' : ''}`;
-const prets = (n: number) => `${fonds(n)} prêt${n > 1 ? 's' : ''}`;
 
 /**
  * « Changer à chaque déverrouillage » : avec le fond animé Prisme actif, l'image change tous les N
@@ -36,23 +35,31 @@ export function UnlockSection({ optionOn, status, onChanged }: { optionOn: boole
     onChanged();
   };
 
-  const used = count > PLAYLIST_LIMIT ? `Les ${PLAYLIST_LIMIT} fonds les plus récents de la source` : fonds(count);
+  const used =
+    count > PLAYLIST_LIMIT
+      ? t('Les {limit} fonds les plus récents de la source', { limit: PLAYLIST_LIMIT })
+      : tn(count, '{count} fond', '{count} fonds');
   let help: string;
-  if (count < 2) help = 'Il faut au moins deux fonds dans la source choisie.';
-  else if (!listOn || !live) help = `${used} seront préparés sur l’appareil, pour changer d’image sans connexion.`;
-  else if (!status?.playlist.enabled) help = 'Préparation des images…';
-  else if (prepared < total) help = `${prets(prepared)} sur ${total} : les images sont préparées en arrière-plan.`;
-  else help = `${prets(prepared)}, disponibles sans connexion.`;
+  if (count < 2) help = t('Il faut au moins deux fonds dans la source choisie.');
+  else if (!listOn || !live) help = t('{used} seront préparés sur l’appareil, pour changer d’image sans connexion.', { used });
+  else if (!status?.playlist.enabled) help = t('Préparation des images…');
+  else if (prepared < total) {
+    const one = '{count} fond prêt sur {total} : les images sont préparées en arrière-plan.';
+    const other = '{count} fonds prêts sur {total} : les images sont préparées en arrière-plan.';
+    help = tn(prepared, one, other, { total });
+  } else help = tn(prepared, '{count} fond prêt, disponible sans connexion.', '{count} fonds prêts, disponibles sans connexion.');
 
   return (
     <section className="live-unlock">
       <ListItem
-        headline="Changer à chaque déverrouillage"
-        supporting={unlock.every === 1 ? 'Une nouvelle image à chaque déverrouillage' : `Une nouvelle image tous les ${unlock.every} déverrouillages`}
+        headline={t('Changer à chaque déverrouillage')}
+        supporting={
+          unlock.every === 1 ? t('Une nouvelle image à chaque déverrouillage') : t('Une nouvelle image tous les {count} déverrouillages', { count: unlock.every })
+        }
         leading={<Icon name="mobileLock" />}
         trailing={
           <Switch
-            label="Changer à chaque déverrouillage"
+            label={t('Changer à chaque déverrouillage')}
             checked={unlock.enabled}
             disabled={!live && !unlock.enabled}
             onChange={(enabled) => update({ enabled })}
@@ -64,39 +71,39 @@ export function UnlockSection({ optionOn, status, onChanged }: { optionOn: boole
         <div className="option-status" role="status">
           <Icon name="info" />
           {optionOn
-            ? 'Active d’abord le fond animé Prisme (bouton « Activer le fond animé » ci-dessus) : l’image ne change qu’avec lui.'
-            : 'Active l’option Fond animé (interrupteur en haut de l’écran) pour changer d’image à chaque déverrouillage.'}
+            ? t('Active d’abord le fond animé Prisme (bouton « Activer le fond animé » ci-dessus) : l’image ne change qu’avec lui.')
+            : t('Active l’option Fond animé (interrupteur en haut de l’écran) pour changer d’image à chaque déverrouillage.')}
         </div>
       )}
 
       <div className="option-block">
-        <h2 className="option-block__title">Fréquence</h2>
-        <div className="chip-wrap" role="group" aria-label="Fréquence du changement">
+        <h2 className="option-block__title">{t('Fréquence')}</h2>
+        <div className="chip-wrap" role="group" aria-label={t('Fréquence du changement')}>
           {UNLOCK_FREQUENCIES.map(({ every, label }) => (
             <Chip key={every} selected={unlock.every === every} onClick={() => update({ every })}>
-              {label}
+              {t(label)}
             </Chip>
           ))}
         </div>
-        <p className="option-hint">Nombre de déverrouillages entre deux changements d’image.</p>
+        <p className="option-hint">{t('Nombre de déverrouillages entre deux changements d’image.')}</p>
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Source</h2>
+        <h2 className="option-block__title">{t('Source')}</h2>
         <div className="chip-wrap">
           <Chip selected={unlock.source === FAVORITES_SOURCE} onClick={() => update({ source: FAVORITES_SOURCE })}>
-            Favoris ({Object.keys(favorites).length})
+            {t('Favoris ({count})', { count: Object.keys(favorites).length })}
           </Chip>
           {collections.map((c) => (
             <Chip key={c.id} selected={unlock.source === c.id} onClick={() => update({ source: c.id })}>
-              {c.name} ({c.itemIds.length})
+              {collectionLabel(c)} ({c.itemIds.length})
             </Chip>
           ))}
         </div>
         <p className="option-hint" role="status">
           {help}
         </p>
-        {doubleTap && <p className="option-hint">Le double-tap passe aussi à l’image suivante de cette liste.</p>}
+        {doubleTap && <p className="option-hint">{t('Le double-tap passe aussi à l’image suivante de cette liste.')}</p>}
       </div>
     </section>
   );

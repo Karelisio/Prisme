@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '@/shared/i18n';
 import { nativeErrorMessage } from '@/shared/native';
 import { type LiveMedia, type LiveMediaKind, PrismeLive } from '@/shared/native/automation';
 import { Button, Icon, LinearProgress } from '@/shared/ui/components';
@@ -6,6 +7,7 @@ import type { IconName } from '@/shared/ui/icons';
 import { showSnackbar } from '@/shared/ui/overlays';
 import { mediaDetails } from './media';
 
+/** Textes en français (données) : `t(...)` à l'affichage. */
 const TEXTS: Record<LiveMediaKind, { icon: IconName; none: string; choose: string; change: string }> = {
   video: { icon: 'movie', none: 'Aucune vidéo choisie', choose: 'Choisir une vidéo', change: 'Changer de vidéo' },
   gif: { icon: 'gif', none: 'Aucun GIF choisi', choose: 'Choisir un GIF', change: 'Changer de GIF' },
@@ -39,15 +41,15 @@ export function MediaChoice({ kind, media, refresh }: { kind: LiveMediaKind; med
           <Icon name={texts.icon} size={32} />
         </div>
         <div className="live-media__text">
-          <span className="live-media__name">{media ? media.name : texts.none}</span>
+          <span className="live-media__name">{media ? media.name : t(texts.none)}</span>
           {media && <span className="live-media__details">{mediaDetails(media)}</span>}
         </div>
       </div>
       <Button variant="outlined" disabled={busy} onClick={() => void pick()}>
-        {media ? texts.change : texts.choose}
+        {t(media ? texts.change : texts.choose)}
       </Button>
       {/* Le fichier est copié dans l'app : une vidéo lourde prend quelques secondes. */}
-      {busy && <LinearProgress label="Copie du fichier" />}
+      {busy && <LinearProgress label={t('Copie du fichier')} />}
     </div>
   );
 }

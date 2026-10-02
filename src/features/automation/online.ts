@@ -4,6 +4,7 @@ import { buildProfile, forYouSpec } from '@/features/discover/profile';
 import { type FeedSpec, resolveQueries } from '@/features/sources/feed';
 import type { SourceToggles } from '@/features/sources/registry';
 import { DEFAULT_FILTERS, type Wallpaper } from '@/features/sources/types';
+import { t } from '@/shared/i18n';
 import type { NativeOnlineConfig, NativeOnlineQuery } from '@/shared/native/automation';
 
 /** Source de rotation « en ligne » : des fonds pris au hasard chez les sources, selon un thème. */
@@ -22,6 +23,7 @@ export const DEFAULT_ONLINE: OnlineRotationPrefs = { theme: 'featured', keyword:
 /** Tendances et Nouveautés n'ont pas de sens au hasard : on garde les thèmes. */
 const NOT_RANDOM = new Set(['featured', 'trending', 'latest']);
 
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 export const ONLINE_THEMES: readonly { key: string; label: string }[] = [
   { key: 'featured', label: 'Fonds d’écran' },
   { key: 'foryou', label: 'Pour toi' },
@@ -29,9 +31,10 @@ export const ONLINE_THEMES: readonly { key: string; label: string }[] = [
   { key: 'custom', label: 'Mot-clé…' },
 ];
 
+/** Thème de la rotation en ligne, dans la langue de l'interface (le mot-clé choisi reste tel quel). */
 export function onlineThemeLabel(prefs: OnlineRotationPrefs): string {
-  if (prefs.theme === 'custom') return prefs.keyword.trim() ? `« ${prefs.keyword.trim()} »` : 'mot-clé à choisir';
-  return ONLINE_THEMES.find((t) => t.key === prefs.theme)?.label ?? 'Fonds d’écran';
+  if (prefs.theme === 'custom') return prefs.keyword.trim() ? t('« {keyword} »', { keyword: prefs.keyword.trim() }) : t('mot-clé à choisir');
+  return t(ONLINE_THEMES.find((theme) => theme.key === prefs.theme)?.label ?? 'Fonds d’écran');
 }
 
 /** Ce que la rotation en ligne cherche : catégorie, goûts tirés des favoris ou mot-clé. */

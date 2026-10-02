@@ -4,11 +4,12 @@ import { goBack } from '@/app/navigation';
 import { useLibrary } from '@/features/library/store';
 import { useSettings } from '@/features/settings/store';
 import { REMOTE_SOURCES, SOURCE_INFO, usableSources } from '@/features/sources/registry';
+import { locale, t, tn } from '@/shared/i18n';
 import { nativeErrorMessage } from '@/shared/native';
 import { PrismeAutomation } from '@/shared/native/automation';
 import { Button, Chip, Icon, IconButton, ListItem, Switch, TextField } from '@/shared/ui/components';
 import { showSnackbar } from '@/shared/ui/overlays';
-import { TargetChips } from './components';
+import { TargetChips, collectionLabel } from './components';
 import { FAVORITES_SOURCE, FOLDER_SOURCE, INTERVALS, rotationItems } from './model';
 import { DEFAULT_ONLINE, ONLINE_SOURCE, ONLINE_THEMES, onlineThemeLabel } from './online';
 import { useAutomationPrefs } from './store';
@@ -46,7 +47,7 @@ export function RotationScreen() {
   const status = useQuery({ queryKey: ['automation-status'], queryFn: () => PrismeAutomation.getStatus(), refetchInterval: 10_000 });
   const nextChange =
     enabled && status.data?.lastRotationAt
-      ? new Date(status.data.lastRotationAt + prefs.intervalMinutes * 60_000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      ? new Date(status.data.lastRotationAt + prefs.intervalMinutes * 60_000).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
       : null;
   const missingKeyword = online && onlinePrefs.theme === 'custom' && !onlinePrefs.keyword.trim();
   const ready = online ? providers.length > 0 && !missingKeyword : count > 1;
@@ -66,7 +67,7 @@ export function RotationScreen() {
       if (result.cancelled) return;
       update({ source: FOLDER_SOURCE, folder: { uri: result.uri, name: result.name } });
       void folderInfo.refetch();
-      showSnackbar(`Dossier « ${result.name} » : ${result.count} photo${result.count > 1 ? 's' : ''}`);
+      showSnackbar(tn(result.count, 'Dossier « {name} » : {count} photo', 'Dossier « {name} » : {count} photos', { name: result.name }));
     } catch (error) {
       showSnackbar(nativeErrorMessage(error));
     }
@@ -75,35 +76,37 @@ export function RotationScreen() {
   const next = async () => {
     try {
       await PrismeAutomation.nextRotation();
-      showSnackbar(online ? 'Nouveau fond en cours de téléchargement' : 'Fond suivant en cours d’application');
+      showSnackbar(online ? t('Nouveau fond en cours de téléchargement') : t('Fond suivant en cours d’application'));
       setTimeout(() => void status.refetch(), 2000);
     } catch (error) {
       showSnackbar(nativeErrorMessage(error));
     }
   };
 
+  const withNextChange = (text: string) => (nextChange ? `${text} · ${t('prochain changement vers {time}', { time: nextChange })}` : text);
   const statusText = online
     ? providers.length === 0
-      ? 'Aucune source en ligne active : active-en une dans Réglages › Sources.'
+      ? t('Aucune source en ligne active : active-en une dans Réglages › Sources.')
       : missingKeyword
-        ? 'Saisis un mot-clé pour la rotation en ligne.'
-        : `Fonds au hasard en ligne : ${onlineThemeLabel(onlinePrefs)}${nextChange ? ` · prochain changement vers ${nextChange}` : ''}`
+        ? t('Saisis un mot-clé pour la rotation en ligne.')
+        : withNextChange(t('Fonds au hasard en ligne : {theme}', { theme: onlineThemeLabel(onlinePrefs) }))
     : folderSource && folderInfo.data && !folderInfo.data.accessible
-      ? 'Dossier inaccessible : choisis-le à nouveau.'
+      ? t('Dossier inaccessible : choisis-le à nouveau.')
       : count > 1
-        ? `${count} ${folderSource ? 'photos du dossier' : 'fonds'} en rotation${nextChange ? ` · prochain changement vers ${nextChange}` : ''}`
-        : 'Il faut au moins deux fonds dans la source choisie.';
+        ? withNextChange(folderSource ? t('{count} photos du dossier en rotation', { count }) : t('{count} fonds en rotation', { count }))
+        : t('Il faut au moins deux fonds dans la source choisie.');
 
   return (
     <div className="screen overlay-screen option-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Rotation</h1>
-        <Switch label="Activer la rotation" checked={enabled} onChange={(v) => setFeature('rotation', v)} />
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Rotation')}</h1>
+        <Switch label={t('Activer la rotation')} checked={enabled} onChange={(v) => setFeature('rotation', v)} />
       </header>
       <p className="option-intro">
-        Prisme change de fond à intervalle régulier, même app fermée (Android peut décaler un peu l'heure exacte pour
-        économiser la batterie). Les fonds dynamiques et le mode focus restent prioritaires.
+        {t(
+          "Prisme change de fond à intervalle régulier, même app fermée (Android peut décaler un peu l'heure exacte pour économiser la batterie). Les fonds dynamiques et le mode focus restent prioritaires.",
+        )}
       </p>
 
       {enabled && (
@@ -114,17 +117,17 @@ export function RotationScreen() {
       )}
 
       <div className="option-block">
-        <h2 className="option-block__title">Source</h2>
+        <h2 className="option-block__title">{t('Source')}</h2>
         <div className="chip-wrap">
           <Chip icon="explore" selected={online} onClick={() => update({ source: ONLINE_SOURCE })}>
-            En ligne, au hasard
+            {t('En ligne, au hasard')}
           </Chip>
           <Chip selected={prefs.source === FAVORITES_SOURCE} onClick={() => update({ source: FAVORITES_SOURCE })}>
-            Favoris ({Object.keys(favorites).length})
+            {t('Favoris ({count})', { count: Object.keys(favorites).length })}
           </Chip>
           {collections.map((c) => (
             <Chip key={c.id} selected={prefs.source === c.id} onClick={() => update({ source: c.id })}>
-              {c.name} ({c.itemIds.length})
+              {collectionLabel(c)} ({c.itemIds.length})
             </Chip>
           ))}
           <Chip
@@ -132,13 +135,13 @@ export function RotationScreen() {
             selected={folderSource}
             onClick={() => (prefs.folder ? update({ source: FOLDER_SOURCE }) : void chooseFolder())}
           >
-            {prefs.folder ? `Dossier « ${prefs.folder.name} »` : 'Dossier du téléphone…'}
+            {prefs.folder ? t('Dossier « {name} »', { name: prefs.folder.name }) : t('Dossier du téléphone…')}
           </Chip>
         </div>
         {folderSource && (
           <div className="option-actions option-actions--flush">
             <Button variant="outlined" icon="folderOpen" onClick={() => void chooseFolder()}>
-              Changer de dossier
+              {t('Changer de dossier')}
             </Button>
           </div>
         )}
@@ -147,19 +150,19 @@ export function RotationScreen() {
       {online && (
         <>
           <div className="option-block">
-            <h2 className="option-block__title">Thème</h2>
-            <div className="chip-wrap" aria-label="Thème de la rotation en ligne">
+            <h2 className="option-block__title">{t('Thème')}</h2>
+            <div className="chip-wrap" aria-label={t('Thème de la rotation en ligne')}>
               {ONLINE_THEMES.map((theme) => (
                 <Chip key={theme.key} selected={onlinePrefs.theme === theme.key} onClick={() => updateOnline({ theme: theme.key })}>
-                  {theme.label}
+                  {t(theme.label)}
                 </Chip>
               ))}
             </div>
             {onlinePrefs.theme === 'custom' && (
               <form className="option-field" onSubmit={commitKeyword}>
                 <TextField
-                  label="Mot-clé"
-                  placeholder="ex. aurore boréale, forêt, néon"
+                  label={t('Mot-clé')}
+                  placeholder={t('ex. aurore boréale, forêt, néon')}
                   enterKeyHint="done"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
@@ -168,28 +171,30 @@ export function RotationScreen() {
               </form>
             )}
             {onlinePrefs.theme === 'foryou' && (
-              <p className="option-hint">D’après tes favoris (sujets, photographes et couleurs) ; sans favoris, des fonds d’écran au hasard.</p>
+              <p className="option-hint">
+                {t('D’après tes favoris (sujets, photographes et couleurs) ; sans favoris, des fonds d’écran au hasard.')}
+              </p>
             )}
             <p className="option-hint">
-              {providers.length > 0 ? `Sources : ${providers.join(', ')} (Réglages › Sources).` : 'Aucune source active (Réglages › Sources).'} Les
-              contenus masqués ne sont jamais choisis.
+              {providers.length > 0 ? t('Sources : {sources} (Réglages › Sources).', { sources: providers.join(', ') }) : t('Aucune source active (Réglages › Sources).')}{' '}
+              {t('Les contenus masqués ne sont jamais choisis.')}
             </p>
           </div>
           <ListItem
-            headline="Uniquement en Wi-Fi"
-            supporting="Sur données mobiles, le fond actuel reste en place"
+            headline={t('Uniquement en Wi-Fi')}
+            supporting={t('Sur données mobiles, le fond actuel reste en place')}
             leading={<Icon name="wifi" />}
-            trailing={<Switch label="Uniquement en Wi-Fi" checked={onlinePrefs.wifiOnly} onChange={(wifiOnly) => updateOnline({ wifiOnly })} />}
+            trailing={<Switch label={t('Uniquement en Wi-Fi')} checked={onlinePrefs.wifiOnly} onChange={(wifiOnly) => updateOnline({ wifiOnly })} />}
           />
         </>
       )}
 
       <div className="option-block">
-        <h2 className="option-block__title">Changer toutes les</h2>
+        <h2 className="option-block__title">{t('Changer toutes les')}</h2>
         <div className="chip-wrap">
           {INTERVALS.map((interval) => (
             <Chip key={interval.minutes} selected={prefs.intervalMinutes === interval.minutes} onClick={() => update({ intervalMinutes: interval.minutes })}>
-              {interval.label}
+              {t(interval.label)}
             </Chip>
           ))}
         </div>
@@ -197,31 +202,33 @@ export function RotationScreen() {
 
       {!online && (
         <ListItem
-          headline="Ordre aléatoire"
-          supporting="Sinon, dans l'ordre de la source"
+          headline={t('Ordre aléatoire')}
+          supporting={t("Sinon, dans l'ordre de la source")}
           leading={<Icon name="shuffle" />}
-          trailing={<Switch label="Ordre aléatoire" checked={prefs.shuffle} onChange={(shuffle) => update({ shuffle })} />}
+          trailing={<Switch label={t('Ordre aléatoire')} checked={prefs.shuffle} onChange={(shuffle) => update({ shuffle })} />}
         />
       )}
       {(online || prefs.shuffle) && (
         <ListItem
-          headline="Rotation intelligente"
+          headline={t('Rotation intelligente')}
           supporting={
-            online ? 'Fonds sombres la nuit, quand la source en propose' : 'Pas de répétition avant d’avoir tout vu, teintes variées, fonds sombres la nuit'
+            online
+              ? t('Fonds sombres la nuit, quand la source en propose')
+              : t('Pas de répétition avant d’avoir tout vu, teintes variées, fonds sombres la nuit')
           }
           leading={<Icon name="wandStars" />}
-          trailing={<Switch label="Rotation intelligente" checked={prefs.smart !== false} onChange={(smart) => update({ smart })} />}
+          trailing={<Switch label={t('Rotation intelligente')} checked={prefs.smart !== false} onChange={(smart) => update({ smart })} />}
         />
       )}
 
       <div className="option-block">
-        <h2 className="option-block__title">Écran</h2>
+        <h2 className="option-block__title">{t('Écran')}</h2>
         <TargetChips value={prefs.target} onChange={(target) => update({ target })} />
       </div>
 
       <div className="option-actions">
         <Button variant="tonal" icon="autorenew" disabled={!enabled || !ready} onClick={() => void next()}>
-          Changer maintenant
+          {t('Changer maintenant')}
         </Button>
       </div>
     </div>

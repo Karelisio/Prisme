@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { Icon, ListItem, SegmentedButtons, Switch } from '@/shared/ui/components';
 import { LiveActivateButton } from './LiveActivate';
 import { PaletteTiles, useAccentSync } from './PaletteTiles';
@@ -13,24 +14,29 @@ export function GradientSection({ optionOn, status, refresh }: ModeSectionProps)
   return (
     <>
       <p className="option-hint option-hint--padded">
-        Des couleurs qui ondulent lentement, façon aurore boréale. Avec le double-tap, le fond passe à la palette suivante.
+        {t('Des couleurs qui ondulent lentement, façon aurore boréale. Avec le double-tap, le fond passe à la palette suivante.')}
       </p>
 
       <div className="option-block">
-        <h2 className="option-block__title">Palette</h2>
-        <PaletteTiles label="Palette du dégradé" value={settings.palette} onChange={(palette) => update({ palette })} />
+        <h2 className="option-block__title">{t('Palette')}</h2>
+        <PaletteTiles label={t('Palette du dégradé')} value={settings.palette} onChange={(palette) => update({ palette })} />
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Vitesse</h2>
-        <SegmentedButtons label="Vitesse du dégradé" options={GRADIENT_SPEEDS} value={settings.speed} onChange={(speed) => update({ speed })} />
+        <h2 className="option-block__title">{t('Vitesse')}</h2>
+        <SegmentedButtons
+          label={t('Vitesse du dégradé')}
+          options={GRADIENT_SPEEDS.map((speed) => ({ ...speed, label: t(speed.label) }))}
+          value={settings.speed}
+          onChange={(speed) => update({ speed })}
+        />
       </div>
 
       <ListItem
-        headline="Grain léger"
-        supporting="Évite les bandes de couleur dans les dégradés sombres"
+        headline={t('Grain léger')}
+        supporting={t('Évite les bandes de couleur dans les dégradés sombres')}
         leading={<Icon name="grain" />}
-        trailing={<Switch label="Grain léger" checked={settings.grain} onChange={(grain) => update({ grain })} />}
+        trailing={<Switch label={t('Grain léger')} checked={settings.grain} onChange={(grain) => update({ grain })} />}
       />
 
       <LiveActivateButton status={status} disabled={!optionOn} refresh={refresh} onActivate={() => activateLiveMode('gradient')} />

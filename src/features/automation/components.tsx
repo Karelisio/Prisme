@@ -4,6 +4,8 @@ import { useThumbSrc } from '@/features/library/useImageSrc';
 import { importFromGallery } from '@/features/sources/device';
 import type { Wallpaper } from '@/features/sources/types';
 import { FAVORITES_SOURCE, rotationItems } from '@/features/automation/model';
+import { CREATIONS_ID } from '@/features/library/creations';
+import { t } from '@/shared/i18n';
 import { type WallpaperTarget, nativeErrorMessage } from '@/shared/native';
 import { Button, Chip, EmptyState, Icon } from '@/shared/ui/components';
 import type { IconName } from '@/shared/ui/icons';
@@ -16,17 +18,20 @@ export const TARGET_CHOICES: readonly { value: WallpaperTarget; label: string }[
   { value: 'both', label: 'Les deux' },
 ];
 
-export function TargetChips({ value, onChange }: { value: WallpaperTarget; onChange: (t: WallpaperTarget) => void }) {
+export function TargetChips({ value, onChange }: { value: WallpaperTarget; onChange: (target: WallpaperTarget) => void }) {
   return (
-    <div className="chip-wrap" aria-label="Écran visé">
-      {TARGET_CHOICES.map((t) => (
-        <Chip key={t.value} selected={value === t.value} onClick={() => onChange(t.value)}>
-          {t.label}
+    <div className="chip-wrap" aria-label={t('Écran visé')}>
+      {TARGET_CHOICES.map((choice) => (
+        <Chip key={choice.value} selected={value === choice.value} onClick={() => onChange(choice.value)}>
+          {t(choice.label)}
         </Chip>
       ))}
     </div>
   );
 }
+
+/** Nom d'une collection : « Créations », créée par l'app, suit la langue ; les autres sont des noms choisis par l'utilisateur. */
+export const collectionLabel = (collection: { id: string; name: string }): string => (collection.id === CREATIONS_ID ? t(collection.name) : collection.name);
 
 function PickerThumb({ wallpaper, onPick }: { wallpaper: Wallpaper; onPick: (w: Wallpaper) => void }) {
   const src = useThumbSrc(wallpaper);
@@ -69,7 +74,7 @@ export function WallpaperPicker({
       if (!useLibrary.getState().favorites[w.id]) toggleFavorite(w);
       pick(w);
     } catch (error) {
-      showSnackbar(`Import impossible : ${nativeErrorMessage(error)}`);
+      showSnackbar(t('Import impossible : {message}', { message: nativeErrorMessage(error) }));
     }
   };
 
@@ -77,16 +82,20 @@ export function WallpaperPicker({
     <BottomSheet open={open} onClose={onClose} title={title}>
       <div className="chip-row">
         <Chip selected={source === FAVORITES_SOURCE} onClick={() => setSource(FAVORITES_SOURCE)}>
-          Favoris
+          {t('Favoris')}
         </Chip>
         {collections.map((c) => (
           <Chip key={c.id} selected={source === c.id} onClick={() => setSource(c.id)}>
-            {c.name}
+            {collectionLabel(c)}
           </Chip>
         ))}
       </div>
       {list.length === 0 ? (
-        <EmptyState icon="favorite" title="Rien ici pour l'instant" text="Ajoute des fonds aux favoris ou à une collection, ou importe une image." />
+        <EmptyState
+          icon="favorite"
+          title={t("Rien ici pour l'instant")}
+          text={t('Ajoute des fonds aux favoris ou à une collection, ou importe une image.')}
+        />
       ) : (
         <div className="picker">
           {list.map((w) => (
@@ -96,7 +105,7 @@ export function WallpaperPicker({
       )}
       <div className="sheet__actions">
         <Button variant="tonal" icon="addPhoto" onClick={() => void importImage()}>
-          Importer
+          {t('Importer')}
         </Button>
       </div>
     </BottomSheet>
@@ -134,16 +143,16 @@ export function RefRow({
       </span>
       {wallpaper ? (
         <span className="ref-row__chosen">
-          <button type="button" className="ref-row__thumb" onClick={onChoose} aria-label={`Changer le fond « ${label} »`}>
+          <button type="button" className="ref-row__thumb" onClick={onChoose} aria-label={t('Changer le fond « {label} »', { label })}>
             <RefThumb wallpaper={wallpaper} />
           </button>
-          <button type="button" className="ref-row__clear" onClick={onClear} aria-label={`Retirer le fond « ${label} »`}>
+          <button type="button" className="ref-row__clear" onClick={onClear} aria-label={t('Retirer le fond « {label} »', { label })}>
             <Icon name="close" size={16} />
           </button>
         </span>
       ) : (
-        <Button variant="outlined" onClick={onChoose} aria-label={`Choisir le fond « ${label} »`}>
-          Choisir
+        <Button variant="outlined" onClick={onChoose} aria-label={t('Choisir le fond « {label} »', { label })}>
+          {t('Choisir')}
         </Button>
       )}
     </div>

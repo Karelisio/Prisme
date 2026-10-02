@@ -19,6 +19,7 @@ import {
 /** Fonds d'exemple de l'aperçu : de quoi voir le texte passer du clair au sombre selon la luminosité du fond. */
 export type PreviewBackground = 'night' | 'dawn' | 'day';
 
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 export const PREVIEW_BACKGROUNDS: readonly { value: PreviewBackground; label: string }[] = [
   { value: 'night', label: 'Nuit' },
   { value: 'dawn', label: 'Aube' },

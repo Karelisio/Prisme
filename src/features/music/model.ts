@@ -25,6 +25,7 @@ export function musicStatusKind(status: Pick<MusicStatus, 'accessGranted' | 'sho
   return status.showing ? 'showing' : 'ready';
 }
 
+/** Textes en français (données) : `t(text)` à l'affichage. */
 export const MUSIC_STATUS: Record<MusicStatusKind, { icon: IconName; text: string }> = {
   access: { icon: 'info', text: "Autorise l'accès aux notifications" },
   off: { icon: 'info', text: 'Option désactivée : active-la pour afficher la pochette' },

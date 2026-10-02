@@ -6,6 +6,7 @@ import { saveCreation } from '@/features/library/creations';
 import { useLibrary } from '@/features/library/store';
 import { TARGET_LABELS, applyWallpaper } from '@/features/preview/applyWallpaper';
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { getScreenInfo } from '@/shared/lib/screen';
 import { nativeErrorMessage } from '@/shared/native';
 import { PrismeAutomation } from '@/shared/native/automation';
@@ -19,6 +20,7 @@ import { useAutomationPrefs } from './store';
 
 interface Preset {
   key: string;
+  /** En français (donnée) : `t(label)` à l'affichage. */
   label: string;
   params: GeneratorParams;
 }
@@ -48,9 +50,9 @@ function PresetTile({ preset, onPick, disabled }: { preset: Preset; onPick: () =
     if (canvas && ctx) renderGenerated(ctx, preset.params, canvas.width, canvas.height);
   }, [preset]);
   return (
-    <button type="button" className="preset-tile" onClick={onPick} disabled={disabled} aria-label={`Fond épuré ${preset.label}`}>
+    <button type="button" className="preset-tile" onClick={onPick} disabled={disabled} aria-label={t('Fond épuré {label}', { label: t(preset.label) })}>
       <canvas ref={ref} width={90} height={200} className="preset" />
-      <span>{preset.label}</span>
+      <span>{t(preset.label)}</span>
     </button>
   );
 }
@@ -70,7 +72,11 @@ export function FocusScreen() {
     setBusy(true);
     try {
       const { width, height } = await getScreenInfo();
-      const creation = await saveCreation(await exportGenerated(preset.params, width, height), preset.params.colors[0], `Fond épuré ${preset.label}`);
+      const creation = await saveCreation(
+        await exportGenerated(preset.params, width, height),
+        preset.params.colors[0],
+        t('Fond épuré {label}', { label: t(preset.label) }),
+      );
       update({ wallpaperId: creation.id });
     } catch (e) {
       showSnackbar(nativeErrorMessage(e));
@@ -89,33 +95,38 @@ export function FocusScreen() {
     if (!wallpaper) return;
     try {
       await applyWallpaper({ wallpaper, target: prefs.target, remember: false });
-      showSnackbar(`Fond épuré appliqué : ${TARGET_LABELS[prefs.target].toLowerCase()}`);
+      showSnackbar(t('Fond épuré appliqué : {screen}', { screen: t(TARGET_LABELS[prefs.target]).toLowerCase() }));
     } catch (e) {
-      showSnackbar(`Échec : ${nativeErrorMessage(e)}`);
+      showSnackbar(t('Échec : {message}', { message: nativeErrorMessage(e) }));
     }
   };
 
   return (
     <div className="screen overlay-screen option-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Mode focus</h1>
-        <Switch label="Activer le mode focus" checked={enabled} onChange={(v) => setFeature('focus', v)} />
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Mode focus')}</h1>
+        <Switch label={t('Activer le mode focus')} checked={enabled} onChange={(v) => setFeature('focus', v)} />
       </header>
       <p className="option-intro">
-        Pendant les plages choisies, Prisme pose un fond épuré pour limiter les distractions, puis remet ton fond habituel.
-        Il passe avant les fonds dynamiques et la rotation.
+        {t(
+          'Pendant les plages choisies, Prisme pose un fond épuré pour limiter les distractions, puis remet ton fond habituel. Il passe avant les fonds dynamiques et la rotation.',
+        )}
       </p>
 
       {enabled && (
         <div className="option-status" role="status">
           <Icon name={status.data?.focusActive ? 'focus' : 'schedule'} />
-          {!wallpaper ? 'Choisis un fond épuré pour démarrer.' : status.data?.focusActive ? 'Mode focus en cours.' : 'En attente de la prochaine plage.'}
+          {!wallpaper
+            ? t('Choisis un fond épuré pour démarrer.')
+            : status.data?.focusActive
+              ? t('Mode focus en cours.')
+              : t('En attente de la prochaine plage.')}
         </div>
       )}
 
       <div className="option-block">
-        <h2 className="option-block__title">Fond épuré</h2>
+        <h2 className="option-block__title">{t('Fond épuré')}</h2>
         <div className="presets">
           {focusPresets(scheme).map((preset) => (
             <PresetTile key={preset.key} preset={preset} disabled={busy} onPick={() => void pickPreset(preset)} />
@@ -124,46 +135,46 @@ export function FocusScreen() {
       </div>
       <RefRow
         icon="focus"
-        label="Fond choisi"
-        supporting={wallpaper ? undefined : 'Un modèle ci-dessus ou une image de ta bibliothèque'}
+        label={t('Fond choisi')}
+        supporting={wallpaper ? undefined : t('Un modèle ci-dessus ou une image de ta bibliothèque')}
         wallpaperId={prefs.wallpaperId}
         onChoose={() => setPicking(true)}
         onClear={() => update({ wallpaperId: null })}
       />
 
       <div className="option-block">
-        <h2 className="option-block__title">Plages horaires</h2>
+        <h2 className="option-block__title">{t('Plages horaires')}</h2>
       </div>
       {prefs.schedules.map((schedule) => (
         <div key={schedule.id} className="schedule">
-          <div className="schedule__days" aria-label="Jours">
+          <div className="schedule__days" aria-label={t('Jours')}>
             {DAYS.map((day) => (
               <button
                 key={day.value}
                 type="button"
                 className="day-toggle"
                 aria-pressed={schedule.days.includes(day.value)}
-                aria-label={day.label}
-                title={day.label}
+                aria-label={t(day.label)}
+                title={t(day.label)}
                 onClick={() => toggleDay(schedule, day.value)}
               >
-                {day.short}
+                {t(day.label).charAt(0).toUpperCase()}
               </button>
             ))}
           </div>
           <div className="schedule__times">
             <label>
-              Début
+              {t('Début')}
               <input type="time" className="time-input" value={schedule.start} onChange={(e) => e.target.value && setSchedule(schedule.id, { start: e.target.value })} />
             </label>
             <label>
-              Fin
+              {t('Fin')}
               <input type="time" className="time-input" value={schedule.end} onChange={(e) => e.target.value && setSchedule(schedule.id, { end: e.target.value })} />
             </label>
             <span className="schedule__spacer" />
-            <IconButton icon="delete" label="Supprimer la plage" onClick={() => update({ schedules: prefs.schedules.filter((s) => s.id !== schedule.id) })} />
+            <IconButton icon="delete" label={t('Supprimer la plage')} onClick={() => update({ schedules: prefs.schedules.filter((s) => s.id !== schedule.id) })} />
           </div>
-          {schedule.end < schedule.start && <p className="schedule__note">Se termine le lendemain.</p>}
+          {schedule.end < schedule.start && <p className="schedule__note">{t('Se termine le lendemain.')}</p>}
         </div>
       ))}
       <div className="option-actions">
@@ -172,21 +183,21 @@ export function FocusScreen() {
           icon="add"
           onClick={() => update({ schedules: [...prefs.schedules, { id: crypto.randomUUID(), days: [1, 2, 3, 4, 5], start: '14:00', end: '17:00' }] })}
         >
-          Ajouter une plage
+          {t('Ajouter une plage')}
         </Button>
       </div>
 
       <div className="option-block">
-        <h2 className="option-block__title">Écran</h2>
+        <h2 className="option-block__title">{t('Écran')}</h2>
         <TargetChips value={prefs.target} onChange={(target) => update({ target })} />
       </div>
       <div className="option-actions">
         <Button variant="tonal" icon="play" disabled={!wallpaper} onClick={() => void tryNow()}>
-          Essayer maintenant
+          {t('Essayer maintenant')}
         </Button>
       </div>
 
-      <WallpaperPicker open={picking} title="Fond épuré" onClose={() => setPicking(false)} onPick={(w) => update({ wallpaperId: w.id })} />
+      <WallpaperPicker open={picking} title={t('Fond épuré')} onClose={() => setPicking(false)} onPick={(w) => update({ wallpaperId: w.id })} />
     </div>
   );
 }

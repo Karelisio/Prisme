@@ -1,3 +1,4 @@
+import { locale, t } from '@/shared/i18n';
 import type { SystemTheme } from '@/shared/native';
 import type { LiveWeatherStatus } from '@/shared/native/automation';
 import type { IconName } from '@/shared/ui/icons';
@@ -6,6 +7,9 @@ import type { IconName } from '@/shared/ui/icons';
  * Fonds animés « Dégradé » et « Particules », et météo animée du genre « Photo » : réglages envoyés à la
  * scène native (mêmes clés et mêmes valeurs par défaut que MotionPalettes.kt, GradientMotion.kt,
  * ParticlesPhysics.kt et WeatherEffects.kt), aperçu des palettes et état de la météo.
+ *
+ * Les libellés (palettes, vitesses, styles, météo…) restent en français dans les données : l'interface les
+ * traduit à l'affichage (`t(label)`), jamais au chargement du module.
  */
 
 export type MotionPaletteKey = 'system' | 'aurora' | 'sunset' | 'ocean' | 'forest' | 'neon' | 'pastel';
@@ -129,7 +133,7 @@ export function weatherOverlaySettings(stored: unknown): WeatherOverlaySettings 
   return { ...WEATHER_OVERLAY_DEFAULTS, ...value };
 }
 
-/** Condition lisible d'un code météo WMO, et si la couche l'anime (mêmes codes que WeatherEffects.kt). */
+/** Condition d'un code météo WMO (libellé en français, à traduire avec `t`), et si la couche l'anime (mêmes codes que WeatherEffects.kt). */
 export function weatherCondition(code: number, isDay: boolean): { label: string; animated: boolean } {
   if (code === 0 || code === 1) return { label: isDay ? 'Ciel clair' : 'Nuit claire', animated: false };
   if (code === 45 || code === 48) return { label: 'Brouillard', animated: true };
@@ -140,9 +144,9 @@ export function weatherCondition(code: number, isDay: boolean): { label: string;
   return { label: 'Nuageux', animated: false };
 }
 
-/** « Lyon, Auvergne-Rhône-Alpes, France » → « Lyon ». */
+/** « Lyon, Auvergne-Rhône-Alpes, France » → « Lyon » ; sans nom : « ce lieu ». */
 export function shortPlaceName(name: string | undefined): string {
-  return name?.split(',')[0]?.trim() || 'ce lieu';
+  return name?.split(',')[0]?.trim() || t('ce lieu');
 }
 
 /** Même lieu, à environ 1 km près (comme le natif). */
@@ -150,14 +154,13 @@ export function samePlace(a: { latitude: number; longitude: number }, b: { latit
   return Math.abs(a.latitude - b.latitude) < 0.01 && Math.abs(a.longitude - b.longitude) < 0.01;
 }
 
-const hourFormat = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
-const dayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
-
-/** « à 14:05 » le jour même, sinon « le 1 oct. à 14:05 ». */
+/** « à 14:05 » le jour même, sinon « le 1 oct. à 14:05 » (« at 14:05 », « on 1 Oct at 14:05 » en anglais). */
 export function formatUpdate(at: number, now: Date): string {
   const date = new Date(at);
-  const sameDay = date.toDateString() === now.toDateString();
-  return sameDay ? `à ${hourFormat.format(date)}` : `le ${dayFormat.format(date)} à ${hourFormat.format(date)}`;
+  const time = new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit' }).format(date);
+  if (date.toDateString() === now.toDateString()) return t('à {time}', { time });
+  const day = new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short' }).format(date);
+  return t('le {date} à {time}', { date: day, time });
 }
 
 /** État de la météo animée affiché sous le lieu (chaîne vide : rien à afficher). */
@@ -165,15 +168,17 @@ export function weatherStatusText(settings: WeatherOverlaySettings, reading: Liv
   if (!settings.enabled) return '';
   if (settings.preview !== 'auto') {
     const label = WEATHER_PREVIEWS.find((p) => p.value === settings.preview)?.label ?? '';
-    return `Aperçu : ${label}. Choisis « Auto » pour suivre la météo réelle.`;
+    return t('Aperçu : {label}. Choisis « Auto » pour suivre la météo réelle.', { label: t(label) });
   }
-  if (settings.latitude === undefined || settings.longitude === undefined) return 'Choisis un lieu pour suivre sa météo.';
-  const place = settings.name === 'Ma position' ? 'ta position' : shortPlaceName(settings.name);
+  if (settings.latitude === undefined || settings.longitude === undefined) return t('Choisis un lieu pour suivre sa météo.');
+  const place = settings.name === 'Ma position' ? t('ta position') : shortPlaceName(settings.name);
   const here = { latitude: settings.latitude, longitude: settings.longitude };
-  if (!reading || !samePlace(reading, here)) return `Météo de ${place} : relevée dès que le fond animé est visible.`;
-  const condition = weatherCondition(reading.code, reading.isDay);
-  const text = `${condition.label} à ${place}, mise à jour ${formatUpdate(reading.updatedAt, now)}`;
-  return condition.animated ? text : `${text} : rien à animer par ce temps.`;
+  if (!reading || !samePlace(reading, here)) return t('Météo de {place} : relevée dès que le fond animé est visible.', { place });
+  const { label, animated } = weatherCondition(reading.code, reading.isDay);
+  const vars = { condition: t(label), place, when: formatUpdate(reading.updatedAt, now) };
+  return animated
+    ? t('{condition} à {place}, mise à jour {when}', vars)
+    : t('{condition} à {place}, mise à jour {when} : rien à animer par ce temps.', vars);
 }
 
 // --- Aperçu des palettes (mêmes taches et mêmes calculs que GradientMotion.kt) ---

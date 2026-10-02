@@ -3,6 +3,7 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { goBack } from '@/app/navigation';
 import { useLibrary } from '@/features/library/store';
 import { useSettings } from '@/features/settings/store';
+import { t, tn } from '@/shared/i18n';
 import { isNative, nativeErrorMessage } from '@/shared/native';
 import { type DevicePosition, type LocationPermissions, PrismeAutomation } from '@/shared/native/automation';
 import { Button, Chip, Icon, IconButton, Switch, TextField } from '@/shared/ui/components';
@@ -17,7 +18,7 @@ function RadiusChips({ value, label, onChange }: { value: number; label: string;
     <div className="chip-wrap" role="group" aria-label={label}>
       {PLACE_RADII.map((radius) => (
         <Chip key={radius.meters} selected={value === radius.meters} onClick={() => onChange(radius.meters)}>
-          {radius.label}
+          {t(radius.label)}
         </Chip>
       ))}
     </div>
@@ -52,15 +53,16 @@ export function PlacesScreen() {
 
   const ready = prefs.items.filter((p) => p.wallpaperId && wallpapers[p.wallpaperId]).length;
   const granted = !!permissions?.precise && !!permissions.background;
-  const suggestions = PLACE_SUGGESTIONS.filter((s) => !prefs.items.some((p) => p.name === s));
+  // Noms proposés : dans la langue de l'interface, et c'est ce nom-là qui est enregistré (un nom de lieu est un contenu).
+  const suggestions = PLACE_SUGGESTIONS.map((s) => t(s)).filter((s) => !prefs.items.some((p) => p.name === s));
 
   const updatePlace = (id: string, patch: Partial<PlaceZone>) => update({ items: prefs.items.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
 
   const removePlace = (place: PlaceZone) => {
     const index = prefs.items.findIndex((p) => p.id === place.id);
     update({ items: prefs.items.filter((p) => p.id !== place.id) });
-    showSnackbar(`Lieu « ${place.name} » supprimé`, {
-      label: 'Annuler',
+    showSnackbar(t('Lieu « {name} » supprimé', { name: place.name }), {
+      label: t('Annuler'),
       onAction: () => {
         const items = useAutomationPrefs.getState().places.items;
         update({ items: [...items.slice(0, index), place, ...items.slice(index)] });
@@ -71,7 +73,7 @@ export function PlacesScreen() {
   const checkNow = async () => {
     try {
       await PrismeAutomation.runNow();
-      showSnackbar('Vérification de la position lancée');
+      showSnackbar(t('Vérification de la position lancée'));
     } catch (error) {
       showSnackbar(nativeErrorMessage(error));
     }
@@ -112,26 +114,25 @@ export function PlacesScreen() {
 
   const setupText =
     prefs.items.length === 0
-      ? 'Ajoute un lieu pour démarrer.'
+      ? t('Ajoute un lieu pour démarrer.')
       : ready === 0
-        ? 'Choisis un fond pour au moins un lieu.'
-        : `${ready} ${ready > 1 ? 'lieux surveillés' : 'lieu surveillé'}.`;
+        ? t('Choisis un fond pour au moins un lieu.')
+        : tn(ready, '{count} lieu surveillé.', '{count} lieux surveillés.');
   const permissionText = !permissions?.precise
-    ? 'Autorise la position précise : Prisme en a besoin pour savoir quand tu es dans un lieu.'
-    : 'Choisis « Toujours autoriser » pour la position : sans cela, Prisme ne la lit pas quand l’app est fermée.';
+    ? t('Autorise la position précise : Prisme en a besoin pour savoir quand tu es dans un lieu.')
+    : t('Choisis « Toujours autoriser » pour la position : sans cela, Prisme ne la lit pas quand l’app est fermée.');
 
   return (
     <div className="screen overlay-screen option-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Selon le lieu</h1>
-        <Switch label="Activer « Selon le lieu »" checked={enabled} onChange={(v) => setFeature('places', v)} />
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Selon le lieu')}</h1>
+        <Switch label={t('Activer « Selon le lieu »')} checked={enabled} onChange={(v) => setFeature('places', v)} />
       </header>
       <p className="option-intro">
-        Un fond pour chaque lieu (maison, travail…). Prisme le pose quand ton téléphone est dans la zone, même app fermée, puis remet
-        ton fond habituel en sortant. La position est vérifiée environ toutes les 15 minutes (Android peut retarder ces vérifications
-        pour économiser la batterie) et reste sur ton téléphone. Le mode focus passe avant ; les fonds dynamiques et la rotation
-        passent après.
+        {t(
+          'Un fond pour chaque lieu (maison, travail…). Prisme le pose quand ton téléphone est dans la zone, même app fermée, puis remet ton fond habituel en sortant. La position est vérifiée environ toutes les 15 minutes (Android peut retarder ces vérifications pour économiser la batterie) et reste sur ton téléphone. Le mode focus passe avant ; les fonds dynamiques et la rotation passent après.',
+        )}
       </p>
 
       {enabled && (
@@ -146,14 +147,14 @@ export function PlacesScreen() {
           <div className="option-status" role="status">
             <Icon name={granted ? 'checkCircle' : 'info'} />
             <span>
-              {granted ? 'Autorisations de position accordées.' : permissionText}
+              {granted ? t('Autorisations de position accordées.') : permissionText}
               {!granted && hint ? ` ${hint}` : ''}
             </span>
           </div>
           {!granted && (
             <div className="option-actions">
               <Button variant="tonal" icon="place" onClick={() => void requestPermissions()}>
-                Autoriser la position
+                {t('Autoriser la position')}
               </Button>
             </div>
           )}
@@ -161,34 +162,34 @@ export function PlacesScreen() {
       )}
 
       <div className="option-block">
-        <h2 className="option-block__title">Lieux</h2>
-        {prefs.items.length === 0 && <p className="option-hint">Aucun lieu pour l’instant.</p>}
-        {prefs.items.length > 1 && <p className="option-hint">Si des zones se recouvrent, le premier lieu de la liste l’emporte.</p>}
+        <h2 className="option-block__title">{t('Lieux')}</h2>
+        {prefs.items.length === 0 && <p className="option-hint">{t('Aucun lieu pour l’instant.')}</p>}
+        {prefs.items.length > 1 && <p className="option-hint">{t('Si des zones se recouvrent, le premier lieu de la liste l’emporte.')}</p>}
       </div>
       {prefs.items.map((place) => (
         <div key={place.id} className="place-card">
           <RefRow
             icon="place"
             label={place.name}
-            supporting={place.wallpaperId ? undefined : 'Choisis un fond pour ce lieu'}
+            supporting={place.wallpaperId ? undefined : t('Choisis un fond pour ce lieu')}
             wallpaperId={place.wallpaperId}
             onChoose={() => setPicking(place)}
             onClear={() => updatePlace(place.id, { wallpaperId: null })}
           />
           <div className="place-card__footer">
-            <RadiusChips value={place.radius} label={`Rayon : ${place.name}`} onChange={(meters) => updatePlace(place.id, { radius: meters })} />
-            <Button variant="text" icon="delete" aria-label={`Supprimer le lieu « ${place.name} »`} onClick={() => removePlace(place)}>
-              Supprimer
+            <RadiusChips value={place.radius} label={t('Rayon : {name}', { name: place.name })} onChange={(meters) => updatePlace(place.id, { radius: meters })} />
+            <Button variant="text" icon="delete" aria-label={t('Supprimer le lieu « {name} »', { name: place.name })} onClick={() => removePlace(place)}>
+              {t('Supprimer')}
             </Button>
           </div>
         </div>
       ))}
 
-      <form className="option-block place-add" aria-label="Ajouter un lieu" onSubmit={addPlace}>
-        <h2 className="option-block__title">Ajouter un lieu</h2>
+      <form className="option-block place-add" aria-label={t('Ajouter un lieu')} onSubmit={addPlace}>
+        <h2 className="option-block__title">{t('Ajouter un lieu')}</h2>
         <TextField
-          label="Nom du lieu"
-          placeholder="ex. Maison"
+          label={t('Nom du lieu')}
+          placeholder={t('ex. Maison')}
           maxLength={40}
           autoComplete="off"
           autoCapitalize="words"
@@ -197,7 +198,7 @@ export function PlacesScreen() {
           onChange={(e) => setName(e.target.value)}
         />
         {suggestions.length > 0 && (
-          <div className="chip-wrap option-field" role="group" aria-label="Noms proposés">
+          <div className="chip-wrap option-field" role="group" aria-label={t('Noms proposés')}>
             {suggestions.map((suggestion) => (
               <Chip key={suggestion} selected={name === suggestion} onClick={() => setName(suggestion)}>
                 {suggestion}
@@ -207,36 +208,38 @@ export function PlacesScreen() {
         )}
         <div className="option-actions">
           <Button variant="tonal" icon="myLocation" disabled={locating} onClick={() => void locate()}>
-            {locating ? 'Recherche de la position…' : 'Utiliser ma position actuelle'}
+            {locating ? t('Recherche de la position…') : t('Utiliser ma position actuelle')}
           </Button>
         </div>
         <p className="option-hint" role="status">
           {position
-            ? `Position trouvée${position.accuracy !== undefined ? ` (± ${Math.round(position.accuracy)} m)` : ''}.`
-            : 'À faire sur place : la zone sera centrée sur ta position.'}
+            ? position.accuracy !== undefined
+              ? t('Position trouvée (± {meters} m).', { meters: Math.round(position.accuracy) })
+              : t('Position trouvée.')
+            : t('À faire sur place : la zone sera centrée sur ta position.')}
         </p>
-        <h2 className="option-block__title option-field">Rayon de la zone</h2>
-        <RadiusChips value={radius} label="Rayon du nouveau lieu" onChange={setRadius} />
+        <h2 className="option-block__title option-field">{t('Rayon de la zone')}</h2>
+        <RadiusChips value={radius} label={t('Rayon du nouveau lieu')} onChange={setRadius} />
         <div className="option-actions">
           <Button type="submit" icon="add" disabled={!position || !name.trim()}>
-            Ajouter ce lieu
+            {t('Ajouter ce lieu')}
           </Button>
         </div>
       </form>
 
       <div className="option-block">
-        <h2 className="option-block__title">Écran</h2>
+        <h2 className="option-block__title">{t('Écran')}</h2>
         <TargetChips value={prefs.target} onChange={(target) => update({ target })} />
       </div>
       <div className="option-actions">
         <Button variant="tonal" icon="refresh" disabled={!enabled || ready === 0} onClick={() => void checkNow()}>
-          Vérifier maintenant
+          {t('Vérifier maintenant')}
         </Button>
       </div>
 
       <WallpaperPicker
         open={picking !== null}
-        title={picking ? `Fond « ${picking.name} »` : ''}
+        title={picking ? t('Fond « {label} »', { label: picking.name }) : ''}
         onClose={() => setPicking(null)}
         onPick={(w) => picking && updatePlace(picking.id, { wallpaperId: w.id })}
       />

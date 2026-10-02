@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { drawGrain } from '@/shared/lib/noise';
 import type { ColorScheme } from '@/shared/theme/scheme';
 import { type Palette6, completePalette } from './color';
@@ -50,6 +51,7 @@ export interface StyleSettings {
 
 export type StyleGroup = 'gradients' | 'patterns';
 
+/** Libellés (familles, styles, réglages) en français dans les données : `t(label)` à l'affichage. */
 export const STYLE_GROUPS: readonly { value: StyleGroup; label: string }[] = [
   { value: 'gradients', label: 'Dégradés' },
   { value: 'patterns', label: 'Motifs' },
@@ -313,7 +315,7 @@ export async function exportGenerated(p: GeneratorParams, width: number, height:
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas indisponible');
+  if (!ctx) throw new Error(t('Canvas indisponible'));
   renderGenerated(ctx, p, width, height);
   // PNG pour les aplats et les motifs nets (pas d'artefacts), JPEG dès qu'il y a du grain ou des dégradés riches.
   const flat = p.style === 'solid' || isPatternStyle(p.style);

@@ -14,6 +14,7 @@ export interface UnlockPrefs {
 
 export const DEFAULT_UNLOCK: UnlockPrefs = { enabled: false, every: 1, source: FAVORITES_SOURCE };
 
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 export const UNLOCK_FREQUENCIES: readonly { every: number; label: string }[] = [
   { every: 1, label: 'Chaque fois' },
   { every: 3, label: '3' },

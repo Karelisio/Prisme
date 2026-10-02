@@ -1,3 +1,4 @@
+import { locale, t } from '@/shared/i18n';
 import type { LiveMedia, LiveMediaKind } from '@/shared/native/automation';
 
 /** Poids maximal des fichiers copiés dans l'app, en Mo (mêmes limites que le natif, qui refuse au-delà avec un message). */
@@ -12,10 +13,10 @@ export function formatDuration(ms: number): string {
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`;
 }
 
-/** Poids d'un fichier, à la française : « 820 Ko », « 46,3 Mo », « 1,2 Go ». */
+/** Poids d'un fichier, à la française : « 820 Ko », « 46,3 Mo », « 1,2 Go » (« 820 KB », « 46.3 MB » en anglais). */
 export function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${Math.max(0, Math.round(bytes))} o`;
-  const units = ['Ko', 'Mo', 'Go'];
+  if (bytes < 1024) return `${Math.max(0, Math.round(bytes))} ${t('o')}`;
+  const units = [t('Ko'), t('Mo'), t('Go')];
   let value = bytes / 1024;
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {
@@ -24,7 +25,7 @@ export function formatSize(bytes: number): string {
   }
   // Une décimale sous 100, aucune au-delà ; « 3 Mo » plutôt que « 3,0 Mo ».
   const rounded = value >= 100 ? Math.round(value) : Math.round(value * 10) / 10;
-  return `${String(rounded).replace('.', ',')} ${units[unit]}`;
+  return `${rounded.toLocaleString(locale(), { useGrouping: false })} ${units[unit]}`;
 }
 
 /** Ce qu'on sait du fichier choisi, sur une ligne : « 0:15 · 46,3 Mo · 1080 × 1920 » (pas de durée pour un GIF). */

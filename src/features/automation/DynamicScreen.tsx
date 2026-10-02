@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { goBack } from '@/app/navigation';
 import { useSettings } from '@/features/settings/store';
+import { t } from '@/shared/i18n';
 import { getJson, withParams } from '@/shared/lib/http';
 import { nativeErrorMessage } from '@/shared/native';
 import { PrismeAutomation } from '@/shared/native/automation';
@@ -23,6 +24,7 @@ import {
 import { useAutomationPrefs } from './store';
 import { formatMinutes, sunTimesOn } from './sun';
 
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 const MODES = [
   { value: 'time', label: 'Heure' },
   { value: 'weather', label: 'Météo' },
@@ -56,7 +58,7 @@ export function DynamicScreen() {
   const runNow = async () => {
     try {
       await PrismeAutomation.runNow();
-      showSnackbar('Mise à jour du fond lancée');
+      showSnackbar(t('Mise à jour du fond lancée'));
     } catch (error) {
       showSnackbar(nativeErrorMessage(error));
     }
@@ -65,20 +67,19 @@ export function DynamicScreen() {
   return (
     <div className="screen overlay-screen option-screen">
       <header className="top-bar">
-        <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Fonds dynamiques</h1>
-        <Switch label="Activer les fonds dynamiques" checked={enabled} onChange={(v) => setFeature('dynamic', v)} />
+        <IconButton icon="arrowBack" label={t('Retour')} onClick={goBack} />
+        <h1 className="top-bar__title">{t('Fonds dynamiques')}</h1>
+        <Switch label={t('Activer les fonds dynamiques')} checked={enabled} onChange={(v) => setFeature('dynamic', v)} />
       </header>
       <p className="option-intro">
-        Ton fond change tout seul selon la situation, même app fermée. Choisis un fond pour chaque cas : les cas sans fond
-        sont ignorés.
+        {t('Ton fond change tout seul selon la situation, même app fermée. Choisis un fond pour chaque cas : les cas sans fond sont ignorés.')}
       </p>
 
       <div className="option-block">
-        <div className="chip-wrap" role="radiogroup" aria-label="Déclencheur">
+        <div className="chip-wrap" role="radiogroup" aria-label={t('Déclencheur')}>
           {MODES.map((m) => (
             <Chip key={m.value} role="radio" aria-checked={prefs.mode === m.value} selected={prefs.mode === m.value} onClick={() => update({ mode: m.value })}>
-              {m.label}
+              {t(m.label)}
             </Chip>
           ))}
         </div>
@@ -88,46 +89,47 @@ export function DynamicScreen() {
         <div className="option-status" role="status">
           <Icon name="info" />
           {(prefs.mode === 'weather' || (prefs.mode === 'time' && prefs.followSun)) && !prefs.place
-            ? 'Choisis un lieu puis des fonds.'
-            : 'Choisis au moins un fond pour démarrer.'}
+            ? t('Choisis un lieu puis des fonds.')
+            : t('Choisis au moins un fond pour démarrer.')}
         </div>
       )}
 
       {prefs.mode === 'time' && (
         <>
           <ListItem
-            headline="Suivre le soleil"
-            supporting="Les créneaux suivent le lever et le coucher du soleil de ta ville, toute l’année"
+            headline={t('Suivre le soleil')}
+            supporting={t('Les créneaux suivent le lever et le coucher du soleil de ta ville, toute l’année')}
             leading={<Icon name="twilight" />}
-            trailing={<Switch label="Suivre le soleil" checked={prefs.followSun} onChange={(followSun) => update({ followSun })} />}
+            trailing={<Switch label={t('Suivre le soleil')} checked={prefs.followSun} onChange={(followSun) => update({ followSun })} />}
           />
           {prefs.followSun && <PlacePicker place={prefs.place} weather={false} onChange={(place) => update({ place })} />}
           {sun && (
             <p className="option-hint option-hint--padded">
-              Aujourd’hui : lever {formatMinutes(sun.sunrise)}, coucher {formatMinutes(sun.sunset)}.
+              {t('Aujourd’hui : lever {sunrise}, coucher {sunset}.', { sunrise: formatMinutes(sun.sunrise), sunset: formatMinutes(sun.sunset) })}
             </p>
           )}
           {TIME_SLOTS.map((slot) => {
             const anchor = SUN_ANCHORS[slot.key];
             const start = sun ? formatMinutes((anchor.anchor === 'sunrise' ? sun.sunrise : sun.sunset) + anchor.offset) : null;
+            const label = t(slot.label);
             return (
               <RefRow
                 key={slot.key}
                 icon={slot.icon}
-                label={slot.label}
+                label={label}
                 wallpaperId={prefs.slots[slot.key]}
-                onChoose={() => setPicking({ label: slot.label, assign: (id) => update({ slots: { ...prefs.slots, [slot.key]: id } }) })}
+                onChoose={() => setPicking({ label, assign: (id) => update({ slots: { ...prefs.slots, [slot.key]: id } }) })}
                 onClear={() => update({ slots: { ...prefs.slots, [slot.key]: undefined } })}
               >
                 {prefs.followSun ? (
-                  <span className="time-sun" title={anchor.label} aria-label={`Début : ${slot.label}, ${anchor.label}`}>
+                  <span className="time-sun" title={t(anchor.label)} aria-label={t('Début : {slot}, {anchor}', { slot: label, anchor: t(anchor.label) })}>
                     {start ?? '—'}
                   </span>
                 ) : (
                   <input
                     type="time"
                     className="time-input"
-                    aria-label={`Début : ${slot.label}`}
+                    aria-label={t('Début : {slot}', { slot: label })}
                     value={prefs.slotStarts[slot.key]}
                     onChange={(e) => e.target.value && update({ slotStarts: { ...prefs.slotStarts, [slot.key]: e.target.value } })}
                   />
@@ -141,7 +143,7 @@ export function DynamicScreen() {
       {prefs.mode === 'theme' && (
         <>
           <p className="option-hint option-hint--padded">
-            Le fond suit le thème clair ou sombre du téléphone, y compris quand il bascule tout seul le soir.
+            {t('Le fond suit le thème clair ou sombre du téléphone, y compris quand il bascule tout seul le soir.')}
           </p>
           {(
             [
@@ -152,9 +154,9 @@ export function DynamicScreen() {
             <RefRow
               key={key}
               icon={icon}
-              label={label}
+              label={t(label)}
               wallpaperId={prefs.theme[key]}
-              onChoose={() => setPicking({ label, assign: (id) => update({ theme: { ...prefs.theme, [key]: id } }) })}
+              onChoose={() => setPicking({ label: t(label), assign: (id) => update({ theme: { ...prefs.theme, [key]: id } }) })}
               onClear={() => update({ theme: { ...prefs.theme, [key]: undefined } })}
             />
           ))}
@@ -168,9 +170,9 @@ export function DynamicScreen() {
             <RefRow
               key={kind.key}
               icon={kind.icon}
-              label={kind.label}
+              label={t(kind.label)}
               wallpaperId={prefs.weather[kind.key]}
-              onChoose={() => setPicking({ label: kind.label, assign: (id) => update({ weather: { ...prefs.weather, [kind.key]: id } }) })}
+              onChoose={() => setPicking({ label: t(kind.label), assign: (id) => update({ weather: { ...prefs.weather, [kind.key]: id } }) })}
               onClear={() => update({ weather: { ...prefs.weather, [kind.key]: undefined } })}
             />
           ))}
@@ -181,10 +183,10 @@ export function DynamicScreen() {
         <>
           <div className="option-block">
             <SegmentedButtons
-              label="Hémisphère"
+              label={t('Hémisphère')}
               options={[
-                { value: 'north', label: 'Hémisphère nord' },
-                { value: 'south', label: 'Hémisphère sud' },
+                { value: 'north', label: t('Hémisphère nord') },
+                { value: 'south', label: t('Hémisphère sud') },
               ]}
               value={prefs.hemisphere}
               onChange={(hemisphere) => update({ hemisphere })}
@@ -194,9 +196,9 @@ export function DynamicScreen() {
             <RefRow
               key={season.key}
               icon={season.icon}
-              label={season.label}
+              label={t(season.label)}
               wallpaperId={prefs.seasons[season.key]}
-              onChoose={() => setPicking({ label: season.label, assign: (id) => update({ seasons: { ...prefs.seasons, [season.key]: id } }) })}
+              onChoose={() => setPicking({ label: t(season.label), assign: (id) => update({ seasons: { ...prefs.seasons, [season.key]: id } }) })}
               onClear={() => update({ seasons: { ...prefs.seasons, [season.key]: undefined } })}
             />
           ))}
@@ -208,26 +210,26 @@ export function DynamicScreen() {
           <RefRow
             key={level.key}
             icon={level.icon}
-            label={level.label}
+            label={t(level.label)}
             wallpaperId={prefs.battery[level.key]}
-            onChoose={() => setPicking({ label: level.label, assign: (id) => update({ battery: { ...prefs.battery, [level.key]: id } }) })}
+            onChoose={() => setPicking({ label: t(level.label), assign: (id) => update({ battery: { ...prefs.battery, [level.key]: id } }) })}
             onClear={() => update({ battery: { ...prefs.battery, [level.key]: undefined } })}
           />
         ))}
 
       <div className="option-block">
-        <h2 className="option-block__title">Écran</h2>
+        <h2 className="option-block__title">{t('Écran')}</h2>
         <TargetChips value={prefs.target} onChange={(target) => update({ target })} />
       </div>
       <div className="option-actions">
         <Button variant="tonal" icon="refresh" disabled={!enabled || configuredCount === 0} onClick={() => void runNow()}>
-          Appliquer maintenant
+          {t('Appliquer maintenant')}
         </Button>
       </div>
 
       <WallpaperPicker
         open={picking !== null}
-        title={picking ? `Fond « ${picking.label} »` : ''}
+        title={picking ? t('Fond « {label} »', { label: picking.label }) : ''}
         onClose={() => setPicking(null)}
         onPick={(w) => picking?.assign(w.id)}
       />
@@ -235,6 +237,7 @@ export function DynamicScreen() {
   );
 }
 
+/** Libellés en français (données) : `t(label)` à l'affichage. */
 const WEATHER_LABELS = Object.fromEntries(WEATHER_KINDS.map((k) => [k.key, k.label])) as Record<WeatherKey, string>;
 
 /** Lieu de la météo ou du soleil : recherche de ville ou position approximative de l'appareil. */
@@ -263,7 +266,7 @@ export function PlacePicker({ place, onChange, weather = true }: { place: Place 
     try {
       setResults(await searchPlaces(query));
     } catch {
-      showSnackbar('Recherche de ville impossible');
+      showSnackbar(t('Recherche de ville impossible'));
     } finally {
       setSearching(false);
     }
@@ -272,6 +275,7 @@ export function PlacePicker({ place, onChange, weather = true }: { place: Place 
   const locate = async () => {
     try {
       const { latitude, longitude } = await PrismeAutomation.getApproximateLocation();
+      // Nom gardé en français (donnée) : traduit à l'affichage, comme les autres noms que l'app donne elle-même.
       onChange({ name: 'Ma position', latitude, longitude });
     } catch (error) {
       showSnackbar(nativeErrorMessage(error));
@@ -280,11 +284,13 @@ export function PlacePicker({ place, onChange, weather = true }: { place: Place 
 
   return (
     <div className="option-block">
-      <h2 className="option-block__title">Lieu</h2>
+      <h2 className="option-block__title">{t('Lieu')}</h2>
       {place && (
         <ListItem
-          headline={place.name}
-          supporting={!weather ? 'Lieu choisi' : current.data ? `Actuellement : ${WEATHER_LABELS[current.data]}` : 'Météo Open-Meteo'}
+          headline={t(place.name)}
+          supporting={
+            !weather ? t('Lieu choisi') : current.data ? t('Actuellement : {weather}', { weather: t(WEATHER_LABELS[current.data]) }) : t('Météo Open-Meteo')
+          }
           leading={<Icon name="partlyCloudy" />}
         />
       )}
@@ -295,13 +301,13 @@ export function PlacePicker({ place, onChange, weather = true }: { place: Place 
           void search();
         }}
       >
-        <TextField label="Ville" value={query} onChange={(e) => setQuery(e.target.value)} enterKeyHint="search" />
+        <TextField label={t('Ville')} value={query} onChange={(e) => setQuery(e.target.value)} enterKeyHint="search" />
         <div className="option-actions">
           <Button type="submit" variant="tonal" icon="search" disabled={searching || query.trim().length < 2}>
-            Rechercher
+            {t('Rechercher')}
           </Button>
           <Button variant="outlined" icon="explore" onClick={() => void locate()}>
-            Ma position
+            {t('Ma position')}
           </Button>
         </div>
       </form>
