@@ -16,8 +16,8 @@ async function addFavorites(page: Page, indexes: number[]) {
 async function openLiveScreen(page: Page) {
   await page.getByRole('button', { name: 'Réglages' }).click();
   const settings = page.locator('.tab[data-active="true"]');
-  await settings.getByRole('switch', { name: 'Fond animé (parallaxe)' }).click();
-  await settings.getByRole('button', { name: /Fond animé \(parallaxe\)/ }).click();
+  await settings.getByRole('switch', { name: 'Fonds animés', exact: true }).click();
+  await settings.getByRole('button', { name: /^Fonds animés/ }).click();
   const screen = page.locator('.overlay-screen');
   await screen.getByRole('button', { name: 'Choisir une image' }).click();
   await page.locator('.picker__item').first().click();
@@ -98,7 +98,7 @@ test.describe('fond animé : changer à chaque déverrouillage', () => {
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Réglages' }).click();
-    await page.locator('.tab[data-active="true"]').getByRole('button', { name: /Fond animé \(parallaxe\)/ }).click();
+    await page.locator('.tab[data-active="true"]').getByRole('button', { name: /^Fonds animés/ }).click();
     const again = page.locator('.overlay-screen');
     await again.getByRole('button', { name: /^Nuit \(2\)/ }).click();
     await expect(again.getByRole('button', { name: /^Nuit \(2\)/ })).toHaveAttribute('aria-pressed', 'true');
@@ -111,7 +111,7 @@ test.describe('fond animé : changer à chaque déverrouillage', () => {
     // Les réglages survivent au rechargement, la liste repart au natif.
     await page.reload();
     await page.getByRole('button', { name: 'Réglages' }).click();
-    await page.locator('.tab[data-active="true"]').getByRole('button', { name: /Fond animé \(parallaxe\)/ }).click();
+    await page.locator('.tab[data-active="true"]').getByRole('button', { name: /^Fonds animés/ }).click();
     const reloaded = page.locator('.overlay-screen');
     await expect(reloaded.getByRole('switch', { name: 'Changer à chaque déverrouillage' })).toHaveAttribute('aria-checked', 'true');
     await expect(reloaded.getByRole('button', { name: /^Nuit \(2\)/ })).toHaveAttribute('aria-pressed', 'true');

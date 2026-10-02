@@ -272,19 +272,40 @@ declare global {
   }
 }
 
-/** Changer à chaque déverrouillage : images (id + URI d'application) et fréquence en déverrouillages. */
+/** Genre de fond animé : une scène par genre dans le service Prisme. */
+export type LiveMode = 'image' | 'video' | 'gif' | 'gradient' | 'particles' | 'relief';
+
+/**
+ * Liste d'images du fond animé (genre « photo ») : images (id + URI d'application), fréquence en
+ * déverrouillages et, avec `unlock`, changement à chaque déverrouillage (sinon : double-tap seulement).
+ */
 export interface LivePlaylist {
   enabled: boolean;
   every: number;
   items: { id: string; uri: string }[];
+  unlock?: boolean;
 }
 
 export interface LiveStatus {
   active: boolean;
   intensity: number;
   configured: boolean;
+  mode: LiveMode;
+  /** Pause en économie de batterie activée. */
+  eco: boolean;
+  doubleTap: boolean;
+  /** Fond figé en ce moment : économie d'énergie ou batterie faible (seulement si `eco`). */
+  paused: boolean;
   /** `count` : images prêtes (préparées sur l'appareil), `every` : déverrouillages entre deux changements. */
-  playlist: { enabled: boolean; count: number; every: number };
+  playlist: { enabled: boolean; count: number; every: number; unlock?: boolean };
+}
+
+/** Genre, options communes et réglages propres au genre (objet libre, lu par la scène native). */
+export interface LiveConfiguration {
+  mode: LiveMode;
+  eco: boolean;
+  doubleTap: boolean;
+  settings?: Record<string, unknown>;
 }
 
 export interface PrismeLivePlugin {
@@ -294,6 +315,10 @@ export interface PrismeLivePlugin {
    * `count` : images déjà prêtes. La suite se lit dans `getStatus().playlist`.
    */
   setPlaylist(options: LivePlaylist): Promise<{ enabled: boolean; count: number }>;
+  /** Enregistre le genre et ses réglages ; le service suit aussitôt s'il est actif. */
+  configure(options: LiveConfiguration): Promise<{ active: boolean }>;
+  /** Ouvre l'écran d'Android qui active le fond animé Prisme (« active » : il l'est déjà). */
+  activate(): Promise<{ status: 'active' | 'launched' }>;
   getStatus(): Promise<LiveStatus>;
 }
 
@@ -301,6 +326,11 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
   calls: { uri: string; intensity: number; crop?: NormalizedRect }[] = [];
   /** Tests : appels à `setPlaylist`, dans l'ordre. */
   playlistCalls: LivePlaylist[] = [];
+  /** Tests : appels à `configure`, dans l'ordre. */
+  configureCalls: LiveConfiguration[] = [];
+  activated = false;
+  /** Tests : fond figé (économie d'énergie). */
+  paused = false;
 
   constructor() {
     super();
@@ -309,7 +339,9 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
 
   async setLiveWallpaper(options: { uri: string; intensity: number; crop?: NormalizedRect }) {
     this.calls.push(options);
-    return { status: 'launched' as const };
+    const status = this.activated ? ('updated' as const) : ('launched' as const);
+    this.activated = true;
+    return { status };
   }
 
   async setPlaylist(options: LivePlaylist) {
@@ -317,13 +349,34 @@ export class PrismeLiveWeb extends WebPlugin implements PrismeLivePlugin {
     return { enabled: options.enabled, count: options.enabled ? options.items.length : 0 };
   }
 
+  async configure(options: LiveConfiguration) {
+    this.configureCalls.push(options);
+    return { active: this.activated };
+  }
+
+  async activate() {
+    const status = this.activated ? ('active' as const) : ('launched' as const);
+    this.activated = true;
+    return { status };
+  }
+
   async getStatus(): Promise<LiveStatus> {
     const playlist = this.playlistCalls.at(-1);
+    const config = this.configureCalls.at(-1);
     return {
-      active: this.calls.length > 0,
+      active: this.activated,
       intensity: this.calls.at(-1)?.intensity ?? 0.5,
       configured: this.calls.length > 0,
-      playlist: { enabled: playlist?.enabled ?? false, count: playlist?.enabled ? playlist.items.length : 0, every: playlist?.every ?? 1 },
+      mode: config?.mode ?? 'image',
+      eco: config?.eco ?? true,
+      doubleTap: config?.doubleTap ?? false,
+      paused: (config?.eco ?? true) && this.paused,
+      playlist: {
+        enabled: playlist?.enabled ?? false,
+        count: playlist?.enabled ? playlist.items.length : 0,
+        every: playlist?.every ?? 1,
+        unlock: playlist?.unlock ?? true,
+      },
     };
   }
 }

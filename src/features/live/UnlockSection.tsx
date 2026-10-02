@@ -16,6 +16,9 @@ const prets = (n: number) => `${fonds(n)} prêt${n > 1 ? 's' : ''}`;
 export function UnlockSection({ optionOn, status, onChanged }: { optionOn: boolean; status: LiveStatus | undefined; onChanged: () => void }) {
   const unlock = useLive((s) => s.unlock);
   const updateUnlock = useLive((s) => s.updateUnlock);
+  const doubleTap = useLive((s) => s.doubleTap);
+  // La liste sert au déverrouillage comme au double-tap : elle est préparée dès que l'un des deux est actif.
+  const listOn = unlock.enabled || doubleTap;
   const favorites = useLibrary((s) => s.favorites);
   const items = useLibrary((s) => s.items);
   const collections = useLibrary((s) => s.collections);
@@ -35,7 +38,7 @@ export function UnlockSection({ optionOn, status, onChanged }: { optionOn: boole
   const used = count > PLAYLIST_LIMIT ? `Les ${PLAYLIST_LIMIT} fonds les plus récents de la source` : fonds(count);
   let help: string;
   if (count < 2) help = 'Il faut au moins deux fonds dans la source choisie.';
-  else if (!unlock.enabled || !live) help = `${used} seront préparés sur l’appareil, pour changer d’image sans connexion.`;
+  else if (!listOn || !live) help = `${used} seront préparés sur l’appareil, pour changer d’image sans connexion.`;
   else if (!status?.playlist.enabled) help = 'Préparation des images…';
   else if (prepared < total) help = `${prets(prepared)} sur ${total} : les images sont préparées en arrière-plan.`;
   else help = `${prets(prepared)}, disponibles sans connexion.`;
@@ -92,6 +95,7 @@ export function UnlockSection({ optionOn, status, onChanged }: { optionOn: boole
         <p className="option-hint" role="status">
           {help}
         </p>
+        {doubleTap && <p className="option-hint">Le double-tap passe aussi à l’image suivante de cette liste.</p>}
       </div>
     </section>
   );

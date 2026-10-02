@@ -14,7 +14,7 @@ interface OptionDef {
 
 export const OPTIONS: readonly OptionDef[] = [
   { key: 'dynamic', title: 'Fonds dynamiques', description: 'Selon l’heure, la météo, la saison ou la batterie', icon: 'partlyCloudy', screen: 'dynamic' },
-  { key: 'live', title: 'Fond animé (parallaxe)', description: 'Le fond suit les mouvements du téléphone', icon: 'rotation3d', screen: 'live' },
+  { key: 'live', title: 'Fonds animés', description: 'Photo en parallaxe et autres fonds qui bougent', icon: 'rotation3d', screen: 'live' },
   { key: 'rotation', title: 'Rotation automatique', description: 'Change de fond à intervalle régulier, au hasard en ligne ou parmi tes favoris', icon: 'autorenew', screen: 'rotation' },
   { key: 'music', title: 'Pochette de la musique', description: 'Le fond devient la pochette du morceau en cours', icon: 'musicNote', screen: 'music' },
   { key: 'places', title: 'Selon le lieu', description: 'Un fond à la maison, un autre au travail', icon: 'place', screen: 'places' },

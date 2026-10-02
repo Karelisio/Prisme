@@ -48,6 +48,21 @@ describe('changer à chaque déverrouillage : liste envoyée au natif', () => {
     expect(buildPlaylist({ ...on, source: 'inconnue' }, true, library, uriFor)).toBe(PLAYLIST_OFF);
   });
 
+  it('double-tap seul : la liste est préparée, sans changement au déverrouillage', () => {
+    expect(buildPlaylist(DEFAULT_UNLOCK, true, library, uriFor, true)).toEqual({
+      enabled: true,
+      every: 1,
+      unlock: false,
+      items: [
+        { id: 'b', uri: 'https://images.unsplash.com/b?fm=jpg' },
+        { id: 'a', uri: '/data/offline/a.jpg' },
+      ],
+    });
+    // Les deux : la liste sert aussi au déverrouillage.
+    expect(buildPlaylist(on, true, library, uriFor, true)).not.toHaveProperty('unlock');
+    expect(buildPlaylist(DEFAULT_UNLOCK, false, library, uriFor, true)).toBe(PLAYLIST_OFF);
+  });
+
   it('nombre de fonds borné', () => {
     const many = Object.fromEntries(Array.from({ length: PLAYLIST_LIMIT + 20 }, (_, i) => [`w${i}`, wp(`w${i}`)]));
     const favorites = Object.fromEntries(Object.keys(many).map((id, i) => [id, i]));

@@ -5,6 +5,7 @@ import { ExploreScreen } from '@/features/browse/ExploreScreen';
 import { startAutomationSync } from '@/features/automation/sync';
 import { startDailySync } from '@/features/discover/dailySync';
 import { startOfflineSync } from '@/features/library/offline';
+import { startLiveSync } from '@/features/live/liveSync';
 import { startPlaylistSync } from '@/features/live/playlistSync';
 import { startMusicSync } from '@/features/music/musicSync';
 import { UpdateSheet } from '@/features/updates/UpdateSheet';
@@ -109,6 +110,7 @@ function AppShell() {
   useEffect(() => startOfflineSync(), []);
   useEffect(() => startAutomationSync(), []);
   useEffect(() => startMusicSync(), []);
+  useEffect(() => startLiveSync(), []);
   useEffect(() => startPlaylistSync(), []);
   useEffect(() => startDailySync(), []);
   useEffect(() => startAppActions(), []);

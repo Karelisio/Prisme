@@ -1,100 +1,77 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 import { goBack } from '@/app/navigation';
-import { WallpaperPicker } from '@/features/automation/components';
-import { useThumbSrc } from '@/features/library/useImageSrc';
 import { useSettings } from '@/features/settings/store';
-import type { Wallpaper } from '@/features/sources/types';
-import { nativeErrorMessage } from '@/shared/native';
 import { PrismeLive } from '@/shared/native/automation';
-import { Button, Icon, IconButton, Switch } from '@/shared/ui/components';
-import { showSnackbar } from '@/shared/ui/overlays';
-import { UnlockSection } from './UnlockSection';
-import { setLiveWallpaper, useLive } from './live';
+import { Chip, Icon, IconButton, ListItem, Switch } from '@/shared/ui/components';
+import { useLive } from './live';
+import { LIVE_MODES, PHOTO_MODE } from './modes';
 import '@/features/automation/automation.css';
 import './live.css';
 
 export function LiveScreen() {
   const enabled = useSettings((s) => s.features.live);
   const setFeature = useSettings((s) => s.setFeature);
-  const wallpaper = useLive((s) => s.wallpaper);
-  const intensity = useLive((s) => s.intensity);
-  const setIntensity = useLive((s) => s.setIntensity);
-  const [picking, setPicking] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const mode = useLive((s) => s.mode);
+  const setMode = useLive((s) => s.setMode);
+  const doubleTap = useLive((s) => s.doubleTap);
+  const setDoubleTap = useLive((s) => s.setDoubleTap);
+  const eco = useLive((s) => s.eco);
+  const setEco = useLive((s) => s.setEco);
   const status = useQuery({ queryKey: ['live-status'], queryFn: () => PrismeLive.getStatus(), refetchInterval: 5_000 });
-
-  const activate = async (w: Wallpaper | null = wallpaper) => {
-    if (!w) return;
-    setBusy(true);
-    try {
-      showSnackbar(await setLiveWallpaper(w));
-      void status.refetch();
-    } catch (error) {
-      showSnackbar(nativeErrorMessage(error));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const current = LIVE_MODES.find((m) => m.key === mode) ?? PHOTO_MODE;
+  const refresh = () => void status.refetch();
 
   return (
     <div className="screen overlay-screen option-screen">
       <header className="top-bar">
         <IconButton icon="arrowBack" label="Retour" onClick={goBack} />
-        <h1 className="top-bar__title">Fond animé</h1>
-        <Switch label="Activer l'option fond animé" checked={enabled} onChange={(v) => setFeature('live', v)} />
+        <h1 className="top-bar__title">Fonds animés</h1>
+        <Switch label="Activer l'option fonds animés" checked={enabled} onChange={(v) => setFeature('live', v)} />
       </header>
       <p className="option-intro">
-        Le fond glisse légèrement quand tu inclines le téléphone, comme s'il était derrière l'écran. Le capteur est coupé
-        quand le fond n'est pas visible et en mode économie d'énergie.
+        Un fond qui bouge sur l’écran d’accueil. Il s’arrête dès qu’il n’est plus visible : le capteur et l’animation ne
+        tournent que quand tu le regardes.
       </p>
 
       {status.data?.active && (
         <div className="option-status" role="status">
-          <Icon name="checkCircle" />
-          Le fond animé Prisme est actif.
+          <Icon name={status.data.paused ? 'eco' : 'checkCircle'} />
+          {status.data.paused
+            ? 'Le fond animé Prisme est actif, figé pour économiser la batterie.'
+            : 'Le fond animé Prisme est actif.'}
         </div>
       )}
 
-      <div className="option-block live-choice">
-        {wallpaper ? <LiveThumb wallpaper={wallpaper} /> : <div className="live-thumb live-thumb--empty"><Icon name="image" size={32} /></div>}
-        <Button variant="outlined" onClick={() => setPicking(true)}>
-          {wallpaper ? 'Changer d’image' : 'Choisir une image'}
-        </Button>
-      </div>
+      {LIVE_MODES.length > 1 && (
+        <div className="option-block">
+          <h2 className="option-block__title">Genre</h2>
+          <div className="chip-wrap" role="group" aria-label="Genre de fond animé">
+            {LIVE_MODES.map((m) => (
+              <Chip key={m.key} icon={m.icon} selected={current.key === m.key} onClick={() => setMode(m.key)}>
+                {m.label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <current.Section optionOn={enabled} status={status.data} refresh={refresh} />
 
       <div className="option-block">
-        <h2 className="option-block__title">Intensité de la parallaxe</h2>
-        <input
-          className="slider"
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={intensity}
-          aria-label="Intensité de la parallaxe"
-          onChange={(e) => setIntensity(Number(e.target.value))}
-        />
-        <div className="live-scale">
-          <span>Subtile</span>
-          <span>Prononcée</span>
-        </div>
+        <h2 className="option-block__title">Options</h2>
       </div>
-
-      <div className="option-actions">
-        <Button icon="rotation3d" disabled={!enabled || !wallpaper || busy} onClick={() => void activate()}>
-          {status.data?.active ? 'Mettre à jour' : 'Activer le fond animé'}
-        </Button>
-      </div>
-
-      <UnlockSection optionOn={enabled} status={status.data} onChanged={() => setTimeout(() => void status.refetch(), 1500)} />
-
-      <WallpaperPicker open={picking} title="Image du fond animé" onClose={() => setPicking(false)} onPick={(w) => useLive.setState({ wallpaper: w })} />
+      <ListItem
+        headline="Double-tap sur l’écran d’accueil"
+        supporting="Image suivante de la liste (Photo), ou nouvelle variante selon le genre"
+        leading={<Icon name="touchApp" />}
+        trailing={<Switch label="Double-tap sur l’écran d’accueil" checked={doubleTap} onChange={setDoubleTap} />}
+      />
+      <ListItem
+        headline="Pause en économie de batterie"
+        supporting="Le fond se fige en économie d’énergie, ou sous 15 % de batterie hors charge"
+        leading={<Icon name="eco" />}
+        trailing={<Switch label="Pause en économie de batterie" checked={eco} onChange={setEco} />}
+      />
     </div>
   );
-}
-
-function LiveThumb({ wallpaper }: { wallpaper: Wallpaper }) {
-  const src = useThumbSrc(wallpaper);
-  return <img className="live-thumb" src={src} alt="" style={{ backgroundColor: wallpaper.color }} />;
 }

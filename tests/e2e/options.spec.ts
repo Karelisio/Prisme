@@ -89,8 +89,8 @@ test('fond animé : réglage de l’intensité et application depuis l’aperçu
   await page.keyboard.press('Escape');
 
   const settings = await openSettings(page);
-  await settings.getByRole('switch', { name: 'Fond animé (parallaxe)' }).click();
-  await settings.getByRole('button', { name: /Fond animé \(parallaxe\)/ }).click();
+  await settings.getByRole('switch', { name: 'Fonds animés', exact: true }).click();
+  await settings.getByRole('button', { name: /^Fonds animés/ }).click();
   const screen = page.locator('.overlay-screen');
   await screen.getByRole('button', { name: 'Choisir une image' }).click();
   await page.locator('.picker__item').first().click();

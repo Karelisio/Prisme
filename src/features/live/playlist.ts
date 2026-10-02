@@ -29,18 +29,21 @@ export const PLAYLIST_OFF: LivePlaylist = { enabled: false, every: 1, items: [] 
 
 /**
  * Liste envoyée au natif : les fonds de la source choisie (les plus récents d'abord pour les favoris),
- * avec leur URI d'application (copie hors ligne si elle existe). Il en faut au moins deux : sinon l'image
- * ne pourrait pas changer, et rien n'est envoyé.
+ * avec leur URI d'application (copie hors ligne si elle existe). Elle sert au changement à chaque
+ * déverrouillage et au double-tap ([doubleTap]). Il en faut au moins deux : sinon l'image ne pourrait
+ * pas changer, et rien n'est envoyé.
  */
 export function buildPlaylist(
   prefs: UnlockPrefs,
   optionOn: boolean,
   library: Pick<LibraryData, 'items' | 'favorites' | 'collections'>,
   uriFor: (w: Wallpaper) => string,
+  doubleTap = false,
 ): LivePlaylist {
-  if (!optionOn || !prefs.enabled) return PLAYLIST_OFF;
+  if (!optionOn || !(prefs.enabled || doubleTap)) return PLAYLIST_OFF;
   const items = rotationItems(prefs.source, library)
     .slice(0, PLAYLIST_LIMIT)
     .map((w) => ({ id: w.id, uri: uriFor(w) }));
-  return items.length < 2 ? PLAYLIST_OFF : { enabled: true, every: prefs.every, items };
+  if (items.length < 2) return PLAYLIST_OFF;
+  return prefs.enabled ? { enabled: true, every: prefs.every, items } : { enabled: true, every: prefs.every, items, unlock: false };
 }

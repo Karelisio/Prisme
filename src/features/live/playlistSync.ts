@@ -17,7 +17,8 @@ let timer: number | undefined;
 async function push() {
   const library = useLibrary.getState();
   if (!library.hydrated) return;
-  const playlist = buildPlaylist(useLive.getState().unlock, useSettings.getState().features.live, library, applyUri);
+  const { unlock, doubleTap } = useLive.getState();
+  const playlist = buildPlaylist(unlock, useSettings.getState().features.live, library, applyUri, doubleTap);
   const json = JSON.stringify(playlist);
   if (json === lastSent) return;
   lastSent = json;
@@ -55,7 +56,7 @@ function schedule() {
 export function startPlaylistSync(): () => void {
   const unsubscribers = [
     useLive.subscribe((s, prev) => {
-      if (s.unlock !== prev.unlock) schedule();
+      if (s.unlock !== prev.unlock || s.doubleTap !== prev.doubleTap) schedule();
     }),
     useSettings.subscribe((s, prev) => {
       if (s.features.live !== prev.features.live) schedule();

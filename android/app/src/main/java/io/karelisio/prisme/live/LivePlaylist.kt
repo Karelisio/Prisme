@@ -40,9 +40,10 @@ internal object LivePlaylist {
 
     /**
      * Enregistre la demande et lance la préparation ; renvoie le nombre d'images déjà prêtes. Sans
-     * [enabled], la liste est vidée et ses fichiers supprimés.
+     * [enabled], la liste est vidée et ses fichiers supprimés. Sans [unlock], les déverrouillages ne
+     * changent pas l'image : la liste ne sert qu'au double-tap.
      */
-    fun update(context: Context, enabled: Boolean, every: Int, items: List<WallpaperRef>): Int {
+    fun update(context: Context, enabled: Boolean, every: Int, items: List<WallpaperRef>, unlock: Boolean = true): Int {
         val app = context.applicationContext
         val dir = File(app.filesDir, DIR)
         val targets = if (enabled) UnlockPlaylist.select(items).map { Target(it, File(dir, "${CacheKeys.of(it.id)}.jpg")) } else emptyList()
@@ -51,14 +52,14 @@ internal object LivePlaylist {
         synchronized(lock) {
             request = ++generation
             val paths = readyPaths(targets)
-            LiveWallpaperStore.savePlaylist(app, enabled, every, paths)
+            LiveWallpaperStore.savePlaylist(app, enabled, every, paths, unlock)
             ready = paths.size
         }
-        scope.launch { queue.withLock { prepare(app, request, every, targets) } }
+        scope.launch { queue.withLock { prepare(app, request, every, unlock, targets) } }
         return ready
     }
 
-    private fun prepare(app: Context, request: Int, every: Int, targets: List<Target>) {
+    private fun prepare(app: Context, request: Int, every: Int, unlock: Boolean, targets: List<Target>) {
         if (targets.isNotEmpty()) {
             val images = LiveImages(app)
             val screen = ScreenInfo.read(app, null)
@@ -74,14 +75,14 @@ internal object LivePlaylist {
                 }
                 // Publiée au fur et à mesure : le changement fonctionne dès que deux images sont prêtes.
                 synchronized(lock) {
-                    if (request == generation) LiveWallpaperStore.savePlaylist(app, true, every, readyPaths(targets))
+                    if (request == generation) LiveWallpaperStore.savePlaylist(app, true, every, readyPaths(targets), unlock)
                 }
             }
         }
         synchronized(lock) {
             if (request != generation) return
             // Dernière publication : elle reprend aussi les images terminées entre-temps par un travail précédent.
-            if (targets.isNotEmpty()) LiveWallpaperStore.savePlaylist(app, true, every, readyPaths(targets))
+            if (targets.isNotEmpty()) LiveWallpaperStore.savePlaylist(app, true, every, readyPaths(targets), unlock)
             removeUnused(File(app.filesDir, DIR), targets)
         }
     }
